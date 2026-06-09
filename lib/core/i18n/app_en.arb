@@ -1,0 +1,12 @@
+# app_en.arb
+{
+  "problem_puncture": "Puncture / Flat Tyre",
+  "problem_fuel": "Out of Fuel",
+  "problem_breakdown": "Breakdown",
+  "nearest_helpers": "Nearest Helpers",
+  "call_now": "Call Now",
+  "directions": "Directions",
+  "far_away": "Far Away",
+  "hours_unknown": "Hours Unknown",
+  "last_updated": "Last updated: {time}"
+}
