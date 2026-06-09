@@ -1,6 +1,5 @@
 // lib/presentation/screens/location_prompt_screen.dart
 import 'package:flutter/material.dart';
-import 'package:roadside_help/presentation/state/app_state.dart';
 
 class LocationPromptScreen extends StatefulWidget {
   const LocationPromptScreen({super.key});

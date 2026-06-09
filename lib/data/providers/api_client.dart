@@ -1,6 +1,5 @@
 // lib/data/providers/api_client.dart
 import 'package:http/http.dart' as http;
-import 'dart:convert';
 
 class ApiClient {
   final String baseUrl = 'https://api.roadsidehelp.in'; // Example base URL

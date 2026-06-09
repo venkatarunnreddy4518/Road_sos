@@ -1,5 +1,6 @@
 // lib/presentation/state/app_state.dart
 import 'package:flutter/material.dart';
+import '../../data/repositories/local_db.dart';
 
 enum ConnectivityStatus { online, offline, initializing }
 

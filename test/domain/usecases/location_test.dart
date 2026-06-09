@@ -1,6 +1,5 @@
 // test/domain/usecases/location_test.dart
 import 'package:test/test.dart';
-import 'package:roadside_help/domain/entities/helper.dart'; // Not really needed but for context
 import 'package:roadside_help/core/utils/distance_calculator.dart';
 
 void main() {

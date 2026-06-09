@@ -1,8 +1,8 @@
 // test/presentation/i18n_test.dart
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter/material.dart';
 import 'package:roadside_help/presentation/widgets/language_switcher.dart';
 import 'package:roadside_help/presentation/state/app_state.dart';
-import 'package:roadside_help/core/i18n/app_localization.dart';
 
 void main() {
   testWidgets('LanguageSwitcher should update the app locale when a language is selected', (WidgetTester tester) async {

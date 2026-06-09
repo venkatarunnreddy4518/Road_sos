@@ -1,6 +1,4 @@
 // lib/core/i18n/app_localization.dart
-import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 
 class AppLocalization {
   // This is a mock of how localization would be handled.
