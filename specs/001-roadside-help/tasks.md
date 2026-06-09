@@ -28,9 +28,9 @@ description: "Task list template for feature implementation"
 
 **Purpose**: Project initialization and basic structure
 
-- [ ] T001 Create project structure (core, data, domain, presentation) per implementation plan in `lib/`
-- [ ] T002 Initialize Flutter project and add dependencies (`sqflite`, `geolocator`, `url_launcher`, `flutter_localizations`, `http`) in `pubspec.yaml`
-- [ ] T003 [P] Configure linting and formatting tools in `analysis_options.yaml`
+- [x] T001 Create project structure (core, data, domain, presentation) per implementation plan in `lib/`
+- [x] T002 Initialize Flutter project and add dependencies (`sqflite`, `geolocator`, `url_launcher`, `flutter_localizations`, `http`) in `pubspec.yaml`
+- [x] T003 [P] Configure linting and formatting tools in `analysis_options.yaml`
 
 ---
 
@@ -40,12 +40,12 @@ description: "Task list template for feature implementation"
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T004 Setup SQLite database schema for `helpers`, `problem_types`, and `config` tables in `lib/data/repositories/local_db.dart`
-- [ ] T005 [P] Implement base `Helper` and `ProblemType` entities in `lib/domain/entities/`
-- [ ] T006 [P] Setup base API client for helper synchronization in `lib/data/providers/api_client.dart`
-- [ ] T007 Create distance calculation utility (Haversine) in `lib/core/utils/distance_calculator.dart`
-- [ ] T008 [P] Configure localization infrastructure and generate initial `.arb` files in `lib/core/i18n/`
-- [ ] T009 Implement global error handling and logging infrastructure in `lib/core/utils/logger.dart`
+- [x] T004 Setup SQLite database schema for `helpers`, `problem_types`, and `config` tables in `lib/data/repositories/local_db.dart`
+- [x] T005 [P] Implement base `Helper` and `ProblemType` entities in `lib/domain/entities/`
+- [x] T006 [P] Setup base API client for helper synchronization in `lib/data/providers/api_client.dart`
+- [x] T007 Create distance calculation utility (Haversine) in `lib/core/utils/distance_calculator.dart`
+- [x] T008 [P] Configure localization infrastructure and generate initial `.arb` files in `lib/core/i18n/`
+- [x] T009 Implement global error handling and logging infrastructure in `lib/core/utils/logger.dart`
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
@@ -61,18 +61,18 @@ description: "Task list template for feature implementation"
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T010 [P] [US1] Unit test for `FindNearestHelpers` use case in `test/domain/usecases/find_nearest_test.dart`
-- [ ] T011 [P] [US1] Integration test for helper list sorting and distance display in `test/integration/helper_list_test.dart`
+- [x] T010 [P] [US1] Unit test for `FindNearestHelpers` use case in `test/domain/usecases/find_nearest_test.dart`
+- [x] T011 [P] [US1] Integration test for helper list sorting and distance display in `test/integration/helper_list_test.dart`
 
 ### Implementation for User Story 1
 
-- [ ] T012 [P] [US1] Create `HelperRepository` for local caching and retrieval in `lib/data/repositories/helper_repository.dart`
-- [ ] T013 [US1] Implement `FindNearestHelpers` use case in `lib/domain/usecases/find_nearest_helpers.dart` (depends on T010)
-- [ ] T014 [P] [US1] Implement `ProblemSelectionScreen` UI in `lib/presentation/screens/problem_selection_screen.dart`
-- [ ] T015 [P] [US1] Implement `HelperListScreen` UI with distance sorting in `lib/presentation/screens/helper_list_screen.dart`
-- [ ] T016 [US1] Implement `HelperCard` widget with one-tap call and directions in `lib/presentation/widgets/helper_card.dart` (depends on T015)
-- [ ] T017 [US1] Integrate `url_launcher` for native call and maps actions in `lib/presentation/widgets/helper_card.dart`
-- [ ] T018 [US1] Implement logic to visually flag helpers beyond 15km as "far away" in `lib/presentation/widgets/helper_card.dart`
+- [x] T012 [P] [US1] Create `HelperRepository` for local caching and retrieval in `lib/data/repositories/helper_repository.dart`
+- [x] T013 [US1] Implement `FindNearestHelpers` use case in `lib/domain/usecases/find_nearest_helpers.dart` (depends on T010)
+- [x] T014 [P] [US1] Implement `ProblemSelectionScreen` UI in `lib/presentation/screens/problem_selection_screen.dart`
+- [x] T015 [P] [US1] Implement `HelperListScreen` UI with distance sorting in `lib/presentation/screens/helper_list_screen.dart`
+- [x] T016 [US1] Implement `HelperCard` widget with one-tap call and directions in `lib/presentation/widgets/helper_card.dart` (depends on T015)
+- [x] T017 [US1] Integrate `url_launcher` for native call and maps actions in `lib/presentation/widgets/helper_card.dart`
+- [x] T018 [US1] Implement logic to visually flag helpers beyond 15km as "far away" in `lib/presentation/widgets/helper_card.dart`
 
 **Checkpoint**: At this point, User Story 1 should be fully functional and testable independently
 
@@ -86,17 +86,17 @@ description: "Task list template for feature implementation"
 
 ### Tests for User Story 2
 
-- [ ] T019 [P] [US2] Integration test for offline data retrieval from SQLite in `test/integration/offline_data_test.dart`
-- [ ] T020 [P] [US2] Unit test for GPS coordinate updates while offline in `test/domain/usecases/location_test.dart`
+- [x] T019 [P] [US2] Integration test for offline data retrieval from SQLite in `test/integration/offline_data_test.dart`
+- [x] T020 [P] [US2] Unit test for GPS coordinate updates while offline in `test/domain/usecases/location_test.dart`
 
 ### Implementation for User Story 2
 
-- [ ] T021 [P] [US2] Implement `SyncData` use case to pull data from `/v1/helpers/sync` in `lib/domain/usecases/sync_data.dart`
-- [ ] T022 [US2] Implement Source-Priority Merge logic in `lib/data/repositories/helper_repository.dart` (depends on T021)
-- [ ] T023 [P] [US2] Implement `MapScreen` with current GPS location marker in `lib/presentation/screens/map_screen.dart`
-- [ ] T024 [US2] Implement "Last Updated" timestamp indicator in `lib/presentation/screens/helper_list_screen.dart`
-- [ ] T025 [US2] Add SMS contact capability via `url_launcher` in `lib/presentation/widgets/helper_card.dart`
-- [ ] T026 [US2] Implement graceful degradation (no-network warnings) in `lib/presentation/state/app_state.dart`
+- [x] T021 [P] [US2] Implement `SyncData` use case to pull data from `/v1/helpers/sync` in `lib/domain/usecases/sync_data.dart`
+- [x] T022 [US2] Implement Source-Priority Merge logic in `lib/data/repositories/helper_repository.dart` (depends on T021)
+- [x] T023 [P] [US2] Implement `MapScreen` with current GPS location marker in `lib/presentation/screens/map_screen.dart`
+- [x] T024 [US2] Implement "Last Updated" timestamp indicator in `lib/presentation/screens/helper_list_screen.dart`
+- [x] T025 [US2] Add SMS contact capability via `url_launcher` in `lib/presentation/widgets/helper_card.dart`
+- [x] T026 [US2] Implement graceful degradation (no-network warnings) in `lib/presentation/state/app_state.dart`
 
 **Checkpoint**: At this point, User Stories 1 AND 2 should both work independently
 
@@ -110,14 +110,14 @@ description: "Task list template for feature implementation"
 
 ### Tests for User Story 3
 
-- [ ] T027 [P] [US3] Widget test for dynamic language switching in `test/presentation/i18n_test.dart`
+- [x] T027 [P] [US3] Widget test for dynamic language switching in `test/presentation/i18n_test.dart`
 
 ### Implementation for User Story 3
 
-- [ ] T028 [P] [US3] Implement `LanguagePreference` persistence in `lib/data/repositories/local_db.dart`
-- [ ] T029 [US3] Implement `LanguageSwitcher` widget in `lib/presentation/widgets/language_switcher.dart`
-- [ ] T030 [US3] Integrate `LanguageSwitcher` with Flutter's `Locale` state management in `lib/presentation/state/app_state.dart`
-- [ ] T031 [US3] Populate all interface strings in `.arb` files for English, Hindi, and other major Indian languages in `lib/core/i18n/`
+- [x] T028 [P] [US3] Implement `LanguagePreference` persistence in `lib/data/repositories/local_db.dart`
+- [x] T029 [US3] Implement `LanguageSwitcher` widget in `lib/presentation/widgets/language_switcher.dart`
+- [x] T030 [US3] Integrate `LanguageSwitcher` with Flutter's `Locale` state management in `lib/presentation/state/app_state.dart`
+- [x] T031 [US3] Populate all interface strings in `.arb` files for English, Hindi, and other major Indian languages in `lib/core/i18n/`
 
 **Checkpoint**: All user stories should now be independently functional
 
@@ -127,11 +127,11 @@ description: "Task list template for feature implementation"
 
 **Purpose**: Improvements that affect multiple user stories
 
-- [ ] T032 [P] Implement manual location entry prompt for GPS-unavailable scenarios in `lib/presentation/screens/location_prompt_screen.dart`
-- [ ] T033 [P] Add "Hours Unknown" labels for helpers with missing opening hours in `lib/presentation/widgets/helper_card.dart`
-- [ ] T034 [P] Perform final UI/UX polish for accessibility and consistent 60fps performance
-- [ ] T035 [P] Run `quickstart.md` validation and finalize documentation
-- [ ] T036 Security review: Verify HTTPS enforcement and API key handling
+- [x] T032 [P] Implement manual location entry prompt for GPS-unavailable scenarios in `lib/presentation/screens/location_prompt_screen.dart`
+- [x] T033 [P] Add "Hours Unknown" labels for helpers with missing opening hours in `lib/presentation/widgets/helper_card.dart`
+- [x] T034 [P] Perform final UI/UX polish for accessibility and consistent 60fps performance
+- [x] T035 [P] Run `quickstart.md` validation and finalize documentation
+- [x] T036 Security review: Verify HTTPS enforcement and API key handling
 
 ---
 

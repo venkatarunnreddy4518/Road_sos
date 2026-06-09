@@ -1,0 +1,30 @@
+# Flutter/Dart ignores
+/.dart_tool/
+/.packages
+/.pub-cache/
+/.pub/
+/build/
+
+# Android ignores
+.gradle/
+local.properties
+*.keystore
+*.jks
+
+# iOS ignores
+Pods/
+.generated/
+*.moved-aside
+
+# Web ignores
+.web_cache/
+
+# IDE ignores
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Env ignores
+.env*

@@ -1,0 +1,9 @@
+include: package:flutter_lints/flutter.rules.yaml
+
+analyzer:
+  exclude:
+    - build/**
+    - "**/*.g.dart"
+  errors:
+    todo: ignore
+    unused_local_variable: ignore
