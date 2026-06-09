@@ -1,7 +1,6 @@
 // lib/data/repositories/local_db.dart
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
-import '../models/helper_model.dart'; // Assuming models are similar to entities for now
 
 class LocalDb {
   static final LocalDb _instance = LocalDb._internal();
@@ -18,7 +17,7 @@ class LocalDb {
   }
 
   Future<Database> _initDb() async {
-    String path = join(await sqflite.getDatabasesPath(), 'roadside_help.db');
+    String path = join(await getDatabasesPath(), 'roadside_help.db');
     return await openDatabase(
       path,
       version: 1,

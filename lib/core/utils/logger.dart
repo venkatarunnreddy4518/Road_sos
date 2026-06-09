@@ -1,5 +1,4 @@
 // lib/core/utils/logger.dart
-import 'dart:developer';
 
 enum LogLevel { INFO, WARNING, ERROR, DEBUG }
 

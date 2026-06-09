@@ -2,7 +2,6 @@
 import 'package:test/test.dart';
 import 'package:roadside_help/data/repositories/helper_repository.dart';
 import 'package:roadside_help/domain/entities/helper.dart';
-import 'package:roadside_help/data/repositories/local_db.dart';
 
 void main() {
   test('should retrieve helpers from local SQLite when offline', () async {
