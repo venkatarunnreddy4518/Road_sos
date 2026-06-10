@@ -123,9 +123,9 @@ class _TopPanel extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          _RouteInput(
+          const _RouteInput(
             icon: Icons.my_location,
-            color: const Color(0xFF18A957),
+            color: Color(0xFF18A957),
             label: 'Pickup',
             value: 'MG Road, Bengaluru',
           ),

@@ -146,12 +146,12 @@ class _HelperMapHeader extends StatelessWidget {
     return Stack(
       children: [
         const Positioned.fill(child: _ListMap()),
-        Positioned(
+        const Positioned(
           left: 24,
           top: 118,
           child: _MapPin(
             icon: Icons.navigation,
-            color: const Color(0xFF111111),
+            color: Color(0xFF111111),
             size: 42,
           ),
         ),
