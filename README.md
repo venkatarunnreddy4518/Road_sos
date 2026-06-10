@@ -88,9 +88,23 @@ The app opens in Chrome. Sign in (or **Continue as guest**), pick a category, an
 seeded helpers. To exercise the two-sided flow, run a second client and register it as a helper
 (Profile → Provider mode).
 
-> **Android emulator** instead of web: use `--dart-define=API_BASE_URL=http://10.0.2.2:8000`
-> (the emulator's alias for your host). Note `android/` isn't generated yet — run
-> `flutter create .` first to add native platforms.
+### Run on a phone / emulator
+
+Native `android/` and `ios/` are generated and pre-configured with the required permissions
+(internet, location) and intent/URL-scheme entries for call/SMS/directions.
+
+```powershell
+flutter devices                                  # list connected devices/emulators
+# Android emulator (10.0.2.2 = your host machine):
+flutter run -d emulator-5554 --dart-define=API_BASE_URL=http://10.0.2.2:8000
+# Physical Android phone on the same Wi-Fi (use your PC's LAN IP):
+flutter run -d <deviceId> --dart-define=API_BASE_URL=http://192.168.x.x:8000
+# build an installable debug APK:
+flutter build apk --debug --dart-define=API_BASE_URL=http://10.0.2.2:8000
+```
+
+> iOS requires macOS + Xcode to build/run. Cleartext HTTP to the local backend is enabled for
+> dev on both platforms; use HTTPS in production.
 
 ### Troubleshooting
 
