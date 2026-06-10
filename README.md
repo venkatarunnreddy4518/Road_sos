@@ -72,8 +72,9 @@ Verify the API is up:
 - Swagger docs: <http://localhost:8000/docs>
 
 > **Dev/mock auth** (no external accounts needed): phone OTP returns a `dev_code` and accepts
-> `000000`; Google sign-in uses a demo identity. To use the real providers, set `GOOGLE_CLIENT_ID`
-> and the `TWILIO_*` vars in `.env` (see `.env.example`).
+> `000000`; Google sign-in uses a demo identity. To wire **real** Twilio SMS and Google sign-in,
+> follow [docs/PROVIDERS.md](docs/PROVIDERS.md) (put secrets in `backend/.env`; pass Google client
+> ids to the app via `--dart-define`).
 
 ### Step 3 — Flutter app (web)
 
