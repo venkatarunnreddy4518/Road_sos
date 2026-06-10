@@ -3,20 +3,28 @@ import hashlib
 import secrets
 from datetime import datetime, timedelta, timezone
 
+import bcrypt
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 
 from app.core.config import settings
 
-_pwd = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# bcrypt operates on bytes and only considers the first 72 bytes of the secret.
+_BCRYPT_MAX = 72
+
+
+def _prepare(password: str) -> bytes:
+    return password.encode("utf-8")[:_BCRYPT_MAX]
 
 
 def hash_password(password: str) -> str:
-    return _pwd.hash(password)
+    return bcrypt.hashpw(_prepare(password), bcrypt.gensalt()).decode("utf-8")
 
 
 def verify_password(password: str, password_hash: str) -> bool:
-    return _pwd.verify(password, password_hash)
+    try:
+        return bcrypt.checkpw(_prepare(password), password_hash.encode("utf-8"))
+    except ValueError:
+        return False
 
 
 def hash_token(raw: str) -> str:

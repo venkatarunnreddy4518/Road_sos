@@ -21,24 +21,85 @@ Flutter app (lib/)  ──HTTPS REST──▶  FastAPI backend (backend/)  ─�
 - **Backend**: FastAPI + SQLAlchemy + Alembic + PostgreSQL, JWT auth, bcrypt hashing.
 - **Auth**: phone OTP, email+password, Google, and guest (OTP/Google have dev mocks).
 
-## Quick start
+## How to run
 
-**1) Backend** — see [backend/README.md](backend/README.md):
+You run **two things**: the backend API (Python + PostgreSQL) and the Flutter app (web).
+Commands below are for **Windows PowerShell** (the project's primary environment).
 
-```bash
-cd backend && pip install -r requirements.txt
-copy .env.example .env            # set DATABASE_URL + JWT_SECRET
-alembic upgrade head && python -m app.seed.run
+### Prerequisites
+
+| Tool | Version | Check |
+|------|---------|-------|
+| Flutter SDK | 3.x (Dart 3) | `flutter --version` |
+| Python | 3.11+ | `python --version` |
+| PostgreSQL | 14+ (running) | service `postgresql-x64-XX` Running |
+
+Enable Flutter web once: `flutter config --enable-web`.
+
+### Step 1 — Database (one time)
+
+Create the database, using **your** PostgreSQL `postgres` password (set during install):
+
+```powershell
+# replace YOURPASS; this creates the app database
+$env:PGPASSWORD="YOURPASS"
+& "$env:ProgramFiles\PostgreSQL\18\bin\createdb.exe" -U postgres roadside_help
+```
+
+### Step 2 — Backend API
+
+```powershell
+cd backend
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+
+Copy-Item .env.example .env       # then edit .env (see below)
+alembic upgrade head              # create tables
+python -m app.seed.run            # seed categories + ~15 demo helpers
 uvicorn app.main:app --reload --port 8000
 ```
 
-**2) App**:
+Edit **`backend/.env`** so `DATABASE_URL` has your real password, and set a `JWT_SECRET`:
 
-```bash
-flutter pub get
-flutter run -d chrome --dart-define=API_BASE_URL=http://localhost:8000      # web
-# device/emulator: use http://10.0.2.2:8000 on Android emulator
 ```
+DATABASE_URL=postgresql+psycopg://postgres:YOURPASS@localhost:5432/roadside_help
+JWT_SECRET=any-long-random-string
+```
+
+Verify the API is up:
+- Health: <http://localhost:8000/health>
+- Swagger docs: <http://localhost:8000/docs>
+
+> **Dev/mock auth** (no external accounts needed): phone OTP returns a `dev_code` and accepts
+> `000000`; Google sign-in uses a demo identity. To use the real providers, set `GOOGLE_CLIENT_ID`
+> and the `TWILIO_*` vars in `.env` (see `.env.example`).
+
+### Step 3 — Flutter app (web)
+
+In a **second terminal** at the project root:
+
+```powershell
+flutter pub get
+flutter run -d chrome --dart-define=API_BASE_URL=http://localhost:8000
+```
+
+The app opens in Chrome. Sign in (or **Continue as guest**), pick a category, and you'll see the
+seeded helpers. To exercise the two-sided flow, run a second client and register it as a helper
+(Profile → Provider mode).
+
+> **Android emulator** instead of web: use `--dart-define=API_BASE_URL=http://10.0.2.2:8000`
+> (the emulator's alias for your host). Note `android/` isn't generated yet — run
+> `flutter create .` first to add native platforms.
+
+### Troubleshooting
+
+| Symptom | Fix |
+|---------|-----|
+| `password authentication failed for user "postgres"` | Wrong password in `DATABASE_URL` — use your real Postgres password. |
+| App shows "Offline — showing cached helpers" | Backend not reachable; confirm `uvicorn` is running on :8000 and `API_BASE_URL` matches. |
+| Browser blocks the API (CORS) | `CORS_ORIGINS=*` is set by default in `.env.example`; keep it for local dev. |
+| Empty helper list | Run `python -m app.seed.run`. |
 
 Full demo walkthrough: [specs/002-roadside-marketplace/quickstart.md](specs/002-roadside-marketplace/quickstart.md).
 
