@@ -105,7 +105,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           TextField(
             controller: _vehicle,
             enabled: _editing,
-            decoration: const InputDecoration(labelText: 'Vehicle (e.g. Honda Activa)', border: OutlineInputBorder()),
+            decoration: InputDecoration(labelText: context.tr('vehicle_hint'), border: const OutlineInputBorder()),
           ),
           const SizedBox(height: 20),
           if (_editing)
@@ -121,7 +121,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             OutlinedButton.icon(
               onPressed: () => setState(() => _editing = true),
               icon: const Icon(Icons.edit),
-              label: const Text('Edit profile'),
+              label: Text(context.tr('edit_profile')),
             ),
           const Divider(height: 40),
           ListTile(
@@ -152,8 +152,7 @@ class _GuestPrompt extends StatelessWidget {
             children: [
               const Icon(Icons.person_outline, size: 56, color: Colors.black38),
               const SizedBox(height: 12),
-              const Text('Sign in to manage your profile and history',
-                  textAlign: TextAlign.center),
+              Text(context.tr('sign_in_profile_prompt'), textAlign: TextAlign.center),
               const SizedBox(height: 16),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(

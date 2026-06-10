@@ -54,9 +54,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
           child: Padding(
             padding: const EdgeInsets.only(bottom: 8),
             child: SegmentedButton<String>(
-              segments: const [
-                ButtonSegment(value: 'seeker', label: Text('As seeker')),
-                ButtonSegment(value: 'helper', label: Text('As helper')),
+              segments: [
+                ButtonSegment(value: 'seeker', label: Text(context.tr('as_seeker'))),
+                ButtonSegment(value: 'helper', label: Text(context.tr('as_helper'))),
               ],
               selected: {_role},
               onSelectionChanged: (s) {
@@ -70,7 +70,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _items.isEmpty
-              ? const Center(child: Text('No requests yet'))
+              ? Center(child: Text(context.tr('no_requests')))
               : RefreshIndicator(
                   onRefresh: _load,
                   child: ListView(

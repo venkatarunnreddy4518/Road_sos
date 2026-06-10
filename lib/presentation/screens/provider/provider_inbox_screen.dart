@@ -188,7 +188,6 @@ class _RegisterHelperState extends State<_RegisterHelper> {
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
-        const Text('Become a helper', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
         const SizedBox(height: 4),
         const Text('Register your service to receive nearby roadside requests.',
             style: TextStyle(color: Colors.black54)),
@@ -219,7 +218,7 @@ class _RegisterHelperState extends State<_RegisterHelper> {
           onPressed: _busy ? null : _register,
           child: _busy
               ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-              : const Text('Register & go online'),
+              : Text(context.tr('register_go_online')),
         ),
       ],
     );

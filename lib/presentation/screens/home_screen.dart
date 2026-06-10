@@ -3,11 +3,11 @@ import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/i18n/l10n_ext.dart';
-import '../../core/network/api_client.dart';
 import '../../core/utils/location_service.dart';
 import '../../data/api/discovery_api.dart';
 import '../../data/models/category.dart';
 import '../../data/models/marketplace_helper.dart';
+import '../../data/repositories/helper_cache.dart';
 import '../state/auth_state.dart';
 import '../widgets/category_grid.dart';
 import '../widgets/marketplace_helper_card.dart';
@@ -53,15 +53,25 @@ class _DiscoverTab extends StatefulWidget {
 
 class _DiscoverTabState extends State<_DiscoverTab> {
   final _api = DiscoveryApi();
+  final _cache = HelperCache();
   List<ServiceCategory> _categories = [];
   List<MarketplaceHelper> _nearby = [];
   Position? _pos;
   bool _loading = true;
   bool _offline = false;
+  DateTime? _cacheAge;
 
   // Fallback to the seed center so the prototype is demoable without GPS.
   double get _lat => _pos?.latitude ?? 17.4239;
   double get _lng => _pos?.longitude ?? 78.4738;
+
+  String _fmtAge(DateTime t) {
+    final d = DateTime.now().difference(t);
+    if (d.inMinutes < 1) return 'just now';
+    if (d.inMinutes < 60) return '${d.inMinutes}m ago';
+    if (d.inHours < 24) return '${d.inHours}h ago';
+    return '${d.inDays}d ago';
+  }
 
   @override
   void initState() {
@@ -75,15 +85,27 @@ class _DiscoverTabState extends State<_DiscoverTab> {
     try {
       final cats = await _api.categories();
       final near = await _api.nearby(lat: _lat, lng: _lng, limit: 5);
+      // Cache the full helper feed for offline use (best-effort).
+      try {
+        await _cache.save(await _api.syncFeed());
+      } catch (_) {/* ignore cache-fill failures */}
+      if (!mounted) return;
       setState(() {
         _categories = cats;
         _nearby = near;
         _offline = false;
+        _cacheAge = null;
       });
-    } on ApiException {
-      setState(() => _offline = true);
     } catch (_) {
-      setState(() => _offline = true);
+      // Offline / backend unreachable: fall back to the cached helper list (FR-026).
+      final cached = await _cache.load(lat: _lat, lng: _lng);
+      final age = await _cache.lastSyncedAt();
+      if (!mounted) return;
+      setState(() {
+        _offline = true;
+        _nearby = cached.take(5).toList();
+        _cacheAge = age;
+      });
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -143,7 +165,14 @@ class _DiscoverTabState extends State<_DiscoverTab> {
                 child: Row(children: [
                   const Icon(Icons.wifi_off, size: 18, color: Color(0xFFB3261E)),
                   const SizedBox(width: 8),
-                  Expanded(child: Text(context.tr('offline_banner'), style: const TextStyle(fontSize: 12))),
+                  Expanded(
+                    child: Text(
+                      _cacheAge != null
+                          ? '${context.tr('offline_banner')} · ${context.tr('last_updated')} ${_fmtAge(_cacheAge!)}'
+                          : context.tr('offline_banner'),
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                  ),
                 ]),
               ),
             const SizedBox(height: 8),
