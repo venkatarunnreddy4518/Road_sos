@@ -102,13 +102,16 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen> {
                   keyboardType: TextInputType.number,
                   decoration: InputDecoration(labelText: context.tr('enter_code'), border: const OutlineInputBorder()),
                 ),
-                if (_devCode != null)
+                 if (_devCode != null)
                   Padding(
                     padding: const EdgeInsets.only(top: 8),
                     child: Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                          color: const Color(0xFFFFF6D6), borderRadius: BorderRadius.circular(8)),
+                          color: Theme.of(context).brightness == Brightness.light
+                              ? const Color(0xFFF2F2F7)
+                              : const Color(0xFF2C2C2E),
+                          borderRadius: BorderRadius.circular(8)),
                       child: Text('Dev mode: your code is $_devCode',
                           style: const TextStyle(fontSize: 12)),
                     ),
@@ -116,16 +119,20 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen> {
               ],
               if (_error != null) ...[
                 const SizedBox(height: 12),
-                Text(_error!, style: const TextStyle(color: Color(0xFFB3261E))),
+                Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
               ],
               const SizedBox(height: 24),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF111111), foregroundColor: Colors.white),
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary),
                 onPressed: _busy ? null : (_codeSent ? _verify : _sendCode),
                 child: _busy
-                    ? const SizedBox(
-                        height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    ? SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Theme.of(context).colorScheme.onPrimary))
                     : Text(_codeSent ? context.tr('verify') : context.tr('send_code')),
               ),
             ],

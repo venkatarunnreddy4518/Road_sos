@@ -35,7 +35,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -54,10 +53,10 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 height: 96,
                 width: 96,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF4C430),
+                  color: Theme.of(context).colorScheme.primary,
                   borderRadius: BorderRadius.circular(28),
                 ),
-                child: const Icon(Icons.car_repair, size: 56, color: Color(0xFF111111)),
+                child: Icon(Icons.car_repair, size: 56, color: Theme.of(context).colorScheme.onPrimary),
               ),
               const SizedBox(height: 24),
               Text(context.tr('app_title'),
@@ -65,9 +64,10 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               const SizedBox(height: 8),
               Text(context.tr('welcome_tagline'),
                   textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 16, color: Colors.black54)),
+                  style: TextStyle(fontSize: 16, color: Theme.of(context).colorScheme.tertiary)),
               const Spacer(),
               _primary(
+                context: context,
                 icon: Icons.mail_outline,
                 label: context.tr('continue_email'),
                 onTap: () => _push(const EmailAuthScreen()),
@@ -100,13 +100,13 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   void _push(Widget screen) =>
       Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen));
 
-  Widget _primary({required IconData icon, required String label, VoidCallback? onTap}) {
+  Widget _primary({required BuildContext context, required IconData icon, required String label, VoidCallback? onTap}) {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton.icon(
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF111111),
-          foregroundColor: Colors.white,
+          backgroundColor: Theme.of(context).colorScheme.primary,
+          foregroundColor: Theme.of(context).colorScheme.onPrimary,
         ),
         onPressed: onTap,
         icon: Icon(icon),

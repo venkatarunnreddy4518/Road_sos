@@ -109,11 +109,15 @@ class _ProviderInboxScreenState extends State<ProviderInboxScreen> {
                           final dist = (r['distance_km'] as num?)?.toDouble();
                           return Card(
                             child: ListTile(
-                              leading: const Icon(Icons.notifications_active, color: Color(0xFFF4C430)),
+                              leading: Icon(Icons.notifications_active, color: Theme.of(context).colorScheme.primary),
                               title: Text(r['note'] ?? 'Roadside request'),
                               subtitle: Text(dist != null ? '${dist.toStringAsFixed(1)} km away' : ''),
                               trailing: FilledButton(
                                 onPressed: () => _accept(r['id']),
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: Theme.of(context).colorScheme.primary,
+                                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                                ),
                                 child: Text(context.tr('accept')),
                               ),
                             ),
@@ -189,8 +193,8 @@ class _RegisterHelperState extends State<_RegisterHelper> {
       padding: const EdgeInsets.all(20),
       children: [
         const SizedBox(height: 4),
-        const Text('Register your service to receive nearby roadside requests.',
-            style: TextStyle(color: Colors.black54)),
+        Text('Register your service to receive nearby roadside requests.',
+            style: TextStyle(color: Theme.of(context).colorScheme.tertiary)),
         const SizedBox(height: 20),
         TextField(
           controller: _name,
@@ -214,10 +218,16 @@ class _RegisterHelperState extends State<_RegisterHelper> {
         const SizedBox(height: 20),
         ElevatedButton(
           style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF18A957), foregroundColor: Colors.white),
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              foregroundColor: Theme.of(context).colorScheme.onPrimary),
           onPressed: _busy ? null : _register,
           child: _busy
-              ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+              ? SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Theme.of(context).colorScheme.onPrimary))
               : Text(context.tr('register_go_online')),
         ),
       ],

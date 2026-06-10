@@ -113,7 +113,8 @@ class _ProviderJobScreenState extends State<ProviderJobScreen> {
                 padding: const EdgeInsets.all(16),
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF18A957), foregroundColor: Colors.white),
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      foregroundColor: Theme.of(context).colorScheme.onPrimary),
                   onPressed: _busy ? null : () => _advance(next),
                   child: Text('Mark as ${next.label}'),
                 ),

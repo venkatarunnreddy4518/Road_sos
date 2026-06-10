@@ -71,7 +71,11 @@ class AppStrings {
     'register_go_online': {'en': 'Register & go online', 'hi': 'पंजीकरण करें और ऑनलाइन हों', 'te': 'నమోదు చేసి ఆన్‌లైన్‌లోకి వెళ్లండి', 'ta': 'பதிவு செய்து ஆன்லைனில் வாருங்கள்'},
     'active_job': {'en': 'Active job', 'hi': 'सक्रिय कार्य', 'te': 'క్రియాశీల పని', 'ta': 'செயலில் உள்ள வேலை'},
     'vehicle_hint': {'en': 'Vehicle (e.g. Honda Activa)', 'hi': 'वाहन (जैसे Honda Activa)', 'te': 'వాహనం (ఉదా. Honda Activa)', 'ta': 'வாகனம் (எ.கா. Honda Activa)'},
-    'sign_in_profile_prompt': {'en': 'Sign in to manage your profile and history', 'hi': 'अपनी प्रोफ़ाइल और इतिहास प्रबंधित करने के लिए साइन इन करें', 'te': 'మీ ప్రొఫైల్ మరియు చరిత్రను నిర్వహించడానికి సైన్ ఇన్ చేయండి', 'ta': 'உங்கள் சுயவிவரம் மற்றும் வரலாற்றை நிர்வகிக்க உள்நுழையவும்'},
+    'sign_in_profile_prompt': {'en': 'Sign in to manage your profile and history', 'hi': 'अपनी प्रोफ़ाइल और इतिहास प्रबंधित करने के लिए साइन इन करें', 'te': 'మీ ప్రొఫైల్ మరియు చరిత్రను నిర్వహించడానికి సైన్ ఇన్ చేయండి', 'ta': 'உங்கள் சுயவிவரம் మరియు வரலாற்றை నిர்வகிக்க உள்நுழையவும்'},
+    'theme': {'en': 'Theme', 'hi': 'थीम', 'te': 'థీమ్', 'ta': 'தீம்'},
+    'theme_system': {'en': 'System default', 'hi': 'सिस्टम डिफ़ॉल्ट', 'te': 'సిస్టమ్ డిఫాల్ట్', 'ta': 'முறைமை இயல்புநிலை'},
+    'theme_light': {'en': 'Light', 'hi': 'लाइट', 'te': 'లైట్', 'ta': 'ஒளி'},
+    'theme_dark': {'en': 'Dark', 'hi': 'डार्क', 'te': 'డార్క్', 'ta': 'இருள்'},
   };
 
   static String of(String code, String key) {

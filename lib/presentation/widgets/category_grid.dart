@@ -40,11 +40,17 @@ class _CategoryTile extends StatelessWidget {
             height: 64,
             width: 64,
             decoration: BoxDecoration(
-              color: const Color(0xFFFDF6E3),
+              color: Theme.of(context).brightness == Brightness.light
+                  ? const Color(0xFFF2F2F7)
+                  : const Color(0xFF2C2C2E),
               borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: const Color(0xFFF1E4BF)),
+              border: Border.all(color: Theme.of(context).colorScheme.outline),
             ),
-            child: Icon(category.materialIcon, size: 30, color: const Color(0xFF111111)),
+            child: Icon(
+              category.materialIcon,
+              size: 30,
+              color: Theme.of(context).colorScheme.primary,
+            ),
           ),
           const SizedBox(height: 6),
           Text(

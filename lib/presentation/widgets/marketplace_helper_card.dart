@@ -14,9 +14,11 @@ class MarketplaceHelperCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dist = helper.distanceKm;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Card(
       child: InkWell(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(12),
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.all(14),
@@ -25,9 +27,9 @@ class MarketplaceHelperCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  const CircleAvatar(
-                    backgroundColor: Color(0xFFFDF6E3),
-                    child: Icon(Icons.handyman, color: Color(0xFF111111)),
+                  CircleAvatar(
+                    backgroundColor: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFF2F2F7),
+                    child: Icon(Icons.handyman, color: Theme.of(context).colorScheme.primary),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -42,14 +44,15 @@ class MarketplaceHelperCard extends StatelessWidget {
                                   overflow: TextOverflow.ellipsis),
                             ),
                             if (helper.isVerified)
-                              const Padding(
-                                padding: EdgeInsets.only(left: 4),
-                                child: Icon(Icons.verified, size: 16, color: Color(0xFF18A957)),
+                              Padding(
+                                padding: const EdgeInsets.only(left: 4),
+                                child: Icon(Icons.verified, size: 16, color: Theme.of(context).colorScheme.primary),
                               ),
                           ],
                         ),
                         const SizedBox(height: 2),
-                        Text(helper.typeLabel, style: const TextStyle(color: Colors.black54, fontSize: 12)),
+                        Text(helper.typeLabel,
+                            style: TextStyle(color: Theme.of(context).colorScheme.tertiary, fontSize: 12)),
                       ],
                     ),
                   ),
@@ -66,7 +69,12 @@ class MarketplaceHelperCard extends StatelessWidget {
                 children: [
                   RatingStars(rating: helper.ratingAvg, count: helper.ratingCount),
                   _statusChip(context),
-                  if (helper.isFar) _chip(context.tr('far_away'), const Color(0xFFFDECEC), const Color(0xFFB3261E)),
+                  if (helper.isFar)
+                    _chip(
+                      context.tr('far_away'),
+                      isDark ? const Color(0xFF2C2C2E) : const Color(0xFFF2F2F7),
+                      Theme.of(context).colorScheme.primary,
+                    ),
                 ],
               ),
               const SizedBox(height: 12),
@@ -108,12 +116,18 @@ class MarketplaceHelperCard extends StatelessWidget {
   }
 
   Widget _statusChip(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryColor = Theme.of(context).colorScheme.primary;
+    final onPrimaryColor = Theme.of(context).colorScheme.onPrimary;
+    final grayBg = isDark ? const Color(0xFF2C2C2E) : const Color(0xFFF2F2F7);
+    final grayFg = Theme.of(context).colorScheme.tertiary;
+
     if (helper.openNow == null) {
-      return _chip(context.tr('hours_unknown'), const Color(0xFFF2F2F2), Colors.black54);
+      return _chip(context.tr('hours_unknown'), grayBg, grayFg);
     }
     return helper.openNow!
-        ? _chip(context.tr('open_now'), const Color(0xFFE7F6EE), const Color(0xFF18A957))
-        : _chip(context.tr('closed'), const Color(0xFFF2F2F2), Colors.black54);
+        ? _chip(context.tr('open_now'), primaryColor, onPrimaryColor)
+        : _chip(context.tr('closed'), grayBg, grayFg);
   }
 
   Widget _chip(String label, Color bg, Color fg) {
