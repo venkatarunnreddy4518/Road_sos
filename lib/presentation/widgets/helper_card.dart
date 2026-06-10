@@ -48,17 +48,21 @@ class HelperCard extends StatelessWidget {
     final etaMinutes = math.max(4, (distance / 420).round());
     final isFar = DistanceCalculator.isFarAway(distance);
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryColor = Theme.of(context).colorScheme.primary;
+    final tertiaryColor = Theme.of(context).colorScheme.tertiary;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: const Color(0xFFE2E4DA)),
+          color: Theme.of(context).cardColor,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Theme.of(context).colorScheme.outline),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
+              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05),
               blurRadius: 14,
               offset: const Offset(0, 8),
             ),
@@ -92,8 +96,8 @@ class HelperCard extends StatelessWidget {
                         helper.name,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Color(0xFF111111),
+                        style: TextStyle(
+                          color: primaryColor,
                           fontSize: 16,
                           fontWeight: FontWeight.w900,
                         ),
@@ -101,8 +105,8 @@ class HelperCard extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         helperTypeTitle(helper.type),
-                        style: const TextStyle(
-                          color: Color(0xFF6E7168),
+                        style: TextStyle(
+                          color: tertiaryColor,
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
                         ),
@@ -115,18 +119,18 @@ class HelperCard extends StatelessWidget {
                           _InfoChip(
                             icon: Icons.access_time,
                             label: '$etaMinutes min',
-                            color: const Color(0xFF18A957),
+                            color: primaryColor,
                           ),
                           _InfoChip(
                             icon: Icons.route,
                             label: '${(distance / 1000).toStringAsFixed(1)} km',
-                            color: const Color(0xFF2C6BED),
+                            color: Theme.of(context).colorScheme.secondary,
                           ),
                           if (isFar)
-                            const _InfoChip(
+                            _InfoChip(
                               icon: Icons.warning_amber_rounded,
                               label: 'Far away',
-                              color: Color(0xFFE0A500),
+                              color: tertiaryColor,
                             ),
                         ],
                       ),
@@ -140,8 +144,8 @@ class HelperCard extends StatelessWidget {
               helper.openingHours ?? 'Hours unknown',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: Color(0xFF6E7168),
+              style: TextStyle(
+                color: tertiaryColor,
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
               ),
@@ -154,13 +158,6 @@ class HelperCard extends StatelessWidget {
                     onPressed: _openMaps,
                     icon: const Icon(Icons.directions, size: 18),
                     label: const Text('Directions'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color(0xFF111111),
-                      side: const BorderSide(color: Color(0xFFD8DAD2)),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
                   ),
                 ),
                 if (helper.smsCapable) ...[
@@ -170,24 +167,17 @@ class HelperCard extends StatelessWidget {
                     icon: const Icon(Icons.message),
                     tooltip: 'SMS',
                     style: IconButton.styleFrom(
-                      foregroundColor: const Color(0xFF2C6BED),
-                      side: const BorderSide(color: Color(0xFFD8DAD2)),
+                      foregroundColor: primaryColor,
+                      side: BorderSide(color: Theme.of(context).colorScheme.outline),
                     ),
                   ),
                 ],
                 const SizedBox(width: 8),
                 Expanded(
-                  child: FilledButton.icon(
+                  child: ElevatedButton.icon(
                     onPressed: _makeCall,
                     icon: const Icon(Icons.phone, size: 18),
                     label: const Text('Call'),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: const Color(0xFF18A957),
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
                   ),
                 ),
               ],

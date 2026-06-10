@@ -18,11 +18,15 @@ class StatusTimeline extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final primaryColor = Theme.of(context).colorScheme.primary;
+    final tertiaryColor = Theme.of(context).colorScheme.tertiary;
+    final outlineColor = Theme.of(context).colorScheme.outline;
+
     if (current == RequestStatus.cancelled) {
       return Row(children: [
-        const Icon(Icons.cancel, color: Color(0xFFB3261E)),
+        Icon(Icons.cancel, color: primaryColor),
         const SizedBox(width: 8),
-        Text(current.label, style: const TextStyle(fontWeight: FontWeight.w700, color: Color(0xFFB3261E))),
+        Text(current.label, style: TextStyle(fontWeight: FontWeight.w700, color: primaryColor)),
       ]);
     }
     final currentIndex = _steps.indexOf(current);
@@ -38,12 +42,12 @@ class StatusTimeline extends StatelessWidget {
               Column(
                 children: [
                   Icon(done ? Icons.check_circle : Icons.radio_button_unchecked,
-                      size: 22, color: done ? const Color(0xFF18A957) : Colors.black26),
+                      size: 22, color: done ? primaryColor : outlineColor),
                   if (!isLast)
                     Expanded(
                       child: Container(
                         width: 2,
-                        color: i < currentIndex ? const Color(0xFF18A957) : Colors.black12,
+                        color: i < currentIndex ? primaryColor : outlineColor,
                       ),
                     ),
                 ],
@@ -55,7 +59,7 @@ class StatusTimeline extends StatelessWidget {
                   _steps[i].label,
                   style: TextStyle(
                     fontWeight: i == currentIndex ? FontWeight.w700 : FontWeight.w400,
-                    color: done ? Colors.black : Colors.black54,
+                    color: done ? primaryColor : tertiaryColor,
                   ),
                 ),
               ),

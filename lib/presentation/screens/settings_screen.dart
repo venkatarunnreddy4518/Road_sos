@@ -5,6 +5,7 @@ import '../../core/i18n/l10n_ext.dart';
 import '../../core/i18n/strings.dart';
 import '../../data/api/profile_api.dart';
 import '../state/auth_state.dart';
+import '../state/theme_state.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -13,6 +14,7 @@ class SettingsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final locale = context.watch<LocaleController>();
     final auth = context.watch<AuthState>();
+    final themeState = context.watch<ThemeState>();
 
     return Scaffold(
       appBar: AppBar(title: Text(context.tr('settings'))),
@@ -42,6 +44,36 @@ class SettingsScreen extends StatelessWidget {
               },
             );
           }),
+          const Divider(),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: Text(context.tr('theme'),
+                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+          ),
+          RadioListTile<ThemeMode>(
+            value: ThemeMode.system,
+            groupValue: themeState.themeMode,
+            title: Text(context.tr('theme_system')),
+            onChanged: (v) {
+              if (v != null) themeState.setThemeMode(v);
+            },
+          ),
+          RadioListTile<ThemeMode>(
+            value: ThemeMode.light,
+            groupValue: themeState.themeMode,
+            title: Text(context.tr('theme_light')),
+            onChanged: (v) {
+              if (v != null) themeState.setThemeMode(v);
+            },
+          ),
+          RadioListTile<ThemeMode>(
+            value: ThemeMode.dark,
+            groupValue: themeState.themeMode,
+            title: Text(context.tr('theme_dark')),
+            onChanged: (v) {
+              if (v != null) themeState.setThemeMode(v);
+            },
+          ),
           if (auth.isAuthenticated) ...[
             const Divider(),
             ListTile(

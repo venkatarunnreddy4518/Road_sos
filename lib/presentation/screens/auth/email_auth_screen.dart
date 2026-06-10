@@ -84,18 +84,23 @@ class _EmailAuthScreenState extends State<EmailAuthScreen> {
                   decoration: InputDecoration(labelText: context.tr('password'), border: const OutlineInputBorder()),
                   validator: (v) => (v == null || v.length < 6) ? 'Min 6 characters' : null,
                 ),
-                if (_error != null) ...[
+                 if (_error != null) ...[
                   const SizedBox(height: 12),
-                  Text(_error!, style: const TextStyle(color: Color(0xFFB3261E))),
+                  Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
                 ],
                 const SizedBox(height: 24),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF111111), foregroundColor: Colors.white),
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      foregroundColor: Theme.of(context).colorScheme.onPrimary),
                   onPressed: _busy ? null : _submit,
                   child: _busy
-                      ? const SizedBox(
-                          height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      ? SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Theme.of(context).colorScheme.onPrimary))
                       : Text(_isLogin ? context.tr('login') : context.tr('signup')),
                 ),
                 TextButton(

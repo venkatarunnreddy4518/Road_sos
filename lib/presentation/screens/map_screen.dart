@@ -33,6 +33,11 @@ class _MapScreenState extends State<MapScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final tileUrl = isDark
+        ? 'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'
+        : 'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png';
+
     return Scaffold(
       appBar: AppBar(title: const Text('Your Location')),
       body: _userLocation == null
@@ -44,14 +49,14 @@ class _MapScreenState extends State<MapScreen> {
               ),
               children: [
                 TileLayer(
-                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  urlTemplate: tileUrl,
                   userAgentPackageName: 'com.roadsidehelp.app',
                 ),
                 MarkerLayer(
                   markers: [
                     Marker(
                       point: _userLocation!,
-                      child: const Icon(Icons.my_location, color: Colors.blue, size: 30),
+                      child: Icon(Icons.my_location, color: Theme.of(context).colorScheme.primary, size: 30),
                     ),
                   ],
                 ),

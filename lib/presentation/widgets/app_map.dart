@@ -27,11 +27,16 @@ class AppMap extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final tileUrl = isDark
+        ? 'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'
+        : 'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png';
+
     return FlutterMap(
       options: MapOptions(initialCenter: LatLng(centerLat, centerLng), initialZoom: zoom),
       children: [
         TileLayer(
-          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+          urlTemplate: tileUrl,
           userAgentPackageName: 'com.roadsidehelp.app',
         ),
         MarkerLayer(

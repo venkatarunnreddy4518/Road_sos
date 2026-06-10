@@ -16,11 +16,11 @@ from app.models.helper import CategoryHelperType, HelperProfile, ServiceCategory
 log = get_logger("seed")
 
 CATEGORIES = [
-    ("puncture", "Puncture / Flat Tyre", "tire_repair", 0, [HelperType.puncture_shop, HelperType.mechanic]),
+    ("puncture", "Puncture Fix", "tire_repair", 0, [HelperType.puncture_shop, HelperType.mechanic]),
     ("fuel", "Out of Fuel", "local_gas_station", 1, [HelperType.petrol_pump]),
     ("breakdown", "Mechanic / Breakdown", "build", 2, [HelperType.mechanic]),
-    ("towing", "Towing", "fire_truck", 3, [HelperType.towing]),
-    ("battery", "Battery Jumpstart", "battery_charging_full", 4, [HelperType.battery, HelperType.mechanic]),
+    ("towing", "Towing Service", "fire_truck", 3, [HelperType.towing]),
+    ("battery", "Jump Start", "battery_charging_full", 4, [HelperType.battery, HelperType.mechanic]),
 ]
 
 DEMO_NAMES = {
