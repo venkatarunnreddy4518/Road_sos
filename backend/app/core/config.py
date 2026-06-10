@@ -14,8 +14,13 @@ class Settings(BaseSettings):
     access_ttl_minutes: int = 60
     refresh_ttl_days: int = 30
 
+    # Google OAuth: accept one or more client IDs (comma-separated) for ID-token audience checks.
     google_client_id: str | None = None
-    sms_provider_api_key: str | None = None
+
+    # Twilio SMS (real OTP delivery). All three required to leave mock mode.
+    twilio_account_sid: str | None = None
+    twilio_auth_token: str | None = None
+    twilio_from_number: str | None = None
 
     cors_origins: str = "*"
 
@@ -23,12 +28,18 @@ class Settings(BaseSettings):
     seed_center_lng: float = 78.4738
 
     @property
+    def google_client_ids(self) -> list[str]:
+        if not self.google_client_id:
+            return []
+        return [c.strip() for c in self.google_client_id.split(",") if c.strip()]
+
+    @property
     def google_mock_mode(self) -> bool:
-        return not self.google_client_id
+        return not self.google_client_ids
 
     @property
     def sms_mock_mode(self) -> bool:
-        return not self.sms_provider_api_key
+        return not (self.twilio_account_sid and self.twilio_auth_token and self.twilio_from_number)
 
     @property
     def cors_origin_list(self) -> list[str]:

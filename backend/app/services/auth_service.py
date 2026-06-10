@@ -19,6 +19,7 @@ from app.core.security import (
 )
 from app.models.enums import AuthProvider
 from app.models.user import AuthIdentity, OtpCode, RefreshToken, User
+from app.services import sms
 
 log = get_logger(__name__)
 DEV_OTP = "000000"
@@ -96,7 +97,9 @@ def request_otp(db: Session, phone: str) -> dict:
     if settings.sms_mock_mode:
         log.info("OTP requested (dev mode) phone=%s", phone)  # never log the code in prod paths
         return {"sent": True, "dev_code": code}
-    # TODO: integrate real SMS provider here.
+
+    # Real delivery via the configured SMS provider (Twilio).
+    sms.send_sms(phone, f"Your Roadside Help verification code is {code}. It expires in 5 minutes.")
     log.info("OTP requested phone=%s", phone)
     return {"sent": True, "dev_code": None}
 
@@ -127,13 +130,29 @@ def verify_otp(db: Session, phone: str, code: str, display_name: str | None) -> 
 
 # ---- Google (mock fallback when no client id) ----
 
+_GOOGLE_ISSUERS = {"accounts.google.com", "https://accounts.google.com"}
+
+
 def _verify_google_token(id_token: str) -> dict:
-    resp = httpx.get("https://oauth2.googleapis.com/tokeninfo", params={"id_token": id_token}, timeout=10)
+    """Verify a Google ID token server-side: signature/expiry via tokeninfo, then
+    audience and issuer checks against the configured client id(s)."""
+    try:
+        resp = httpx.get(
+            "https://oauth2.googleapis.com/tokeninfo", params={"id_token": id_token}, timeout=10
+        )
+    except httpx.HTTPError as e:
+        raise AppError("unauthenticated", "Could not verify Google token.", status_code=401) from e
     if resp.status_code != 200:
         raise AppError("unauthenticated", "Invalid Google token.", status_code=401)
     data = resp.json()
-    if settings.google_client_id and data.get("aud") != settings.google_client_id:
+
+    if data.get("aud") not in settings.google_client_ids:
         raise AppError("unauthenticated", "Google token audience mismatch.", status_code=401)
+    if data.get("iss") not in _GOOGLE_ISSUERS:
+        raise AppError("unauthenticated", "Google token issuer mismatch.", status_code=401)
+    if data.get("email_verified") in ("false", False):
+        raise AppError("unauthenticated", "Google email not verified.", status_code=401)
+
     return {"sub": data["sub"], "email": data.get("email"), "name": data.get("name", "Google User")}
 
 

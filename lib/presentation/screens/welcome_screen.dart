@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/i18n/l10n_ext.dart';
-import '../../data/api/auth_api.dart';
+import '../../data/api/google_auth_service.dart';
 import '../state/auth_state.dart';
 import 'auth/email_auth_screen.dart';
 import 'auth/phone_otp_screen.dart';
@@ -21,9 +21,10 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   Future<void> _google() async {
     setState(() => _busy = true);
     try {
-      // Prototype: backend is in Google mock mode; send a labelled dev identity.
-      final user = await AuthApi().google(devEmail: 'demo.user@gmail.com', devName: 'Demo User');
-      if (mounted) context.read<AuthState>().onSignedIn(user);
+      // Uses the real native Google flow when GOOGLE_CLIENT_ID is defined,
+      // otherwise the labelled dev fallback.
+      final user = await GoogleAuthService().signIn();
+      if (user != null && mounted) context.read<AuthState>().onSignedIn(user);
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
     } finally {
