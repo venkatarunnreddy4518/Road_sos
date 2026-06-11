@@ -1,5 +1,6 @@
 """Authentication: email/password, phone OTP (mock fallback), Google (mock fallback)."""
 import random
+import re
 import uuid
 from datetime import datetime, timedelta, timezone
 
@@ -23,6 +24,15 @@ from app.services import sms
 
 log = get_logger(__name__)
 DEV_OTP = "000000"
+
+
+def normalize_phone(phone: str) -> str:
+    cleaned = re.sub(r'[\s\-()]+', '', phone)
+    if cleaned.startswith('+'):
+        return cleaned
+    if len(cleaned) == 10 and cleaned.isdigit():
+        return f"+91{cleaned}"
+    return cleaned
 
 
 def _now() -> datetime:

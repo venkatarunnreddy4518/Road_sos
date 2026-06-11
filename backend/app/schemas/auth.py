@@ -45,6 +45,13 @@ class GoogleSignIn(BaseModel):
     dev_name: str | None = None
 
 
+class AppleSignIn(BaseModel):
+    id_token: str | None = None
+    # dev/mock-mode fallback fields
+    dev_email: EmailStr | None = None
+    dev_name: str | None = None
+
+
 class RefreshIn(BaseModel):
     refresh_token: str
 
