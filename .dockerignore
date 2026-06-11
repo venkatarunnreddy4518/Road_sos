@@ -1,0 +1,59 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+dist/
+build/
+*.egg-info/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Secrets — never include in Docker image
+.env
+backend/.env
+*.env
+
+# SQLite dev databases
+*.db
+*.db-shm
+*.db-wal
+
+# Flutter (not needed for backend image)
+android/
+ios/
+web/
+lib/
+test/
+build/
+.dart_tool/
+pubspec.lock
+
+# Logs
+*.log
+*.err
+
+# Docs (optional — remove if you want docs in the image)
+docs/
+specs/
+help/
+
+# OS artefacts
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.iml
