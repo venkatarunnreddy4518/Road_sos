@@ -82,29 +82,49 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen>
         _codeSent = true;
         _devCode = dev;
       });
+    } on ArgumentError catch (e) {
+      setState(() => _error = e.message);
     } catch (e) {
-      setState(() => _error = '$e');
+      final errorMsg = _formatError(e);
+      setState(() => _error = errorMsg);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
   }
 
   Future<void> _verify() async {
+    if (_code.text.trim().length < 4) {
+      setState(() => _error = 'Enter a valid verification code');
+      return;
+    }
     setState(() {
       _busy = true;
       _error = null;
     });
     try {
       final user = await _api.verifyOtp(_phone.text.trim(), _code.text.trim(),
-          name: _name.text.trim());
+          name: _name.text.trim().isEmpty ? null : _name.text.trim());
       if (!mounted) return;
       context.read<AuthState>().onSignedIn(user);
       Navigator.of(context).popUntil((r) => r.isFirst);
+    } on ArgumentError catch (e) {
+      setState(() => _error = e.message);
     } catch (e) {
-      setState(() => _error = '$e');
+      final errorMsg = _formatError(e);
+      setState(() => _error = errorMsg);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
+  }
+
+  String _formatError(dynamic error) {
+    final str = '$error';
+    if (str.contains('Invalid or expired code')) return 'Invalid or expired code. Please request a new one.';
+    if (str.contains('Connection refused') || str.contains('Failed host lookup')) {
+      return 'Unable to connect. Check your internet connection.';
+    }
+    if (str.contains('SocketException')) return 'Network error. Please try again.';
+    return str;
   }
 
   @override
@@ -159,7 +179,7 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen>
                       borderRadius: BorderRadius.circular(14),
                       boxShadow: [
                         BoxShadow(
-                          color: _greenDeep.withOpacity(0.2),
+                          color: _greenDeep.withValues(alpha: 0.2),
                           blurRadius: 16,
                           offset: const Offset(0, 4),
                         ),
@@ -200,7 +220,7 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen>
                       border: Border.all(color: _lineSoft),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.04),
+                          color: Colors.black.withValues(alpha: 0.04),
                           blurRadius: 24,
                           offset: const Offset(0, 4),
                         ),
@@ -364,7 +384,7 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen>
       style: const TextStyle(fontSize: 14, color: _ink),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: TextStyle(fontSize: 14, color: _muted.withOpacity(0.5)),
+        hintStyle: TextStyle(fontSize: 14, color: _muted.withValues(alpha: 0.5)),
         prefixIcon: prefixIcon != null
             ? Icon(prefixIcon, size: 18, color: _muted)
             : null,
@@ -431,7 +451,7 @@ class _GradientButtonState extends State<_GradientButton> {
             borderRadius: BorderRadius.circular(11),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF0B6E47).withOpacity(0.3),
+                color: const Color(0xFF0B6E47).withValues(alpha: 0.3),
                 blurRadius: 14,
                 offset: const Offset(0, 4),
               ),

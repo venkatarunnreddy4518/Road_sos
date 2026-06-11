@@ -60,16 +60,17 @@ def _result(db: Session, user: User) -> dict:
 # ---- Email + password ----
 
 def register_email(db: Session, display_name: str, email: str, password: str) -> dict:
-    if db.scalar(select(User).where(User.email == email)):
+    email_lower = email.lower().strip()
+    if db.scalar(select(User).where(User.email == email_lower)):
         raise AppError("conflict", "Email already registered. Please log in.", status_code=409)
-    user = User(display_name=display_name, email=email)
+    user = User(display_name=display_name, email=email_lower)
     db.add(user)
     db.flush()
     db.add(
         AuthIdentity(
             user_id=user.id,
             provider=AuthProvider.email,
-            provider_uid=email,
+            provider_uid=email_lower,
             password_hash=hash_password(password),
         )
     )
@@ -80,9 +81,10 @@ def register_email(db: Session, display_name: str, email: str, password: str) ->
 
 
 def login_email(db: Session, email: str, password: str) -> dict:
+    email_lower = email.lower().strip()
     identity = db.scalar(
         select(AuthIdentity).where(
-            AuthIdentity.provider == AuthProvider.email, AuthIdentity.provider_uid == email
+            AuthIdentity.provider == AuthProvider.email, AuthIdentity.provider_uid == email_lower
         )
     )
     if not identity or not identity.password_hash or not verify_password(password, identity.password_hash):
@@ -94,10 +96,11 @@ def login_email(db: Session, email: str, password: str) -> dict:
 # ---- Phone OTP (mock fallback when no SMS provider) ----
 
 def request_otp(db: Session, phone: str) -> dict:
+    normalized_phone = normalize_phone(phone)
     code = DEV_OTP if settings.sms_mock_mode else f"{random.randint(0, 999999):06d}"
     db.add(
         OtpCode(
-            phone=phone,
+            phone=normalized_phone,
             code_hash=hash_token(code),
             expires_at=_now() + timedelta(minutes=5),
             created_at=_now(),
@@ -105,19 +108,20 @@ def request_otp(db: Session, phone: str) -> dict:
     )
     db.commit()
     if settings.sms_mock_mode:
-        log.info("OTP requested (dev mode) phone=%s", phone)  # never log the code in prod paths
+        log.info("OTP requested (dev mode) phone=%s", normalized_phone)  # never log the code in prod paths
         return {"sent": True, "dev_code": code}
 
     # Real delivery via the configured SMS provider (Twilio).
-    sms.send_sms(phone, f"Your Roadside Help verification code is {code}. It expires in 5 minutes.")
-    log.info("OTP requested phone=%s", phone)
+    sms.send_sms(normalized_phone, f"Your Roadside Help verification code is {code}. It expires in 5 minutes.")
+    log.info("OTP requested phone=%s", normalized_phone)
     return {"sent": True, "dev_code": None}
 
 
 def verify_otp(db: Session, phone: str, code: str, display_name: str | None) -> dict:
+    normalized_phone = normalize_phone(phone)
     otp = db.scalar(
         select(OtpCode)
-        .where(OtpCode.phone == phone, OtpCode.consumed_at.is_(None))
+        .where(OtpCode.phone == normalized_phone, OtpCode.consumed_at.is_(None))
         .order_by(OtpCode.created_at.desc())
     )
     valid = otp and otp.expires_at > _now() and otp.code_hash == hash_token(code)
@@ -127,12 +131,12 @@ def verify_otp(db: Session, phone: str, code: str, display_name: str | None) -> 
     if otp:
         otp.consumed_at = _now()
 
-    user = db.scalar(select(User).where(User.phone == phone))
+    user = db.scalar(select(User).where(User.phone == normalized_phone))
     if not user:
-        user = User(display_name=display_name or f"User {phone[-4:]}", phone=phone)
+        user = User(display_name=display_name or f"User {normalized_phone[-4:]}", phone=normalized_phone)
         db.add(user)
         db.flush()
-        db.add(AuthIdentity(user_id=user.id, provider=AuthProvider.phone, provider_uid=phone))
+        db.add(AuthIdentity(user_id=user.id, provider=AuthProvider.phone, provider_uid=normalized_phone))
     db.commit()
     db.refresh(user)
     return _result(db, user)
