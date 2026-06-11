@@ -27,7 +27,7 @@ _TERMINAL = {RequestStatus.completed, RequestStatus.cancelled}
 
 
 def _now() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
 def _helper_for_user(db: Session, user: User) -> HelperProfile:
