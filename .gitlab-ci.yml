@@ -37,6 +37,37 @@ flutter-analyze:
     - flutter pub get
     - flutter analyze
 
+pylint-lint:
+  stage: lint
+  allow_failure: true
+  script:
+    - pip install pylint
+    - pip install -r backend/requirements.txt || true
+    - pylint --rcfile=.pylintrc backend/app/ || true
+
+flake8-lint:
+  stage: lint
+  allow_failure: true
+  script:
+    - pip install flake8
+    - flake8 backend/app/
+
+semgrep-scan:
+  stage: lint
+  allow_failure: true
+  image: returntocorp/semgrep:latest
+  before_script: []
+  script:
+    - semgrep --config .semgrep.yml --error backend/app/ || true
+
+pyupgrade-lint:
+  stage: lint
+  allow_failure: true
+  script:
+    - pip install pyupgrade
+    - find backend/app -name '*.py' -exec pyupgrade --py311-plus {} + || true
+
+
 # ==========================================
 # SECURITY STAGE
 # ==========================================
