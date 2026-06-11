@@ -228,42 +228,38 @@ class CategoryGrid extends StatelessWidget {
                       _buildBentoIco(emoji, isWide: true),
                     ],
                   )
-                else
+                else ...[
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (label != null)
-                            Text(
-                              label,
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: Colors.white.withOpacity(0.82),
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 0.8,
-                              ),
-                            ),
-                          const SizedBox(height: 4),
-                          Text(
-                            name,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.white,
-                              height: 1.15,
-                            ),
+                      if (label != null)
+                        Text(
+                          label,
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: Colors.white.withOpacity(0.82),
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.8,
                           ),
-                        ],
-                      ),
-                      Align(
-                        alignment: Alignment.bottomRight,
-                        child: _buildBentoIco(emoji),
+                        ),
+                      const SizedBox(height: 4),
+                      Text(
+                        name,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                          height: 1.15,
+                        ),
                       ),
                     ],
                   ),
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: _buildBentoIco(emoji),
+                  ),
+                ],
                 // FAST badge on top right for tall card
                 if (isFast)
                   Positioned(

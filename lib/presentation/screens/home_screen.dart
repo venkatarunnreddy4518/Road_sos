@@ -204,8 +204,9 @@ class _DiscoverTabState extends State<_DiscoverTab> {
             ),
             children: [
               TileLayer(
-                urlTemplate: 'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                 userAgentPackageName: 'com.roadsidehelp.app',
+                maxZoom: 19,
               ),
               MarkerLayer(markers: markers),
             ],

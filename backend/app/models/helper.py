@@ -7,12 +7,12 @@ from sqlalchemy import (
     Float,
     ForeignKey,
     Integer,
+    JSON,
     Numeric,
     String,
     Text,
     UniqueConstraint,
 )
-from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, TimestampMixin, uuid_pk
@@ -41,7 +41,7 @@ class CategoryHelperType(Base):
         ForeignKey("service_categories.id", ondelete="CASCADE"), primary_key=True
     )
     helper_type: Mapped[HelperType] = mapped_column(
-        Enum(HelperType, name="helper_type"), primary_key=True
+        Enum(HelperType, name="helper_type", native_enum=False), primary_key=True
     )
 
     category: Mapped["ServiceCategory"] = relationship(back_populates="helper_types")
@@ -56,16 +56,16 @@ class HelperProfile(Base, TimestampMixin):
     )
     name: Mapped[str] = mapped_column(String(160), nullable=False)
     helper_type: Mapped[HelperType] = mapped_column(
-        Enum(HelperType, name="helper_type"), index=True
+        Enum(HelperType, name="helper_type", native_enum=False), index=True
     )
     phone: Mapped[str | None] = mapped_column(String(20), nullable=True)
     sms_capable: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     latitude: Mapped[float] = mapped_column(Float, index=True, nullable=False)
     longitude: Mapped[float] = mapped_column(Float, index=True, nullable=False)
     address: Mapped[str | None] = mapped_column(Text, nullable=True)
-    opening_hours: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    opening_hours: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     data_source: Mapped[DataSource] = mapped_column(
-        Enum(DataSource, name="data_source"), default=DataSource.curated, nullable=False
+        Enum(DataSource, name="data_source", native_enum=False), default=DataSource.curated, nullable=False
     )
     is_verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     rating_avg: Mapped[float] = mapped_column(Numeric(2, 1), default=0, nullable=False)
