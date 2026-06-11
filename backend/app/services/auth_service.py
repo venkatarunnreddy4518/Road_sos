@@ -26,7 +26,7 @@ DEV_OTP = "000000"
 
 
 def _now() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
 def _issue_tokens(db: Session, user: User) -> dict:
