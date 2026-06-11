@@ -6,7 +6,8 @@ import '../../../data/api/auth_api.dart';
 import '../../state/auth_state.dart';
 
 class PhoneOtpScreen extends StatefulWidget {
-  const PhoneOtpScreen({super.key});
+  final String? initialPhone;
+  const PhoneOtpScreen({super.key, this.initialPhone});
 
   @override
   State<PhoneOtpScreen> createState() => _PhoneOtpScreenState();
@@ -14,7 +15,7 @@ class PhoneOtpScreen extends StatefulWidget {
 
 class _PhoneOtpScreenState extends State<PhoneOtpScreen>
     with SingleTickerProviderStateMixin {
-  final _phone = TextEditingController();
+  late final TextEditingController _phone;
   final _code = TextEditingController();
   final _name = TextEditingController();
   final _api = AuthApi();
@@ -41,12 +42,20 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen>
   @override
   void initState() {
     super.initState();
+    _phone = TextEditingController(text: widget.initialPhone);
     _fadeCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 500),
     );
     _fadeAnim = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOut);
     _fadeCtrl.forward();
+
+    // Auto-trigger OTP request if phone number was pre-populated
+    if (widget.initialPhone != null && widget.initialPhone!.trim().length >= 6) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _sendCode();
+      });
+    }
   }
 
   @override
