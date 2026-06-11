@@ -1,0 +1,101 @@
+stages:
+  - lint
+  - security
+  - test
+  - build
+
+default:
+  image: python:3.11-slim
+  before_script:
+    - python -V
+    - pip install --upgrade pip
+
+# ==========================================
+# LINT STAGE
+# ==========================================
+ruff-lint:
+  stage: lint
+  script:
+    - pip install ruff
+    - ruff check .
+    - ruff format --check .
+
+mypy-typecheck:
+  stage: lint
+  script:
+    - pip install mypy pydantic pydantic-settings sqlalchemy types-requests
+    - mypy backend/app/
+
+flutter-analyze:
+  stage: lint
+  image: ghcr.io/cirruslabs/flutter:3.24.0
+  before_script: []
+  script:
+    - flutter pub get
+    - flutter analyze
+
+# ==========================================
+# SECURITY STAGE
+# ==========================================
+bandit-security:
+  stage: security
+  script:
+    - pip install bandit
+    - bandit -r backend/app/ -ll
+
+pip-audit-dependencies:
+  stage: security
+  script:
+    - pip install pip-audit
+    - pip-audit -r backend/requirements.txt
+
+gitleaks-secrets:
+  stage: security
+  image:
+    name: zricethezav/gitleaks:latest
+    entrypoint: [""]
+  before_script: []
+  script:
+    - gitleaks detect --verbose --source .
+
+# ==========================================
+# TEST STAGE
+# ==========================================
+pytest-backend:
+  stage: test
+  services:
+    - name: postgres:16-alpine
+      alias: db
+  variables:
+    POSTGRES_DB: roadside_help_test
+    POSTGRES_USER: postgres
+    POSTGRES_PASSWORD: postgres
+    DATABASE_URL: postgresql+psycopg://postgres:postgres@db:5432/roadside_help_test
+  script:
+    - apt-get update && apt-get install -y libpq-dev build-essential
+    - pip install -r backend/requirements.txt
+    - cd backend
+    - pytest --cov=app --cov-fail-under=80
+
+flutter-test:
+  stage: test
+  image: ghcr.io/cirruslabs/flutter:3.24.0
+  before_script: []
+  script:
+    - flutter pub get
+    - flutter test
+
+# ==========================================
+# BUILD STAGE
+# ==========================================
+docker-build-test:
+  stage: build
+  image: docker:24.0.7
+  services:
+    - docker:24.0.7-dind
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+  before_script: []
+  script:
+    - docker build -t roadside-backend:latest ./backend
