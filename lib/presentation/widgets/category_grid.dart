@@ -173,6 +173,45 @@ class CategoryGrid extends StatelessWidget {
             child: Stack(
               clipBehavior: Clip.none,
               children: [
+                // Glowing radial mesh blobs (reproducing CSS bento-card::before & ::after)
+                Positioned(
+                  top: -50,
+                  right: -40,
+                  child: IgnorePointer(
+                    child: Container(
+                      width: 150,
+                      height: 150,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: RadialGradient(
+                          colors: [
+                            Colors.white.withOpacity(0.40),
+                            Colors.white.withOpacity(0.0),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  bottom: -55,
+                  left: -30,
+                  child: IgnorePointer(
+                    child: Container(
+                      width: 130,
+                      height: 130,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: RadialGradient(
+                          colors: [
+                            Colors.black.withOpacity(0.12),
+                            Colors.black.withOpacity(0.0),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
                 // Text layouts
                 if (isWide)
                   Row(
