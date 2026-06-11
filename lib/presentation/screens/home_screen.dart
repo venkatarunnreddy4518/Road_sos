@@ -3,6 +3,8 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 import '../../core/i18n/l10n_ext.dart';
 import '../../core/utils/location_service.dart';
@@ -12,7 +14,9 @@ import '../../data/models/marketplace_helper.dart';
 import '../../data/repositories/helper_cache.dart';
 import '../state/auth_state.dart';
 import '../widgets/category_grid.dart';
+import 'dart:ui';
 import '../widgets/horizontal_helper_card.dart';
+import '../widgets/map_markers.dart';
 import 'helper_detail_screen.dart';
 import 'helper_results_screen.dart';
 import 'history_screen.dart';
@@ -108,6 +112,7 @@ class _DiscoverTabState extends State<_DiscoverTab> {
   final _api = DiscoveryApi();
   final _cache = HelperCache();
   final MapController _mapController = MapController();
+  final ScrollController _scrollController = ScrollController();
   List<ServiceCategory> _categories = [];
   List<MarketplaceHelper> _nearby = [];
   Position? _pos;
@@ -115,9 +120,47 @@ class _DiscoverTabState extends State<_DiscoverTab> {
   bool _offline = false;
   DateTime? _cacheAge;
   bool _showPromo = true;
+  double _scrollOffset = 0.0;
 
   double get _lat => _pos?.latitude ?? 17.4239;
   double get _lng => _pos?.longitude ?? 78.4738;
+  String _addressLine1 = 'Sai Satya Narayan Nivas, Mathrusree Naga...';
+  String _addressLine2 = 'Kukatpally, Hyderabad';
+
+  Future<void> _fetchAddress(double lat, double lng) async {
+    try {
+      final url = Uri.parse('https://nominatim.openstreetmap.org/reverse?format=json&lat=$lat&lon=$lng&zoom=18');
+      final res = await http.get(url, headers: {'User-Agent': 'roadside_help_app/1.0'});
+      if (res.statusCode == 200) {
+        final data = json.decode(res.body);
+        final addr = data['address'] as Map<String, dynamic>?;
+        if (addr != null) {
+          final road = addr['road'] ?? addr['suburb'] ?? addr['neighbourhood'] ?? addr['amenity'] ?? '';
+          final city = addr['city'] ?? addr['town'] ?? addr['county'] ?? 'Hyderabad';
+          final state = addr['state'] ?? '';
+          if (mounted) {
+            setState(() {
+              _addressLine1 = road.toString().isNotEmpty ? road.toString() : 'Current Location';
+              _addressLine2 = '$city, $state'.trim();
+            });
+          }
+        } else {
+          final displayName = data['display_name'] as String?;
+          if (displayName != null) {
+            final parts = displayName.split(',');
+            if (mounted) {
+              setState(() {
+                _addressLine1 = parts.first.trim();
+                _addressLine2 = parts.skip(1).take(2).join(',').trim();
+              });
+            }
+          }
+        }
+      }
+    } catch (_) {
+      // Keep existing default values
+    }
+  }
 
   String _fmtAge(DateTime t) {
     final d = DateTime.now().difference(t);
@@ -131,11 +174,25 @@ class _DiscoverTabState extends State<_DiscoverTab> {
   void initState() {
     super.initState();
     _load();
+    _scrollController.addListener(() {
+      if (mounted) {
+        setState(() {
+          _scrollOffset = _scrollController.offset;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   Future<void> _load() async {
     setState(() => _loading = true);
     _pos = await LocationService.current();
+    _fetchAddress(_lat, _lng);
     try {
       final cats = await _api.categories();
       final near = await _api.nearby(lat: _lat, lng: _lng, limit: 5);
@@ -169,14 +226,279 @@ class _DiscoverTabState extends State<_DiscoverTab> {
     }
   }
 
+  Widget _buildContentList({ScrollController? controller, required bool isDesktop}) {
+    return ListView(
+      controller: controller,
+      shrinkWrap: isDesktop,
+      physics: isDesktop ? const NeverScrollableScrollPhysics() : null,
+      padding: EdgeInsets.zero,
+      children: [
+        // Location Row: Bordered pill style with locator arrow
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(30),
+              border: Border.all(color: const Color(0xFFE7ECEA), width: 1.5),
+            ),
+            child: Row(
+              children: [
+                const Text('🧭 ', style: TextStyle(fontSize: 14)),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _addressLine1,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF14201B),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      Text(
+                        _addressLine2,
+                        style: const TextStyle(
+                          fontSize: 10,
+                          color: Color(0xFF7C887F),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE7F6EE),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Text(
+                    'మీది మంట లేక్',
+                    style: TextStyle(
+                      color: Color(0xFF0E7C52),
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        // Shimmer Search Bar
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+          child: _ShimmerSearchBar(
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => SearchScreen(lat: _lat, lng: _lng)),
+            ),
+          ),
+        ),
+
+        if (_offline)
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFF1F0),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.wifi_off, size: 18, color: Color(0xFFB3261E)),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _cacheAge != null
+                        ? '${context.tr('offline_banner')} · ${context.tr('last_updated')} ${_fmtAge(_cacheAge!)}'
+                        : context.tr('offline_banner'),
+                    style: const TextStyle(fontSize: 12, color: Color(0xFFB3261E)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+        // Promo Banner
+        if (_showPromo)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: const Color(0xFFE7F6EE),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFCDECE0), width: 1.5),
+              ),
+              child: Row(
+                children: [
+                  const Text('🛡️', style: TextStyle(fontSize: 24)),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'More verified helpers online now',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF0E7C52),
+                          ),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          'All helpers are background checked.',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF7C887F),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, size: 16, color: Color(0xFF0E7C52)),
+                    onPressed: () {
+                      setState(() {
+                        _showPromo = false;
+                      });
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+        // Emergency Services Label
+        const Padding(
+          padding: EdgeInsets.fromLTRB(16, 14, 16, 8),
+          child: Text(
+            'EMERGENCY SERVICES',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1.2,
+              color: Color(0xFF7C887F),
+            ),
+          ),
+        ),
+
+        if (_loading)
+          const Padding(
+            padding: EdgeInsets.all(24),
+            child: Center(child: CircularProgressIndicator()),
+          )
+        else ...[
+          CategoryGrid(
+            categories: _categories,
+            onTap: (c) => Navigator.of(context).push(MaterialPageRoute(
+              builder: (_) => HelperResultsScreen(category: c, lat: _lat, lng: _lng),
+            )),
+          ),
+
+          // Open Near You Rail
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 20, 16, 8),
+            child: Text(
+              'OPEN NEAR YOU',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1.2,
+                color: Color(0xFF7C887F),
+              ),
+            ),
+          ),
+
+          Container(
+            height: 136,
+            margin: const EdgeInsets.only(bottom: 12),
+            child: _nearby.isEmpty
+                ? const Center(
+                    child: Text(
+                      'No helpers nearby',
+                      style: TextStyle(fontSize: 12, color: Color(0xFF7C887F)),
+                    ),
+                  )
+                : ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: _nearby.length,
+                    itemBuilder: (context, index) {
+                      final helper = _nearby[index];
+                      return HorizontalHelperCard(
+                        helper: helper,
+                        onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                          builder: (_) => HelperDetailScreen(helperId: helper.id, categoryId: null),
+                        )),
+                      );
+                    },
+                  ),
+          ),
+
+          // Safety Advice Rail
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 12, 16, 8),
+            child: Text(
+              'SAFETY ADVICE',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1.2,
+                color: Color(0xFF7C887F),
+              ),
+            ),
+          ),
+
+          Container(
+            height: 96,
+            margin: const EdgeInsets.only(bottom: 24),
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              children: const [
+                _SafetyAdviceCard(
+                  emoji: '💡',
+                  title: 'Turn on Hazards',
+                  desc: 'Switch on hazard lights immediately to warn passing traffic.',
+                ),
+                _SafetyAdviceCard(
+                  emoji: '🚗',
+                  title: 'Move Off Road',
+                  desc: 'Pull safely onto the shoulder or a safe spot away from lanes.',
+                ),
+                _SafetyAdviceCard(
+                  emoji: '📍',
+                  title: 'Share Location',
+                  desc: 'Send your GPS coordinates to family or emergency contacts.',
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Create map markers
+    final isDesktop = MediaQuery.of(context).size.width > 768;
+
     final userMarker = Marker(
       point: LatLng(_lat, _lng),
-      width: 44,
-      height: 44,
-      child: const _PulsingUserMarker(),
+      width: 230,
+      height: 230,
+      child: const PulsingUserMarker(),
     );
 
     final markers = [
@@ -187,446 +509,352 @@ class _DiscoverTabState extends State<_DiscoverTab> {
           point: LatLng(h.latitude, h.longitude),
           width: 30,
           height: 30,
-          child: _PingingHelperMarker(isEmergency: isEmergency),
+          child: PingingHelperMarker(isEmergency: isEmergency),
         );
       }),
     ];
 
-    return Stack(
-      children: [
-        // 1. MAP AREA (background)
-        Positioned.fill(
-          child: FlutterMap(
-            mapController: _mapController,
-            options: MapOptions(
-              initialCenter: LatLng(_lat, _lng),
-              initialZoom: 14.5,
-            ),
-            children: [
-              TileLayer(
-                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                userAgentPackageName: 'com.roadsidehelp.app',
-                maxZoom: 19,
-              ),
-              MarkerLayer(markers: markers),
-            ],
-          ),
-        ),
-
-        // 2. FLOATING LIVE CHIP (Top overlays)
-        Positioned(
-          top: 48,
-          left: 16,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
+    if (isDesktop) {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(
+            width: 440,
+            decoration: const BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: const [
-                BoxShadow(color: Color(0x1A14281E), blurRadius: 10, offset: Offset(0, 4)),
-              ],
-              border: Border.all(color: const Color(0xFFE7ECEA), width: 1),
+              border: Border(right: BorderSide(color: Color(0xFFE7ECEA), width: 1.5)),
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const _PulsingGreenDot(),
-                const SizedBox(width: 6),
-                Text(
-                  '${_nearby.length} helpers nearby',
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFF14201B),
+                Container(
+                  padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
+                  decoration: const BoxDecoration(
+                    border: Border(bottom: BorderSide(color: Color(0xFFF6F8F7), width: 1.5)),
                   ),
-                ),
-              ],
-            ),
-          ),
-        ),
-
-        // 3. MAP FAB BUTTONS
-        Positioned(
-          right: 16,
-          top: 48,
-          child: Column(
-            children: [
-              GestureDetector(
-                onTap: () {
-                  _mapController.move(LatLng(_lat, _lng), 14.5);
-                },
-                child: Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    boxShadow: const [
-                      BoxShadow(color: Color(0x1414281E), blurRadius: 8, offset: Offset(0, 3)),
-                    ],
-                    border: Border.all(color: const Color(0xFFE7ECEA), width: 1.5),
-                  ),
-                  alignment: Alignment.center,
-                  child: const Text('🎯', style: TextStyle(fontSize: 16)),
-                ),
-              ),
-              const SizedBox(height: 8),
-              GestureDetector(
-                onTap: _load,
-                child: Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    boxShadow: const [
-                      BoxShadow(color: Color(0x1414281E), blurRadius: 8, offset: Offset(0, 3)),
-                    ],
-                    border: Border.all(color: const Color(0xFFE7ECEA), width: 1.5),
-                  ),
-                  alignment: Alignment.center,
-                  child: const Text('📡', style: TextStyle(fontSize: 16)),
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        // 4. MAP CENTER PIN LABEL
-        Positioned(
-          top: MediaQuery.of(context).size.height * 0.22,
-          left: 0,
-          right: 0,
-          child: Center(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-              decoration: BoxDecoration(
-                color: const Color(0xFF0E7C52),
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: const [
-                  BoxShadow(color: Color(0x330E7C52), blurRadius: 12, offset: Offset(0, 2)),
-                ],
-              ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text('📍 ', style: TextStyle(fontSize: 12)),
-                  Text(
-                    'Pickup Point',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-
-        // 5. BOTTOM SHEET PANEL (DraggableScrollableSheet)
-        DraggableScrollableSheet(
-          initialChildSize: 0.56,
-          minChildSize: 0.56,
-          maxChildSize: 0.92,
-          builder: (context, scrollController) {
-            return Container(
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(24),
-                  topRight: Radius.circular(24),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Color(0x1214281E),
-                    blurRadius: 24,
-                    offset: Offset(0, -8),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  // Drag Handle
-                  Container(
-                    width: 36,
-                    height: 4,
-                    margin: const EdgeInsets.only(top: 10, bottom: 8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFE7ECEA),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-
-                  Expanded(
-                    child: ListView(
-                      controller: scrollController,
-                      padding: EdgeInsets.zero,
-                      children: [
-                        // Location Row: Bordered pill style with locator arrow
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(30),
-                              border: Border.all(color: const Color(0xFFE7ECEA), width: 1.5),
-                            ),
-                            child: Row(
-                              children: [
-                                const Text('🧭 ', style: TextStyle(fontSize: 14)),
-                                const SizedBox(width: 8),
-                                const Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'Sai Satya Narayan Nivas, Mathrusree Naga...',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w800,
-                                          color: Color(0xFF14201B),
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                      Text(
-                                        'Kukatpally, Hyderabad',
-                                        style: TextStyle(
-                                          fontSize: 10,
-                                          color: Color(0xFF7C887F),
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFE7F6EE),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: const Text(
-                                    'మీది మంట లేక్',
-                                    style: TextStyle(
-                                      color: Color(0xFF0E7C52),
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w800,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 38,
+                        height: 38,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF18B26B), Color(0xFF0E7C52)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
                           ),
+                          borderRadius: BorderRadius.circular(10),
                         ),
-
-                        // Shimmer Search Bar
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-                          child: _ShimmerSearchBar(
-                            onTap: () => Navigator.of(context).push(
-                              MaterialPageRoute(builder: (_) => SearchScreen(lat: _lat, lng: _lng)),
-                            ),
-                          ),
-                        ),
-
-                        if (_offline)
-                          Container(
-                            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFFF1F0),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.wifi_off, size: 18, color: Color(0xFFB3261E)),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    _cacheAge != null
-                                        ? '${context.tr('offline_banner')} · ${context.tr('last_updated')} ${_fmtAge(_cacheAge!)}'
-                                        : context.tr('offline_banner'),
-                                    style: const TextStyle(fontSize: 12, color: Color(0xFFB3261E)),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                        // Promo Banner
-                        if (_showPromo)
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            child: Container(
-                              padding: const EdgeInsets.all(14),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFE7F6EE),
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(color: const Color(0xFFCDECE0), width: 1.5),
-                              ),
-                              child: Row(
-                                children: [
-                                  const Text('🛡️', style: TextStyle(fontSize: 24)),
-                                  const SizedBox(width: 12),
-                                  const Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          'More verified helpers online now',
-                                          style: TextStyle(
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w800,
-                                            color: Color(0xFF0E7C52),
-                                          ),
-                                        ),
-                                        SizedBox(height: 2),
-                                        Text(
-                                          'All helpers are background checked.',
-                                          style: TextStyle(
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.w600,
-                                            color: Color(0xFF7C887F),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.close, size: 16, color: Color(0xFF0E7C52)),
-                                    onPressed: () {
-                                      setState(() {
-                                        _showPromo = false;
-                                      });
-                                    },
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-
-                        // Emergency Services Label
-                        const Padding(
-                          padding: EdgeInsets.fromLTRB(16, 14, 16, 8),
-                          child: Text(
-                            'EMERGENCY SERVICES',
+                        alignment: Alignment.center,
+                        child: const Text('🛟', style: TextStyle(fontSize: 20)),
+                      ),
+                      const SizedBox(width: 12),
+                      const Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Roadside SOS',
                             style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 1.2,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w900,
+                              color: Color(0xFF14201B),
+                              letterSpacing: -0.5,
+                            ),
+                          ),
+                          Text(
+                            'Highway Assistance Marketplace',
+                            style: TextStyle(
+                              fontSize: 10,
                               color: Color(0xFF7C887F),
-                            ),
-                          ),
-                        ),
-
-                        if (_loading)
-                          const Padding(
-                            padding: EdgeInsets.all(24),
-                            child: Center(child: CircularProgressIndicator()),
-                          )
-                        else ...[
-                          CategoryGrid(
-                            categories: _categories,
-                            onTap: (c) => Navigator.of(context).push(MaterialPageRoute(
-                              builder: (_) => HelperResultsScreen(category: c, lat: _lat, lng: _lng),
-                            )),
-                          ),
-
-                          // Open Near You Rail
-                          const Padding(
-                            padding: EdgeInsets.fromLTRB(16, 20, 16, 8),
-                            child: Text(
-                              'OPEN NEAR YOU',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 1.2,
-                                color: Color(0xFF7C887F),
-                              ),
-                            ),
-                          ),
-
-                          Container(
-                            height: 136,
-                            margin: const EdgeInsets.only(bottom: 12),
-                            child: _nearby.isEmpty
-                                ? const Center(
-                                    child: Text(
-                                      'No helpers nearby',
-                                      style: TextStyle(fontSize: 12, color: Color(0xFF7C887F)),
-                                    ),
-                                  )
-                                : ListView.builder(
-                                    scrollDirection: Axis.horizontal,
-                                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                                    itemCount: _nearby.length,
-                                    itemBuilder: (context, index) {
-                                      final helper = _nearby[index];
-                                      return HorizontalHelperCard(
-                                        helper: helper,
-                                        onTap: () => Navigator.of(context).push(MaterialPageRoute(
-                                          builder: (_) => HelperDetailScreen(helperId: helper.id, categoryId: null),
-                                        )),
-                                      );
-                                    },
-                                  ),
-                          ),
-
-                          // Safety Advice Rail
-                          const Padding(
-                            padding: EdgeInsets.fromLTRB(16, 12, 16, 8),
-                            child: Text(
-                              'SAFETY ADVICE',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 1.2,
-                                color: Color(0xFF7C887F),
-                              ),
-                            ),
-                          ),
-
-                          Container(
-                            height: 96,
-                            margin: const EdgeInsets.only(bottom: 24),
-                            child: ListView(
-                              scrollDirection: Axis.horizontal,
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
-                              children: const [
-                                _SafetyAdviceCard(
-                                  emoji: '💡',
-                                  title: 'Turn on Hazards',
-                                  desc: 'Switch on hazard lights immediately to warn passing traffic.',
-                                ),
-                                _SafetyAdviceCard(
-                                  emoji: '🚗',
-                                  title: 'Move Off Road',
-                                  desc: 'Pull safely onto the shoulder or a safe spot away from lanes.',
-                                ),
-                                _SafetyAdviceCard(
-                                  emoji: '📍',
-                                  title: 'Share Location',
-                                  desc: 'Send your GPS coordinates to family or emergency contacts.',
-                                ),
-                              ],
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ],
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: _buildContentList(isDesktop: true),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: FlutterMap(
+                    mapController: _mapController,
+                    options: MapOptions(
+                      initialCenter: LatLng(_lat, _lng),
+                      initialZoom: 14.5,
+                    ),
+                    children: [
+                      TileLayer(
+                        urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                        userAgentPackageName: 'com.roadsidehelp.app',
+                        maxZoom: 19,
+                      ),
+                      MarkerLayer(markers: markers),
+                    ],
+                  ),
+                ),
+                Positioned(
+                  top: 24,
+                  left: 24,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: const [
+                        BoxShadow(color: Color(0x1A14281E), blurRadius: 10, offset: Offset(0, 4)),
+                      ],
+                      border: Border.all(color: const Color(0xFFE7ECEA), width: 1),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const _PulsingGreenDot(),
+                        const SizedBox(width: 6),
+                        Text(
+                          '${_nearby.length} helpers nearby',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF14201B),
+                          ),
+                        ),
                       ],
                     ),
                   ),
-                ],
+                ),
+                Positioned(
+                  right: 24,
+                  top: 24,
+                  child: Column(
+                    children: [
+                      GestureDetector(
+                        onTap: () {
+                          _mapController.move(LatLng(_lat, _lng), 14.5);
+                        },
+                        child: Container(
+                          width: 38,
+                          height: 38,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            boxShadow: const [
+                              BoxShadow(color: Color(0x1414281E), blurRadius: 8, offset: Offset(0, 3)),
+                            ],
+                            border: Border.all(color: const Color(0xFFE7ECEA), width: 1.5),
+                          ),
+                          alignment: Alignment.center,
+                          child: const Text('🎯', style: TextStyle(fontSize: 16)),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      GestureDetector(
+                        onTap: _load,
+                        child: Container(
+                          width: 38,
+                          height: 38,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            boxShadow: const [
+                              BoxShadow(color: Color(0x1414281E), blurRadius: 8, offset: Offset(0, 3)),
+                            ],
+                            border: Border.all(color: const Color(0xFFE7ECEA), width: 1.5),
+                          ),
+                          alignment: Alignment.center,
+                          child: const Text('📡', style: TextStyle(fontSize: 16)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+    } else {
+      final double mapHeight = 440.0;
+      final double mapOffset = -_scrollOffset * 0.18;
+      final double scrimOpacity = (_scrollOffset / 260.0).clamp(0.0, 0.7);
+
+      return Stack(
+        children: [
+          Positioned(
+            top: mapOffset,
+            left: 0,
+            right: 0,
+            height: mapHeight,
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: FlutterMap(
+                    mapController: _mapController,
+                    options: MapOptions(
+                      initialCenter: LatLng(_lat, _lng),
+                      initialZoom: 14.5,
+                    ),
+                    children: [
+                      TileLayer(
+                        urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                        userAgentPackageName: 'com.roadsidehelp.app',
+                        maxZoom: 19,
+                      ),
+                      MarkerLayer(markers: markers),
+                    ],
+                  ),
+                ),
+                Positioned(
+                  top: 48,
+                  left: 16,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: const [
+                        BoxShadow(color: Color(0x1A14281E), blurRadius: 10, offset: Offset(0, 4)),
+                      ],
+                      border: Border.all(color: const Color(0xFFE7ECEA), width: 1),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const _PulsingGreenDot(),
+                        const SizedBox(width: 6),
+                        Text(
+                          '${_nearby.length} helpers nearby',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF14201B),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                Positioned(
+                  right: 16,
+                  top: 48,
+                  child: Column(
+                    children: [
+                      GestureDetector(
+                        onTap: () {
+                          _mapController.move(LatLng(_lat, _lng), 14.5);
+                        },
+                        child: Container(
+                          width: 38,
+                          height: 38,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            boxShadow: const [
+                              BoxShadow(color: Color(0x1414281E), blurRadius: 8, offset: Offset(0, 3)),
+                            ],
+                            border: Border.all(color: const Color(0xFFE7ECEA), width: 1.5),
+                          ),
+                          alignment: Alignment.center,
+                          child: const Text('🎯', style: TextStyle(fontSize: 16)),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      GestureDetector(
+                        onTap: _load,
+                        child: Container(
+                          width: 38,
+                          height: 38,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            boxShadow: const [
+                              BoxShadow(color: Color(0x1414281E), blurRadius: 8, offset: Offset(0, 3)),
+                            ],
+                            border: Border.all(color: const Color(0xFFE7ECEA), width: 1.5),
+                          ),
+                          alignment: Alignment.center,
+                          child: const Text('📡', style: TextStyle(fontSize: 16)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Positioned(
+                  top: 180,
+                  left: 0,
+                  right: 0,
+                  child: Center(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0E7C52),
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: const [
+                          BoxShadow(color: Color(0x330E7C52), blurRadius: 12, offset: Offset(0, 2)),
+                        ],
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text('📍 ', style: TextStyle(fontSize: 12)),
+                          Text(
+                            'Pickup Point',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Positioned(
+            top: mapOffset,
+            left: 0,
+            right: 0,
+            height: mapHeight,
+            child: IgnorePointer(
+              child: AnimatedContainer(
+                duration: Duration.zero,
+                color: Colors.black.withOpacity(scrimOpacity),
               ),
-            );
-          },
-        ),
-      ],
-    );
+            ),
+          ),
+          NotificationListener<ScrollNotification>(
+            onNotification: (n) {
+              setState(() => _scrollOffset = n.metrics.pixels);
+              return true;
+            },
+            child: ListView(
+              padding: EdgeInsets.only(top: mapHeight - 32),
+              children: [
+                Container(
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+                  ),
+                  child: _buildContentList(isDesktop: true),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
   }
 }
 
@@ -695,136 +923,7 @@ class _SafetyAdviceCard extends StatelessWidget {
   }
 }
 
-class _PulsingUserMarker extends StatefulWidget {
-  const _PulsingUserMarker();
-  @override
-  State<_PulsingUserMarker> createState() => _PulsingUserMarkerState();
-}
 
-class _PulsingUserMarkerState extends State<_PulsingUserMarker> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 2),
-    )..repeat();
-  }
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        return Stack(
-          alignment: Alignment.center,
-          children: [
-            // Ripple ring
-            Container(
-              width: 14 + (24 * _controller.value),
-              height: 14 + (24 * _controller.value),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: const Color(0xFF18B26B).withOpacity(1.0 - _controller.value),
-                  width: 2,
-                ),
-              ),
-            ),
-            // Inner marker
-            Container(
-              width: 18,
-              height: 18,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-                border: Border.all(color: const Color(0xFF0E7C52), width: 3),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x380E7C52),
-                    blurRadius: 6,
-                    offset: Offset(0, 2),
-                  ),
-                ],
-              ),
-              alignment: Alignment.center,
-              child: Container(
-                width: 6,
-                height: 6,
-                decoration: const BoxDecoration(
-                  color: Color(0xFF0E7C52),
-                  shape: BoxShape.circle,
-                ),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-}
-
-class _PingingHelperMarker extends StatefulWidget {
-  final bool isEmergency;
-  const _PingingHelperMarker({required this.isEmergency});
-  @override
-  State<_PingingHelperMarker> createState() => _PingingHelperMarkerState();
-}
-
-class _PingingHelperMarkerState extends State<_PingingHelperMarker> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 2),
-    )..repeat();
-  }
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-  @override
-  Widget build(BuildContext context) {
-    final color = widget.isEmergency ? const Color(0xFFF5A623) : const Color(0xFF0E7C52);
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        return Stack(
-          alignment: Alignment.center,
-          children: [
-            // Ripple ping
-            Container(
-              width: 10 + (20 * _controller.value),
-              height: 10 + (20 * _controller.value),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: color.withOpacity(0.3 * (1.0 - _controller.value)),
-              ),
-            ),
-            // Dot
-            Container(
-              width: 8,
-              height: 8,
-              decoration: BoxDecoration(
-                color: color,
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 1.5),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-}
 
 class _PulsingGreenDot extends StatefulWidget {
   const _PulsingGreenDot();
