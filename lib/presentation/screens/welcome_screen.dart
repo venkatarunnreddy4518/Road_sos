@@ -67,12 +67,28 @@ class _WelcomeScreenState extends State<WelcomeScreen>
 
   void _continue() {
     if (_isPhone) {
+      final input = _phoneCtrl.text.trim();
+      String? normalizedPhone;
+      if (input.isNotEmpty) {
+        if (input.startsWith('+')) {
+          normalizedPhone = input;
+        } else if (input.length == 10 && RegExp(r'^\d+$').hasMatch(input)) {
+          normalizedPhone = '+91$input';
+        } else {
+          normalizedPhone = input;
+        }
+      }
       Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const PhoneOtpScreen()),
+        MaterialPageRoute(
+          builder: (_) => PhoneOtpScreen(initialPhone: normalizedPhone),
+        ),
       );
     } else {
+      final email = _emailCtrl.text.trim();
       Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const EmailAuthScreen()),
+        MaterialPageRoute(
+          builder: (_) => EmailAuthScreen(initialEmail: email.isNotEmpty ? email : null),
+        ),
       );
     }
   }
@@ -160,163 +176,172 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                       opacity: _riseFade,
                       child: SlideTransition(
                         position: _riseSlide,
-                        child: Column(
-                          children: [
-                            // ── Mark / Logo tile ──
-                            Container(
-                              width: 60,
-                              height: 60,
-                              decoration: BoxDecoration(
-                                gradient: const LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: [
-                                    Color(0xFF1FC676),
-                                    Color(0xFF0B6E47),
+                        child: Center(
+                          child: Container(
+                            constraints: const BoxConstraints(maxWidth: 420),
+                            child: Column(
+                              children: [
+                                // ── Mark / Logo tile ──
+                                Container(
+                                  width: 60,
+                                  height: 60,
+                                  decoration: BoxDecoration(
+                                    gradient: const LinearGradient(
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                      colors: [
+                                        Color(0xFF1FC676),
+                                        Color(0xFF0B6E47),
+                                      ],
+                                    ),
+                                    borderRadius: BorderRadius.circular(16),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: _green.withValues(alpha: 0.30),
+                                        blurRadius: 30,
+                                        offset: const Offset(0, 12),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Center(
+                                    child: SizedBox(
+                                      width: 34,
+                                      height: 34,
+                                      child: CustomPaint(
+                                        painter: _BeaconWhitePainter(),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 26),
+
+                                // ── Title ──
+                                const Text(
+                                  'Sign in',
+                                  style: TextStyle(
+                                    fontSize: 32,
+                                    fontWeight: FontWeight.w600,
+                                    color: _ink,
+                                    letterSpacing: -0.7,
+                                    height: 1.1,
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+
+                                // ── Subtitle ──
+                                const Text(
+                                  'Help is one tap away.\nEnter your details to continue.',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: _muted,
+                                    fontWeight: FontWeight.w400,
+                                    height: 1.4,
+                                  ),
+                                ),
+                                const SizedBox(height: 30),
+
+                                // ── Segmented control ──
+                                _SegmentedControl(
+                                  isPhone: _isPhone,
+                                  onChanged: (val) =>
+                                      setState(() => _isPhone = val),
+                                ),
+                                const SizedBox(height: 18),
+
+                                // ── Input fields ──
+                                AnimatedSwitcher(
+                                  duration: const Duration(milliseconds: 250),
+                                  child: _isPhone
+                                      ? _buildPhoneField()
+                                      : _buildEmailField(),
+                                ),
+                                const SizedBox(height: 22),
+
+                                // ── Continue button ──
+                                _GradientButton(
+                                  onTap: _continue,
+                                  busy: _busy,
+                                ),
+                                const SizedBox(height: 26),
+
+                                // ── Divider "or" ──
+                                Row(
+                                  children: [
+                                    const Expanded(
+                                        child: Divider(color: _lineSoft)),
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 14),
+                                      child: Text(
+                                        'or',
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w500,
+                                          color: const Color(0xFFA1A1A8),
+                                        ),
+                                      ),
+                                    ),
+                                    const Expanded(
+                                        child: Divider(color: _lineSoft)),
                                   ],
                                 ),
-                                borderRadius: BorderRadius.circular(16),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: _green.withValues(alpha: 0.30),
-                                    blurRadius: 30,
-                                    offset: const Offset(0, 12),
-                                  ),
-                                ],
-                              ),
-                              child: Center(
-                                child: SizedBox(
-                                  width: 34,
-                                  height: 34,
-                                  child: CustomPaint(
-                                    painter: _BeaconWhitePainter(),
-                                  ),
+                                const SizedBox(height: 26),
+
+                                // ── Google button ──
+                                _GhostButton(
+                                  label: 'Continue with Google',
+                                  icon: Icons.g_mobiledata_rounded,
+                                  onTap: _busy ? null : _google,
                                 ),
-                              ),
-                            ),
-                            const SizedBox(height: 26),
+                                const SizedBox(height: 11),
 
-                            // ── Title ──
-                            const Text(
-                              'Sign in',
-                              style: TextStyle(
-                                fontSize: 32,
-                                fontWeight: FontWeight.w600,
-                                color: _ink,
-                                letterSpacing: -0.7,
-                                height: 1.1,
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-
-                            // ── Subtitle ──
-                            const Text(
-                              'Help is one tap away.\nEnter your details to continue.',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: _muted,
-                                fontWeight: FontWeight.w400,
-                                height: 1.4,
-                              ),
-                            ),
-                            const SizedBox(height: 30),
-
-                            // ── Segmented control ──
-                            _SegmentedControl(
-                              isPhone: _isPhone,
-                              onChanged: (val) =>
-                                  setState(() => _isPhone = val),
-                            ),
-                            const SizedBox(height: 18),
-
-                            // ── Input fields ──
-                            AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 250),
-                              child: _isPhone
-                                  ? _buildPhoneField()
-                                  : _buildEmailField(),
-                            ),
-                            const SizedBox(height: 22),
-
-                            // ── Continue button ──
-                            _GradientButton(
-                              onTap: _continue,
-                              busy: _busy,
-                            ),
-                            const SizedBox(height: 26),
-
-                            // ── Divider "or" ──
-                            Row(
-                              children: [
-                                const Expanded(
-                                    child: Divider(color: _lineSoft)),
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 14),
-                                  child: Text(
-                                    'or',
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w500,
-                                      color: const Color(0xFFA1A1A8),
-                                    ),
-                                  ),
+                                // ── Apple button ──
+                                _GhostButton(
+                                  label: 'Continue with Apple',
+                                  icon: Icons.apple_rounded,
+                                  onTap: () {
+                                    // TODO: Apple Sign-In
+                                  },
                                 ),
-                                const Expanded(
-                                    child: Divider(color: _lineSoft)),
-                              ],
-                            ),
-                            const SizedBox(height: 26),
+                                const SizedBox(height: 22),
 
-                            // ── Google button ──
-                            _GhostButton(
-                              label: 'Continue with Google',
-                              icon: Icons.g_mobiledata_rounded,
-                              onTap: _busy ? null : _google,
-                            ),
-                            const SizedBox(height: 11),
-
-                            // ── Apple button ──
-                            _GhostButton(
-                              label: 'Continue with Apple',
-                              icon: Icons.apple_rounded,
-                              onTap: () {
-                                // TODO: Apple Sign-In
-                              },
-                            ),
-                            const SizedBox(height: 22),
-
-                            // ── Create account ──
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Text(
-                                  'New to Roadside SOS? ',
-                                  style: TextStyle(
-                                    fontSize: 14.5,
-                                    color: _muted,
-                                  ),
-                                ),
-                                GestureDetector(
-                                  onTap: () => Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder: (_) =>
-                                          const EmailAuthScreen(),
+                                // ── Create account ──
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Text(
+                                      'New to Roadside SOS? ',
+                                      style: TextStyle(
+                                        fontSize: 14.5,
+                                        color: _muted,
+                                      ),
                                     ),
-                                  ),
-                                  child: const Text(
-                                    'Create account',
-                                    style: TextStyle(
-                                      fontSize: 14.5,
-                                      fontWeight: FontWeight.w600,
-                                      color: _green,
+                                    GestureDetector(
+                                      onTap: () {
+                                        final email = _emailCtrl.text.trim();
+                                        Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                            builder: (_) => EmailAuthScreen(
+                                              initialEmail: email.isNotEmpty ? email : null,
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                      child: const Text(
+                                        'Create account',
+                                        style: TextStyle(
+                                          fontSize: 14.5,
+                                          fontWeight: FontWeight.w600,
+                                          color: _green,
+                                        ),
+                                      ),
                                     ),
-                                  ),
+                                  ],
                                 ),
                               ],
                             ),
-                          ],
+                          ),
                         ),
                       ),
                     ),

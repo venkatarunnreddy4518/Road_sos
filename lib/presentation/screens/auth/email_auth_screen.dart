@@ -6,7 +6,8 @@ import '../../../data/api/auth_api.dart';
 import '../../state/auth_state.dart';
 
 class EmailAuthScreen extends StatefulWidget {
-  const EmailAuthScreen({super.key});
+  final String? initialEmail;
+  const EmailAuthScreen({super.key, this.initialEmail});
 
   @override
   State<EmailAuthScreen> createState() => _EmailAuthScreenState();
@@ -16,7 +17,7 @@ class _EmailAuthScreenState extends State<EmailAuthScreen>
     with SingleTickerProviderStateMixin {
   final _form = GlobalKey<FormState>();
   final _name = TextEditingController();
-  final _email = TextEditingController();
+  late final TextEditingController _email;
   final _password = TextEditingController();
   bool _isLogin = true;
   bool _busy = false;
@@ -42,6 +43,7 @@ class _EmailAuthScreenState extends State<EmailAuthScreen>
   @override
   void initState() {
     super.initState();
+    _email = TextEditingController(text: widget.initialEmail);
     _fadeCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 500),
