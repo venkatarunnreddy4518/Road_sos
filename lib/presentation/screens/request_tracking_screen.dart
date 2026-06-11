@@ -86,10 +86,11 @@ class _RequestTrackingScreenState extends State<RequestTrackingScreen> {
                     centerLat: r.helperLocation?.latitude ?? r.pickupLat,
                     centerLng: r.helperLocation?.longitude ?? r.pickupLng,
                     markers: [
-                      MapMarker(r.pickupLat, r.pickupLng, icon: Icons.my_location, color: const Color(0xFF111111)),
+                      MapMarker(r.pickupLat, r.pickupLng, icon: Icons.my_location, color: Theme.of(context).colorScheme.primary),
                       if (r.helperLocation != null)
                         MapMarker(r.helperLocation!.latitude, r.helperLocation!.longitude,
-                            icon: Icons.local_shipping, color: const Color(0xFF18A957)),
+                            icon: Icons.local_shipping,
+                            color: Theme.of(context).brightness == Brightness.light ? const Color(0xFF555555) : const Color(0xFFCCCCCC)),
                     ],
                   ),
                 ),
@@ -103,7 +104,7 @@ class _RequestTrackingScreenState extends State<RequestTrackingScreen> {
                           padding: const EdgeInsets.only(top: 8),
                           child: Text(
                             'Helper location updated ${TimeOfDay.fromDateTime(r.helperLocation!.recordedAt.toLocal()).format(context)}',
-                            style: const TextStyle(fontSize: 12, color: Colors.black54),
+                            style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.tertiary),
                           ),
                         ),
                     ],
@@ -121,7 +122,8 @@ class _RequestTrackingScreenState extends State<RequestTrackingScreen> {
                         ? const SizedBox.shrink()
                         : ElevatedButton.icon(
                             style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFFF4C430), foregroundColor: Colors.black),
+                                backgroundColor: Theme.of(context).colorScheme.primary,
+                                foregroundColor: Theme.of(context).colorScheme.onPrimary),
                             onPressed: _review,
                             icon: const Icon(Icons.star),
                             label: Text(context.tr('rate_helper')),
@@ -130,8 +132,8 @@ class _RequestTrackingScreenState extends State<RequestTrackingScreen> {
                         ? const SizedBox.shrink()
                         : OutlinedButton.icon(
                             onPressed: _cancel,
-                            icon: const Icon(Icons.close, color: Color(0xFFB3261E)),
-                            label: Text(context.tr('cancel'), style: const TextStyle(color: Color(0xFFB3261E))),
+                            icon: Icon(Icons.close, color: Theme.of(context).colorScheme.error),
+                            label: Text(context.tr('cancel'), style: TextStyle(color: Theme.of(context).colorScheme.error)),
                           ),
               ),
             ),
@@ -165,7 +167,8 @@ class _ReviewSheetState extends State<_ReviewSheet> {
             width: double.infinity,
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF111111), foregroundColor: Colors.white),
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary),
               onPressed: () => Navigator.of(context).pop(_rating),
               child: Text(context.tr('submit')),
             ),

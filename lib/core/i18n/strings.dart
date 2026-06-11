@@ -60,6 +60,22 @@ class AppStrings {
     'submit': {'en': 'Submit', 'hi': 'जमा करें', 'te': 'సమర్పించు', 'ta': 'சமர்ப்பி'},
     'offline_banner': {'en': 'Offline — showing cached helpers', 'hi': 'ऑफ़लाइन — कैश किए गए सहायक', 'te': 'ఆఫ్‌లైన్ — కాష్ సహాయకులు', 'ta': 'ஆஃப்லைன் — சேமித்த உதவியாளர்கள்'},
     'needs_connection': {'en': 'This needs an internet connection', 'hi': 'इसके लिए इंटरनेट चाहिए', 'te': 'దీనికి ఇంటర్నెట్ అవసరం', 'ta': 'இதற்கு இணைய இணைப்பு தேவை'},
+    'last_updated': {'en': 'updated', 'hi': 'अपडेट', 'te': 'నవీకరించబడింది', 'ta': 'புதுப்பிக்கப்பட்டது'},
+    'no_results': {'en': 'No helpers found', 'hi': 'कोई सहायक नहीं मिला', 'te': 'సహాయకులు ఎవరూ కనుగొనబడలేదు', 'ta': 'உதவியாளர்கள் இல்லை'},
+    'retry': {'en': 'Retry', 'hi': 'पुनः प्रयास करें', 'te': 'మళ్లీ ప్రయత్నించండి', 'ta': 'மீண்டும் முயற்சி'},
+    'edit_profile': {'en': 'Edit profile', 'hi': 'प्रोफ़ाइल संपादित करें', 'te': 'ప్రొఫైల్ సవరించండి', 'ta': 'சுயவிவரத்தைத் திருத்து'},
+    'as_seeker': {'en': 'As seeker', 'hi': 'खोजकर्ता के रूप में', 'te': 'అన్వేషకుడిగా', 'ta': 'தேடுபவராக'},
+    'as_helper': {'en': 'As helper', 'hi': 'सहायक के रूप में', 'te': 'సహాయకుడిగా', 'ta': 'உதவியாளராக'},
+    'no_requests': {'en': 'No requests yet', 'hi': 'अभी तक कोई अनुरोध नहीं', 'te': 'ఇంకా అభ్యర్థనలు లేవు', 'ta': 'இன்னும் கோரிக்கைகள் இல்லை'},
+    'become_helper': {'en': 'Become a helper', 'hi': 'सहायक बनें', 'te': 'సహాయకుడిగా మారండి', 'ta': 'உதவியாளராகுங்கள்'},
+    'register_go_online': {'en': 'Register & go online', 'hi': 'पंजीकरण करें और ऑनलाइन हों', 'te': 'నమోదు చేసి ఆన్‌లైన్‌లోకి వెళ్లండి', 'ta': 'பதிவு செய்து ஆன்லைனில் வாருங்கள்'},
+    'active_job': {'en': 'Active job', 'hi': 'सक्रिय कार्य', 'te': 'క్రియాశీల పని', 'ta': 'செயலில் உள்ள வேலை'},
+    'vehicle_hint': {'en': 'Vehicle (e.g. Honda Activa)', 'hi': 'वाहन (जैसे Honda Activa)', 'te': 'వాహనం (ఉదా. Honda Activa)', 'ta': 'வாகனம் (எ.கா. Honda Activa)'},
+    'sign_in_profile_prompt': {'en': 'Sign in to manage your profile and history', 'hi': 'अपनी प्रोफ़ाइल और इतिहास प्रबंधित करने के लिए साइन इन करें', 'te': 'మీ ప్రొఫైల్ మరియు చరిత్రను నిర్వహించడానికి సైన్ ఇన్ చేయండి', 'ta': 'உங்கள் சுயவிவரம் మరియు வரலாற்றை నిர்வகிக்க உள்நுழையவும்'},
+    'theme': {'en': 'Theme', 'hi': 'थीम', 'te': 'థీమ్', 'ta': 'தீம்'},
+    'theme_system': {'en': 'System default', 'hi': 'सिस्टम डिफ़ॉल्ट', 'te': 'సిస్టమ్ డిఫాల్ట్', 'ta': 'முறைமை இயல்புநிலை'},
+    'theme_light': {'en': 'Light', 'hi': 'लाइट', 'te': 'లైట్', 'ta': 'ஒளி'},
+    'theme_dark': {'en': 'Dark', 'hi': 'डार्क', 'te': 'డార్క్', 'ta': 'இருள்'},
   };
 
   static String of(String code, String key) {

@@ -6,16 +6,22 @@ import '../models/app_user.dart';
 
 /// Bridges native Google Sign-In to the backend.
 ///
-/// When a real OAuth client id is supplied via --dart-define=GOOGLE_CLIENT_ID,
-/// it performs the real native flow, obtains a Google ID token, and exchanges it
-/// at the backend. Otherwise it uses the prototype dev fallback (labelled in the UI).
+/// Configure via --dart-define at build/run time (no secrets in source):
+///   GOOGLE_CLIENT_ID         iOS/Web OAuth client id (also the token audience there)
+///   GOOGLE_SERVER_CLIENT_ID  Web OAuth client id; on Android this becomes the ID token's
+///                            audience so the backend can verify it (set GOOGLE_CLIENT_ID on
+///                            the backend to the same Web client id).
+///
+/// When neither is supplied, it uses the prototype dev fallback (backend in Google mock mode).
 class GoogleAuthService {
   GoogleAuthService({AuthApi? api}) : _api = api ?? AuthApi();
   final AuthApi _api;
 
   static const String clientId = String.fromEnvironment('GOOGLE_CLIENT_ID', defaultValue: '');
+  static const String serverClientId =
+      String.fromEnvironment('GOOGLE_SERVER_CLIENT_ID', defaultValue: '');
 
-  bool get isConfigured => clientId.isNotEmpty;
+  bool get isConfigured => clientId.isNotEmpty || serverClientId.isNotEmpty;
 
   /// Returns the signed-in user, or null if the user cancelled.
   Future<AppUser?> signIn() async {
@@ -25,7 +31,8 @@ class GoogleAuthService {
     }
 
     final google = GoogleSignIn(
-      clientId: clientId,
+      clientId: clientId.isEmpty ? null : clientId,
+      serverClientId: serverClientId.isEmpty ? null : serverClientId,
       scopes: const ['email', 'profile'],
     );
     final account = await google.signIn();

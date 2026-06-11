@@ -12,7 +12,7 @@ from sqlalchemy.orm import sessionmaker
 # Ensure config picks up a test DB before app modules import settings.
 os.environ.setdefault(
     "DATABASE_URL",
-    os.environ.get("TEST_DATABASE_URL", "postgresql+psycopg://postgres:postgres@localhost:5432/roadside_help_test"),
+    os.environ.get("TEST_DATABASE_URL", "sqlite:///./roadside_help_test.db"),
 )
 
 from app.db.session import get_db  # noqa: E402

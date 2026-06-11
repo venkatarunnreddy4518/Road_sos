@@ -61,6 +61,44 @@ class MarketplaceHelper {
         openNow: j['open_now'],
       );
 
+  /// Serialize persistable fields for the offline cache.
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'helper_type': helperType,
+        'phone': phone,
+        'sms_capable': smsCapable,
+        'latitude': latitude,
+        'longitude': longitude,
+        'address': address,
+        'opening_hours': openingHours,
+        'data_source': dataSource,
+        'is_verified': isVerified,
+        'rating_avg': ratingAvg,
+        'rating_count': ratingCount,
+      };
+
+  /// Copy with distance fields recomputed (used when reading the offline cache
+  /// against the user's current position).
+  MarketplaceHelper withDistance(double distanceKm, bool far) => MarketplaceHelper(
+        id: id,
+        name: name,
+        helperType: helperType,
+        phone: phone,
+        smsCapable: smsCapable,
+        latitude: latitude,
+        longitude: longitude,
+        address: address,
+        openingHours: openingHours,
+        dataSource: dataSource,
+        isVerified: isVerified,
+        ratingAvg: ratingAvg,
+        ratingCount: ratingCount,
+        distanceKm: distanceKm,
+        isFar: far,
+        openNow: openNow,
+      );
+
   String get typeLabel {
     switch (helperType) {
       case 'puncture_shop':

@@ -26,6 +26,11 @@ app.add_middleware(
 register_error_handlers(app)
 app.include_router(api_router)
 
+# Auto-create tables for SQLite local dev (no Alembic needed).
+if settings.database_url.startswith("sqlite"):
+    from app.db.session import create_all_tables
+    create_all_tables()
+
 
 @app.get("/health", tags=["health"])
 def health():

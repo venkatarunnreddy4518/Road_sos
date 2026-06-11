@@ -7,6 +7,7 @@ import 'core/i18n/strings.dart';
 import 'presentation/screens/home_screen.dart';
 import 'presentation/screens/welcome_screen.dart';
 import 'presentation/state/auth_state.dart';
+import 'presentation/state/theme_state.dart';
 
 void main() {
   runApp(const RoadsideHelpApp());
@@ -21,13 +22,16 @@ class RoadsideHelpApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => LocaleController()..load()),
         ChangeNotifierProvider(create: (_) => AuthState()..restore()),
+        ChangeNotifierProvider(create: (_) => ThemeState()..restore()),
       ],
-      child: Consumer<LocaleController>(
-        builder: (context, locale, _) {
+      child: Consumer2<LocaleController, ThemeState>(
+        builder: (context, locale, themeState, _) {
           return MaterialApp(
             title: 'Roadside Help',
             debugShowCheckedModeBanner: false,
             theme: AppTheme.lightTheme,
+            darkTheme: AppTheme.darkTheme,
+            themeMode: themeState.themeMode,
             locale: locale.locale,
             localizationsDelegates: const [
               GlobalMaterialLocalizations.delegate,

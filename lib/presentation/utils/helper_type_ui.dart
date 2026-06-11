@@ -19,8 +19,8 @@ IconData helperTypeIcon(HelperType type) {
 
 Color helperTypeColor(HelperType type) {
   return switch (type) {
-    HelperType.PUNCTURE_SHOP => const Color(0xFFF4C430),
-    HelperType.PETROL_PUMP => const Color(0xFF18A957),
-    HelperType.MECHANIC => const Color(0xFF2C6BED),
+    HelperType.PUNCTURE_SHOP => const Color(0xFF111111),
+    HelperType.PETROL_PUMP => const Color(0xFF555555),
+    HelperType.MECHANIC => const Color(0xFF888888),
   };
 }

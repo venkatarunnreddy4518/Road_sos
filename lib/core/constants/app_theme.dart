@@ -3,42 +3,130 @@ import 'package:flutter/material.dart';
 
 class AppTheme {
   static ThemeData get lightTheme {
-    const ink = Color(0xFF111111);
-    const serviceYellow = Color(0xFFF4C430);
-    const actionGreen = Color(0xFF18A957);
-    const warmSurface = Color(0xFFF7F8F2);
+    const primaryGreen = Color(0xFF0E7C52);
+    const brightGreen = Color(0xFF18B26B);
+    const bg = Color(0xFFF6F8F7);
+    const card = Color(0xFFFFFFFF);
+    const border = Color(0xFFE7ECEA);
+    const text = Color(0xFF14201B);
+    const muted = Color(0xFF7C887F);
 
     return ThemeData(
       useMaterial3: true,
-      scaffoldBackgroundColor: warmSurface,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: ink,
-        primary: ink,
-        secondary: serviceYellow,
-        tertiary: actionGreen,
-        surface: Colors.white,
+      brightness: Brightness.light,
+      scaffoldBackgroundColor: bg,
+      fontFamily: 'Plus Jakarta Sans',
+      colorScheme: const ColorScheme.light(
+        primary: primaryGreen,
+        onPrimary: Colors.white,
+        secondary: brightGreen,
+        onSecondary: Colors.white,
+        tertiary: muted,
+        surface: card,
+        onSurface: text,
+        outline: border,
       ),
       appBarTheme: const AppBarTheme(
-        backgroundColor: Colors.white,
-        foregroundColor: ink,
+        backgroundColor: bg,
+        foregroundColor: text,
         centerTitle: false,
         elevation: 0,
       ),
       cardTheme: CardThemeData(
-        color: Colors.white,
+        color: card,
         elevation: 0,
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+          side: const BorderSide(color: border, width: 1.5),
+        ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
+          backgroundColor: primaryGreen,
+          foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          elevation: 0,
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: text,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          side: const BorderSide(color: border, width: 1.5),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          elevation: 0,
         ),
       ),
       iconButtonTheme: IconButtonThemeData(
         style: IconButton.styleFrom(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        ),
+      ),
+    );
+  }
+
+  static ThemeData get darkTheme {
+    const primaryGreen = Color(0xFF0E7C52);
+    const brightGreen = Color(0xFF18B26B);
+    const bg = Color(0xFFF6F8F7);
+    const card = Color(0xFFFFFFFF);
+    const border = Color(0xFFE7ECEA);
+    const text = Color(0xFF14201B);
+    const muted = Color(0xFF7C887F);
+
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.light,
+      scaffoldBackgroundColor: bg,
+      fontFamily: 'Plus Jakarta Sans',
+      colorScheme: const ColorScheme.light(
+        primary: primaryGreen,
+        onPrimary: Colors.white,
+        secondary: brightGreen,
+        onSecondary: Colors.white,
+        tertiary: muted,
+        surface: card,
+        onSurface: text,
+        outline: border,
+      ),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: bg,
+        foregroundColor: text,
+        centerTitle: false,
+        elevation: 0,
+      ),
+      cardTheme: CardThemeData(
+        color: card,
+        elevation: 0,
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+          side: const BorderSide(color: border, width: 1.5),
+        ),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: primaryGreen,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          elevation: 0,
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: text,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          side: const BorderSide(color: border, width: 1.5),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          elevation: 0,
+        ),
+      ),
+      iconButtonTheme: IconButtonThemeData(
+        style: IconButton.styleFrom(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         ),
       ),
     );

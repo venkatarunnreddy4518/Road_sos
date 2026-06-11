@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../../core/i18n/l10n_ext.dart';
 import '../../../core/utils/location_service.dart';
 import '../../../data/api/request_api.dart';
 import '../../../data/models/service_request.dart';
@@ -91,7 +92,7 @@ class _ProviderJobScreenState extends State<ProviderJobScreen> {
     final r = _req;
     final next = r == null ? null : _next[r.status];
     return Scaffold(
-      appBar: AppBar(title: const Text('Active job')),
+      appBar: AppBar(title: Text(context.tr('active_job'))),
       body: r == null
           ? const Center(child: CircularProgressIndicator())
           : Padding(
@@ -112,7 +113,8 @@ class _ProviderJobScreenState extends State<ProviderJobScreen> {
                 padding: const EdgeInsets.all(16),
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF18A957), foregroundColor: Colors.white),
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      foregroundColor: Theme.of(context).colorScheme.onPrimary),
                   onPressed: _busy ? null : () => _advance(next),
                   child: Text('Mark as ${next.label}'),
                 ),

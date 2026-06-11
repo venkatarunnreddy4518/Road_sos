@@ -33,7 +33,7 @@ class AuthIdentity(Base, TimestampMixin):
     user_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
-    provider: Mapped[AuthProvider] = mapped_column(Enum(AuthProvider, name="auth_provider"))
+    provider: Mapped[AuthProvider] = mapped_column(Enum(AuthProvider, name="auth_provider", native_enum=False))
     provider_uid: Mapped[str] = mapped_column(String(255), nullable=False)
     password_hash: Mapped[str | None] = mapped_column(Text, nullable=True)
 

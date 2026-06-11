@@ -35,7 +35,7 @@ class ServiceRequest(Base, TimestampMixin):
         ForeignKey("helper_profiles.id"), nullable=True, index=True
     )
     status: Mapped[RequestStatus] = mapped_column(
-        Enum(RequestStatus, name="request_status"), default=RequestStatus.requested, nullable=False
+        Enum(RequestStatus, name="request_status", native_enum=False), default=RequestStatus.requested, nullable=False
     )
     pickup_lat: Mapped[float] = mapped_column(Float, nullable=False)
     pickup_lng: Mapped[float] = mapped_column(Float, nullable=False)

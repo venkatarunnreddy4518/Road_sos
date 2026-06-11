@@ -12,12 +12,12 @@ class RatingStars extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(Icons.star, size: size, color: const Color(0xFFF4C430)),
+        Icon(Icons.star, size: size, color: Theme.of(context).colorScheme.primary),
         const SizedBox(width: 2),
         Text(rating.toStringAsFixed(1), style: TextStyle(fontSize: size - 2, fontWeight: FontWeight.w600)),
         if (count > 0) ...[
           const SizedBox(width: 2),
-          Text('($count)', style: TextStyle(fontSize: size - 4, color: Colors.black54)),
+          Text('($count)', style: TextStyle(fontSize: size - 4, color: Theme.of(context).colorScheme.tertiary)),
         ],
       ],
     );
@@ -39,7 +39,7 @@ class RatingInput extends StatelessWidget {
         return IconButton(
           onPressed: () => onChanged(i + 1),
           icon: Icon(filled ? Icons.star : Icons.star_border,
-              size: 40, color: const Color(0xFFF4C430)),
+              size: 40, color: Theme.of(context).colorScheme.primary),
         );
       }),
     );
