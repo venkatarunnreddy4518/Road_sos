@@ -1,12 +1,30 @@
 """Database engine + session factory."""
 from collections.abc import Generator
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.config import settings
 
-engine = create_engine(settings.database_url, pool_pre_ping=True, future=True)
+_is_sqlite = settings.database_url.startswith("sqlite")
+
+connect_args = {"check_same_thread": False} if _is_sqlite else {}
+engine = create_engine(
+    settings.database_url,
+    pool_pre_ping=not _is_sqlite,
+    future=True,
+    connect_args=connect_args,
+)
+
+# Enable WAL mode and foreign keys for SQLite
+if _is_sqlite:
+    @event.listens_for(engine, "connect")
+    def _set_sqlite_pragma(dbapi_connection, connection_record):
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA journal_mode=WAL")
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.close()
+
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
 
 
@@ -16,3 +34,13 @@ def get_db() -> Generator[Session, None, None]:
         yield db
     finally:
         db.close()
+
+
+def create_all_tables():
+    """Create all tables (useful for SQLite local dev without Alembic migrations)."""
+    from app.db.base import Base
+    # Import all models so they register with Base.metadata
+    import app.models.user  # noqa: F401
+    import app.models.helper  # noqa: F401
+    import app.models.request  # noqa: F401
+    Base.metadata.create_all(bind=engine)
