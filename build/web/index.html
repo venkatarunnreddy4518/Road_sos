@@ -1,162 +1,46 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Welcome — Roadside SOS</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Noto+Sans+Devanagari:wght@500;600&family=Noto+Sans+Telugu:wght@500;600&family=Noto+Sans+Tamil:wght@500;600&family=Noto+Sans+Kannada:wght@500;600&family=Noto+Sans+Bengali:wght@500;600&family=Noto+Sans+Gujarati:wght@500;600&family=Noto+Sans+Gurmukhi:wght@500;600&family=Noto+Sans+Malayalam:wght@500;600&family=Noto+Sans+Oriya:wght@500;600&family=Noto+Naskh+Arabic:wght@500;600&display=swap" rel="stylesheet"/>
-<style>
-  *,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; }
-  :root{
-    --ink:#34343a; --muted:#8A8F92;
-    --green:#0E7C52; --green-bright:#18B26B; --amber:#F5A623;
-    --grad-green:linear-gradient(135deg,#1FC676 0%,#0B6E47 100%);
-    --uifont:'Plus Jakarta Sans',-apple-system,system-ui,sans-serif;
-    --scriptfont:'Plus Jakarta Sans','Noto Sans Devanagari','Noto Sans Telugu','Noto Sans Tamil','Noto Sans Kannada','Noto Sans Bengali','Noto Sans Gujarati','Noto Sans Gurmukhi','Noto Sans Malayalam','Noto Sans Oriya','Noto Naskh Arabic',sans-serif;
-  }
-  @media (prefers-reduced-motion: reduce){ *{ animation:none!important; transition-duration:.01ms!important; } }
-  html,body{ height:100%; }
-  body{
-    font-family:var(--uifont); color:var(--ink);
-    background:
-      radial-gradient(820px 520px at 50% -8%, rgba(24,178,107,.14), transparent 60%),
-      radial-gradient(640px 460px at 88% 96%, rgba(245,166,35,.12), transparent 60%),
-      #fbfbfd;
-    min-height:100vh; display:flex; flex-direction:column; align-items:center;
-    overflow:hidden; position:relative;
-  }
+  <!--
+    If you are serving your web app in a path other than the root, change the
+    href value below to reflect the base path you are serving from.
 
-  /* faint pulsing rings behind */
-  .ambient{ position:fixed; top:42%; left:50%; transform:translate(-50%,-50%); width:680px; height:680px; pointer-events:none; z-index:0; }
-  .ambient circle{ fill:none; stroke:#0E7C52; stroke-opacity:.06; transform-origin:center; }
-  .ambient .r1{ animation:breathe 5s ease-in-out infinite; }
-  .ambient .r2{ animation:breathe 5s ease-in-out .6s infinite; }
-  .ambient .r3{ animation:breathe 5s ease-in-out 1.2s infinite; }
+    The path provided below has to start and end with a slash "/" in order for
+    it to work correctly.
 
-  /* brand */
-  .brand{ position:relative; z-index:2; margin-top:84px; display:flex; flex-direction:column; align-items:center; gap:16px; animation:rise .8s both; }
-  .tile{
-    width:76px; height:76px; border-radius:20px; background:var(--grad-green);
-    display:flex; align-items:center; justify-content:center;
-    box-shadow:0 16px 40px rgba(14,124,82,.34);
-  }
-  .tile svg{ width:44px; height:44px; }
-  .tile .ring2{ animation:ping 2.6s ease-out infinite; transform-origin:center; }
-  .wordmark{ font-size:16px; font-weight:700; letter-spacing:-.01em; color:var(--ink); }
-  .wordmark span{ color:var(--muted); font-weight:600; }
+    For more details:
+    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
 
-  /* greeting */
-  .stage{ position:relative; z-index:2; flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; width:100%; padding:0 24px; }
-  .hello{
-    font-family:var(--scriptfont);
-    font-size:66px; font-weight:600; line-height:1.1; letter-spacing:-.01em;
-    text-align:center; color:var(--ink);
-    opacity:0; transform:translateY(14px);
-    transition:opacity .55s cubic-bezier(.3,.8,.3,1), transform .55s cubic-bezier(.3,.8,.3,1);
-    min-height:80px; display:flex; align-items:center;
-  }
-  .hello.show{ opacity:1; transform:translateY(0); }
-  .lang{
-    margin-top:14px; font-size:14.5px; font-weight:700; letter-spacing:.12em; text-transform:uppercase;
-    color:var(--green);
-    opacity:0; transform:translateY(8px);
-    transition:opacity .55s .05s, transform .55s .05s;
-  }
-  .lang.show{ opacity:.85; transform:translateY(0); }
+    This is a placeholder for base href that will be replaced by the value of
+    the `--base-href` argument provided to `flutter build`.
+  -->
+  <base href="/">
 
-  /* footer / cta */
-  .foot{ position:relative; z-index:2; width:100%; max-width:420px; padding:0 28px 46px; display:flex; flex-direction:column; align-items:center; gap:16px; animation:rise .8s .2s both; }
-  .dots{ display:flex; gap:6px; margin-bottom:4px; }
-  .dots i{ width:6px; height:6px; border-radius:50%; background:#D2D6D4; }
-  .dots i.on{ background:var(--green); width:18px; border-radius:4px; transition:.3s; }
-  .cta{
-    width:100%; border:0; border-radius:15px; cursor:pointer;
-    background:var(--grad-green); color:#fff;
-    padding:17px; font-family:inherit; font-size:16.5px; font-weight:700; letter-spacing:-.01em;
-    display:flex; align-items:center; justify-content:center; gap:8px;
-    box-shadow:0 10px 26px rgba(14,124,82,.34);
-    transition:transform .12s, box-shadow .2s, filter .2s;
-  }
-  .cta:hover{ filter:brightness(1.05); box-shadow:0 12px 30px rgba(14,124,82,.42); }
-  .cta:active{ transform:scale(.985); }
-  .cta svg{ width:17px; height:17px; transition:transform .2s; }
-  .cta:hover svg{ transform:translateX(3px); }
-  .terms{ font-size:12.5px; color:var(--muted); text-align:center; line-height:1.5; }
-  .terms a{ color:var(--ink); text-decoration:none; font-weight:600; }
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="A new Flutter project.">
 
-  @keyframes rise{ from{ opacity:0; transform:translateY(16px); } to{ opacity:1; transform:translateY(0); } }
-  @keyframes breathe{ 0%,100%{ transform:scale(.96); opacity:.5; } 50%{ transform:scale(1.04); opacity:1; } }
-  @keyframes ping{ 0%{ transform:scale(.9); opacity:.7; } 70%,100%{ transform:scale(1.5); opacity:0; } }
-</style>
+  <!-- iOS meta tags & icons -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="roadside_help">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <title>roadside_help</title>
+  <link rel="manifest" href="manifest.json">
 </head>
 <body>
+  <!--
+    You can customize the "flutter_bootstrap.js" script.
+    This is useful to provide a custom configuration to the Flutter loader
+    or to give the user feedback during the initialization process.
 
-  <svg class="ambient" viewBox="0 0 680 680" aria-hidden="true">
-    <circle class="r1" cx="340" cy="340" r="150"/>
-    <circle class="r2" cx="340" cy="340" r="240"/>
-    <circle class="r3" cx="340" cy="340" r="335"/>
-  </svg>
-
-  <div class="brand">
-    <div class="tile">
-      <svg viewBox="0 0 100 100" fill="none">
-        <circle cx="50" cy="50" r="8.5" fill="#fff"/>
-        <circle cx="50" cy="50" r="19" stroke="#fff" stroke-width="6"/>
-        <circle class="ring2" cx="50" cy="50" r="30" stroke="#FFC861" stroke-width="6"/>
-      </svg>
-    </div>
-    <div class="wordmark">Roadside <span>SOS</span></div>
-  </div>
-
-  <div class="stage">
-    <div class="hello" id="hello"></div>
-    <div class="lang" id="lang"></div>
-  </div>
-
-  <div class="foot">
-    <div class="dots"><i class="on"></i><i></i><i></i></div>
-    <button class="cta" type="button" onclick="window.location.href='app.html'">
-      Get started
-      <svg viewBox="0 0 16 16" fill="none"><path d="M3 8h9M9 4.5 12.5 8 9 11.5" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    </button>
-    <p class="terms">Help on the way, anywhere in India.<br/>By continuing you agree to our <a href="#">Terms</a> &amp; <a href="#">Privacy</a>.</p>
-  </div>
-
-  <script>
-    var greetings = [
-      { t:'Hello',           l:'English',   dir:'ltr' },
-      { t:'नमस्ते',           l:'हिन्दी',     dir:'ltr' },
-      { t:'నమస్కారం',         l:'తెలుగు',     dir:'ltr' },
-      { t:'வணக்கம்',          l:'தமிழ்',      dir:'ltr' },
-      { t:'ನಮಸ್ಕಾರ',          l:'ಕನ್ನಡ',      dir:'ltr' },
-      { t:'নমস্কার',          l:'বাংলা',      dir:'ltr' },
-      { t:'નમસ્તે',           l:'ગુજરાતી',    dir:'ltr' },
-      { t:'ਸਤ ਸ੍ਰੀ ਅਕਾਲ',     l:'ਪੰਜਾਬੀ',     dir:'ltr' },
-      { t:'നമസ്കാരം',         l:'മലയാളം',     dir:'ltr' },
-      { t:'नमस्कार',          l:'मराठी',      dir:'ltr' },
-      { t:'ନମସ୍କାର',          l:'ଓଡ଼ିଆ',      dir:'ltr' },
-      { t:'السلام علیکم',     l:'اردو',       dir:'rtl' }
-    ];
-    var hello = document.getElementById('hello');
-    var lang  = document.getElementById('lang');
-    var i = 0;
-
-    function paint(g){
-      hello.textContent = g.t; hello.style.direction = g.dir;
-      lang.textContent = g.l;  lang.style.direction = g.dir;
-      hello.classList.add('show'); lang.classList.add('show');
-    }
-    paint(greetings[0]);
-
-    setInterval(function(){
-      hello.classList.remove('show'); lang.classList.remove('show');
-      setTimeout(function(){
-        i = (i + 1) % greetings.length;
-        paint(greetings[i]);
-      }, 480);
-    }, 2100);
-  </script>
+    For more details:
+    * https://docs.flutter.dev/platform-integration/web/initialization
+  -->
+  <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
