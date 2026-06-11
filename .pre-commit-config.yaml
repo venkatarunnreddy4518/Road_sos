@@ -33,3 +33,30 @@ repos:
     hooks:
       - id: vulture
         args: ["backend", "--min-confidence", "80"]
+
+  - repo: https://github.com/PyCQA/pylint
+    rev: v3.0.3
+    hooks:
+      - id: pylint
+        args: ["--rcfile=.pylintrc"]
+        exclude: ^(build/|ios/|android/|test/|web/)
+
+  - repo: https://github.com/PyCQA/flake8
+    rev: 7.0.0
+    hooks:
+      - id: flake8
+        exclude: ^(build/|ios/|android/|test/|web/)
+
+  - repo: https://github.com/returntocorp/semgrep
+    rev: v1.56.0
+    hooks:
+      - id: semgrep
+        args: ["--config", ".semgrep.yml", "--error"]
+        exclude: ^(build/|ios/|android/|test/|web/)
+
+  - repo: https://github.com/asottile/pyupgrade
+    rev: v3.15.0
+    hooks:
+      - id: pyupgrade
+        args: ["--py311-plus"]
+

@@ -1,0 +1,43 @@
+[MASTER]
+load-plugins=
+jobs=1
+persistent=yes
+
+[MESSAGES CONTROL]
+disable=
+    C0111,
+    R0903,
+    C0114,
+    C0115,
+    C0116,
+    W0511,
+    R0801
+
+[FORMAT]
+max-line-length=100
+max-module-lines=1000
+indent-string='    '
+
+[BASIC]
+good-names=i,j,k,e,x,v,db,id,_
+
+[DESIGN]
+max-args=8
+max-locals=15
+max-returns=6
+max-branches=12
+max-statements=50
+max-parents=7
+max-attributes=10
+
+[IMPORTS]
+known-third-party=fastapi,pydantic,sqlalchemy,alembic,uvicorn
+
+[TYPECHECK]
+ignored-modules=
+ignored-classes=SQLAlchemy,scoped_session
+
+[SIMILARITIES]
+min-similarity-lines=6
+ignore-comments=yes
+ignore-docstrings=yes

@@ -1,0 +1,54 @@
+rules:
+  - id: hardcoded-secret
+    patterns:
+      - pattern: $KEY = "..."
+      - metavariable-regex:
+          metavariable: $KEY
+          regex: ".*(secret|password|token|api_key|apikey).*"
+    message: "Potential hardcoded secret found in variable '$KEY'"
+    languages: [python]
+    severity: WARNING
+    paths:
+      include:
+        - backend/
+
+  - id: no-exec-eval
+    patterns:
+      - pattern-either:
+          - pattern: exec(...)
+          - pattern: eval(...)
+    message: "Avoid exec() and eval() — they can execute arbitrary code"
+    languages: [python]
+    severity: ERROR
+    paths:
+      include:
+        - backend/
+
+  - id: sql-injection
+    patterns:
+      - pattern: |
+          $QUERY = f"...{$VAR}..."
+      - metavariable-regex:
+          metavariable: $QUERY
+          regex: ".*(SELECT|INSERT|UPDATE|DELETE|DROP).*"
+    message: "Potential SQL injection — use parameterized queries instead"
+    languages: [python]
+    severity: ERROR
+    paths:
+      include:
+        - backend/
+
+  - id: no-debug-in-prod
+    patterns:
+      - pattern-either:
+          - pattern: print(...)
+          - pattern: breakpoint()
+          - pattern: pdb.set_trace()
+    message: "Remove debug statements before committing"
+    languages: [python]
+    severity: WARNING
+    paths:
+      include:
+        - backend/app/
+      exclude:
+        - backend/tests/

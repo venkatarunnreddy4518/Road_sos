@@ -28,10 +28,34 @@ paths = ["backend"]
 sort_by_size = true
 exclude = [".venv", "build"]
 
-[tool.pylint]
+[tool.pylint.master]
+load-plugins = []
+jobs = 1
+
+[tool.pylint."messages control"]
+disable = ["C0111", "R0903", "C0114", "C0115", "C0116"]
+
+[tool.pylint.format]
 max-line-length = 100
-disable = ["C0111", "R0903"]
-ignore = [".venv", "build", "ios", "android"]
+
+[tool.pylint.basic]
+good-names = ["i", "j", "k", "e", "x", "v", "db", "id", "_"]
+
+[tool.pylint.design]
+max-args = 8
+
+[tool.pyupgrade]
+py3-plus = true
+py311-plus = true
+keep-percent-format = false
+
+[tool.semgrep]
+config = [".semgrep.yml"]
+
+[tool.flake8]
+max-line-length = 100
+exclude = [".git", ".venv", "build", "ios", "android", "backend/.venv"]
+ignore = ["E203", "W503"]
 
 [tool.vercel]
 entrypoint = "backend.app.main:app"
