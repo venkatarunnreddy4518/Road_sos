@@ -30,7 +30,8 @@ class CategoryGrid extends StatelessWidget {
       child: Column(
         children: [
           // Row 1: Tall Puncture Fix (left) & stacked Out of Fuel + Jump Start (right)
-          IntrinsicHeight(
+          SizedBox(
+            height: 220,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -162,6 +163,7 @@ class CategoryGrid extends StatelessWidget {
           ),
         ],
       ),
+      clipBehavior: Clip.hardEdge,
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -169,11 +171,11 @@ class CategoryGrid extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           child: Container(
             padding: const EdgeInsets.all(15),
-            height: isWide ? 86 : (isTall ? 211 : 100),
+            height: isWide ? 90 : (isTall ? 220 : null),
             child: Stack(
-              clipBehavior: Clip.none,
+              clipBehavior: Clip.hardEdge,
               children: [
-                // Glowing radial mesh blobs (reproducing CSS bento-card::before & ::after)
+                // Glowing radial mesh blobs
                 Positioned(
                   top: -50,
                   right: -40,
@@ -212,7 +214,7 @@ class CategoryGrid extends StatelessWidget {
                     ),
                   ),
                 ),
-                // Text layouts
+                // Content layout
                 if (isWide)
                   Row(
                     children: [
@@ -267,38 +269,49 @@ class CategoryGrid extends StatelessWidget {
                       _buildBentoIco(emoji, isWide: true),
                     ],
                   )
-                else ...[
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                else
+                  // Non-wide cards: text top-left, icon bottom-right, no overlap
+                  Stack(
                     children: [
-                      if (label != null)
-                        Text(
-                          label,
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: Colors.white.withOpacity(0.82),
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.8,
-                          ),
+                      // Text area with right padding to avoid icon overlap
+                      Positioned(
+                        top: 0,
+                        left: 0,
+                        right: 40,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (label != null)
+                              Text(
+                                label,
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: Colors.white.withOpacity(0.82),
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0.8,
+                                ),
+                              ),
+                            const SizedBox(height: 4),
+                            Text(
+                              name,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                                height: 1.15,
+                              ),
+                            ),
+                          ],
                         ),
-                      const SizedBox(height: 4),
-                      Text(
-                        name,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                          height: 1.15,
-                        ),
+                      ),
+                      // Icon aligned bottom-right
+                      Positioned(
+                        bottom: 0,
+                        right: 0,
+                        child: _buildBentoIco(emoji),
                       ),
                     ],
                   ),
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: _buildBentoIco(emoji),
-                  ),
-                ],
                 // FAST badge on top right for tall card
                 if (isFast)
                   Positioned(
@@ -337,8 +350,8 @@ class CategoryGrid extends StatelessWidget {
   }
 
   Widget _buildBentoIco(String emoji, {bool isWide = false}) {
-    final size = isWide ? 52.0 : 56.0;
-    final emojiSize = isWide ? 28.0 : 31.0;
+    final size = isWide ? 52.0 : 46.0;
+    final emojiSize = isWide ? 28.0 : 25.0;
 
     return Container(
       width: size,
