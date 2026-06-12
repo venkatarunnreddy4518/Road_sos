@@ -75,11 +75,25 @@ class _EmailAuthScreenState extends State<EmailAuthScreen>
       if (!mounted) return;
       context.read<AuthState>().onSignedIn(user);
       Navigator.of(context).popUntil((r) => r.isFirst);
+    } on ArgumentError catch (e) {
+      setState(() => _error = e.message);
     } catch (e) {
-      setState(() => _error = '$e');
+      final errorMsg = _formatError(e);
+      setState(() => _error = errorMsg);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
+  }
+
+  String _formatError(dynamic error) {
+    final str = '$error';
+    if (str.contains('Invalid email or password')) return 'Invalid email or password';
+    if (str.contains('Email already registered')) return 'This email is already registered. Please sign in instead.';
+    if (str.contains('Connection refused') || str.contains('Failed host lookup')) {
+      return 'Unable to connect. Check your internet connection.';
+    }
+    if (str.contains('SocketException')) return 'Network error. Please try again.';
+    return str;
   }
 
   @override
@@ -134,7 +148,7 @@ class _EmailAuthScreenState extends State<EmailAuthScreen>
                       borderRadius: BorderRadius.circular(14),
                       boxShadow: [
                         BoxShadow(
-                          color: _greenDeep.withOpacity(0.2),
+                          color: _greenDeep.withValues(alpha: 0.2),
                           blurRadius: 16,
                           offset: const Offset(0, 4),
                         ),
@@ -174,7 +188,7 @@ class _EmailAuthScreenState extends State<EmailAuthScreen>
                       border: Border.all(color: _lineSoft),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.04),
+                          color: Colors.black.withValues(alpha: 0.04),
                           blurRadius: 24,
                           offset: const Offset(0, 4),
                         ),
@@ -359,7 +373,7 @@ class _EmailAuthScreenState extends State<EmailAuthScreen>
       validator: validator,
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: TextStyle(fontSize: 14, color: _muted.withOpacity(0.5)),
+        hintStyle: TextStyle(fontSize: 14, color: _muted.withValues(alpha: 0.5)),
         prefixIcon: prefixIcon != null
             ? Icon(prefixIcon, size: 18, color: _muted)
             : null,
@@ -436,7 +450,7 @@ class _GradientButtonState extends State<_GradientButton> {
             borderRadius: BorderRadius.circular(11),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF0B6E47).withOpacity(0.3),
+                color: const Color(0xFF0B6E47).withValues(alpha: 0.3),
                 blurRadius: 14,
                 offset: const Offset(0, 4),
               ),

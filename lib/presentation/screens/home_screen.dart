@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:provider/provider.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
@@ -12,10 +11,9 @@ import '../../data/api/discovery_api.dart';
 import '../../data/models/category.dart';
 import '../../data/models/marketplace_helper.dart';
 import '../../data/repositories/helper_cache.dart';
-import '../state/auth_state.dart';
 import '../widgets/category_grid.dart';
-import 'dart:ui';
 import '../widgets/horizontal_helper_card.dart';
+import '../widgets/location_permission_sheet.dart';
 import '../widgets/map_markers.dart';
 import 'helper_detail_screen.dart';
 import 'helper_results_screen.dart';
@@ -122,10 +120,15 @@ class _DiscoverTabState extends State<_DiscoverTab> {
   bool _showPromo = true;
   double _scrollOffset = 0.0;
 
+  /// True once we know we don't have a real fix (denied/skipped) — the map then
+  /// shows an approximate area and the location pill invites the user to enable.
+  bool _locationDenied = false;
+
   double get _lat => _pos?.latitude ?? 17.4239;
   double get _lng => _pos?.longitude ?? 78.4738;
-  String _addressLine1 = 'Sai Satya Narayan Nivas, Mathrusree Naga...';
-  String _addressLine2 = 'Kukatpally, Hyderabad';
+  bool get _hasRealLocation => _pos != null;
+  String _addressLine1 = 'Locating you…';
+  String _addressLine2 = '';
 
   Future<void> _fetchAddress(double lat, double lng) async {
     try {
@@ -173,7 +176,8 @@ class _DiscoverTabState extends State<_DiscoverTab> {
   @override
   void initState() {
     super.initState();
-    _load();
+    // Resolve location (prompting via the popup on first entry) before loading.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _useMyLocation());
     _scrollController.addListener(() {
       if (mounted) {
         setState(() {
@@ -189,10 +193,51 @@ class _DiscoverTabState extends State<_DiscoverTab> {
     super.dispose();
   }
 
+  void _moveMap() {
+    try {
+      _mapController.move(LatLng(_lat, _lng), 14.5);
+    } catch (_) {}
+  }
+
+  /// Resolves the user's position, showing the beautiful permission popup the
+  /// first time (or whenever permission isn't granted), then loads helpers.
+  Future<void> _useMyLocation() async {
+    await _resolveLocation(prompt: true);
+    await _load();
+  }
+
+  Future<void> _resolveLocation({required bool prompt}) async {
+    // Already granted → fetch silently, no popup.
+    if (await LocationService.hasPermission()) {
+      final res = await LocationService.determinePosition(request: false);
+      if (!mounted) return;
+      if (res.ok) {
+        setState(() {
+          _pos = res.position;
+          _locationDenied = false;
+        });
+        _moveMap();
+      }
+      return;
+    }
+    if (!prompt || !mounted) return;
+    // Not granted → show the friendly explainer popup.
+    final res = await showLocationPermissionSheet(context);
+    if (!mounted) return;
+    if (res != null && res.ok) {
+      setState(() {
+        _pos = res.position;
+        _locationDenied = false;
+      });
+      _moveMap();
+    } else {
+      setState(() => _locationDenied = true);
+    }
+  }
+
   Future<void> _load() async {
     setState(() => _loading = true);
-    _pos = await LocationService.current();
-    _fetchAddress(_lat, _lng);
+    if (_hasRealLocation) _fetchAddress(_lat, _lng);
     try {
       final cats = await _api.categories();
       final near = await _api.nearby(lat: _lat, lng: _lng, limit: 5);
@@ -233,62 +278,98 @@ class _DiscoverTabState extends State<_DiscoverTab> {
       physics: isDesktop ? const NeverScrollableScrollPhysics() : null,
       padding: EdgeInsets.zero,
       children: [
-        // Location Row: Bordered pill style with locator arrow
+        // Location Row: tappable pill that resolves / re-requests location.
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(30),
-              border: Border.all(color: const Color(0xFFE7ECEA), width: 1.5),
-            ),
-            child: Row(
-              children: [
-                const Text('🧭 ', style: TextStyle(fontSize: 14)),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _addressLine1,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w800,
-                          color: Color(0xFF14201B),
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      Text(
-                        _addressLine2,
-                        style: const TextStyle(
-                          fontSize: 10,
-                          color: Color(0xFF7C887F),
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
+          child: GestureDetector(
+            onTap: _useMyLocation,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(30),
+                border: Border.all(
+                  color: _locationDenied
+                      ? const Color(0xFFF5C518)
+                      : const Color(0xFFE7ECEA),
+                  width: 1.5,
                 ),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFE7F6EE),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Text(
-                    'మీది మంట లేక్',
-                    style: TextStyle(
-                      color: Color(0xFF0E7C52),
-                      fontSize: 10,
-                      fontWeight: FontWeight.w800,
+              ),
+              child: Row(
+                children: [
+                  Text(_locationDenied ? '📍 ' : '🧭 ',
+                      style: const TextStyle(fontSize: 14)),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _locationDenied
+                              ? 'Location is off'
+                              : _hasRealLocation
+                                  ? _addressLine1
+                                  : 'Locating you…',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF14201B),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        Text(
+                          _locationDenied
+                              ? 'Tap to enable for accurate help'
+                              : _addressLine2,
+                          style: const TextStyle(
+                            fontSize: 10,
+                            color: Color(0xFF7C887F),
+                            fontWeight: FontWeight.w500,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: _locationDenied
+                          ? const Color(0xFFFFF7E0)
+                          : const Color(0xFFE7F6EE),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          _locationDenied
+                              ? Icons.location_off
+                              : Icons.my_location,
+                          size: 11,
+                          color: _locationDenied
+                              ? const Color(0xFF8A6D00)
+                              : const Color(0xFF0E7C52),
+                        ),
+                        const SizedBox(width: 3),
+                        Text(
+                          _locationDenied ? 'Enable' : 'GPS',
+                          style: TextStyle(
+                            color: _locationDenied
+                                ? const Color(0xFF8A6D00)
+                                : const Color(0xFF0E7C52),
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -638,9 +719,7 @@ class _DiscoverTabState extends State<_DiscoverTab> {
                   child: Column(
                     children: [
                       GestureDetector(
-                        onTap: () {
-                          _mapController.move(LatLng(_lat, _lng), 14.5);
-                        },
+                        onTap: _useMyLocation,
                         child: Container(
                           width: 38,
                           height: 38,
@@ -683,7 +762,7 @@ class _DiscoverTabState extends State<_DiscoverTab> {
         ],
       );
     } else {
-      final double mapHeight = 440.0;
+      const double mapHeight = 440.0;
       final double mapOffset = -_scrollOffset * 0.18;
       final double scrimOpacity = (_scrollOffset / 260.0).clamp(0.0, 0.7);
 
@@ -749,9 +828,7 @@ class _DiscoverTabState extends State<_DiscoverTab> {
                   child: Column(
                     children: [
                       GestureDetector(
-                        onTap: () {
-                          _mapController.move(LatLng(_lat, _lng), 14.5);
-                        },
+                        onTap: _useMyLocation,
                         child: Container(
                           width: 38,
                           height: 38,
@@ -830,7 +907,7 @@ class _DiscoverTabState extends State<_DiscoverTab> {
             child: IgnorePointer(
               child: AnimatedContainer(
                 duration: Duration.zero,
-                color: Colors.black.withOpacity(scrimOpacity),
+                color: Colors.black.withValues(alpha: scrimOpacity),
               ),
             ),
           ),
@@ -840,7 +917,7 @@ class _DiscoverTabState extends State<_DiscoverTab> {
               return true;
             },
             child: ListView(
-              padding: EdgeInsets.only(top: mapHeight - 32),
+              padding: const EdgeInsets.only(top: mapHeight - 32),
               children: [
                 Container(
                   decoration: const BoxDecoration(
@@ -959,7 +1036,7 @@ class _PulsingGreenDotState extends State<_PulsingGreenDot> with SingleTickerPro
               height: 8 + (10 * _controller.value),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFF18B26B).withOpacity(0.5 * (1.0 - _controller.value)),
+                color: const Color(0xFF18B26B).withValues(alpha: 0.5 * (1.0 - _controller.value)),
               ),
             ),
             Container(

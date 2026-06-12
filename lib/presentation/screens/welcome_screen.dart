@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/i18n/l10n_ext.dart';
 import '../../data/api/google_auth_service.dart';
 import '../state/auth_state.dart';
 import 'auth/email_auth_screen.dart';
@@ -216,9 +217,9 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                                 const SizedBox(height: 26),
 
                                 // ── Title ──
-                                const Text(
-                                  'Sign in',
-                                  style: TextStyle(
+                                Text(
+                                  context.tr('sign_in'),
+                                  style: const TextStyle(
                                     fontSize: 32,
                                     fontWeight: FontWeight.w600,
                                     color: _ink,
@@ -229,10 +230,10 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                                 const SizedBox(height: 10),
 
                                 // ── Subtitle ──
-                                const Text(
-                                  'Help is one tap away.\nEnter your details to continue.',
+                                Text(
+                                  context.tr('sign_in_subtitle'),
                                   textAlign: TextAlign.center,
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                     fontSize: 16,
                                     color: _muted,
                                     fontWeight: FontWeight.w400,
@@ -266,78 +267,84 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                                 const SizedBox(height: 26),
 
                                 // ── Divider "or" ──
-                                Row(
+                                const Row(
                                   children: [
-                                    const Expanded(
+                                    Expanded(
                                         child: Divider(color: _lineSoft)),
                                     Padding(
-                                      padding: const EdgeInsets.symmetric(
+                                      padding: EdgeInsets.symmetric(
                                           horizontal: 14),
                                       child: Text(
                                         'or',
                                         style: TextStyle(
                                           fontSize: 13,
                                           fontWeight: FontWeight.w500,
-                                          color: const Color(0xFFA1A1A8),
+                                          color: Color(0xFFA1A1A8),
                                         ),
                                       ),
                                     ),
-                                    const Expanded(
+                                    Expanded(
                                         child: Divider(color: _lineSoft)),
                                   ],
                                 ),
                                 const SizedBox(height: 26),
 
                                 // ── Google button ──
-                                _GhostButton(
-                                  label: 'Continue with Google',
-                                  icon: Icons.g_mobiledata_rounded,
-                                  onTap: _busy ? null : _google,
+                                Builder(
+                                  builder: (context) => _GhostButton(
+                                    label: context.tr('continue_google'),
+                                    icon: Icons.g_mobiledata_rounded,
+                                    onTap: _busy ? null : _google,
+                                  ),
                                 ),
                                 const SizedBox(height: 11),
 
                                 // ── Apple button ──
-                                _GhostButton(
-                                  label: 'Continue with Apple',
-                                  icon: Icons.apple_rounded,
-                                  onTap: () {
-                                    // TODO: Apple Sign-In
-                                  },
+                                Builder(
+                                  builder: (context) => _GhostButton(
+                                    label: context.tr('continue_apple'),
+                                    icon: Icons.apple_rounded,
+                                    onTap: () {
+                                      // TODO: Apple Sign-In
+                                    },
+                                  ),
                                 ),
                                 const SizedBox(height: 22),
 
                                 // ── Create account ──
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    const Text(
-                                      'New to Roadside SOS? ',
-                                      style: TextStyle(
-                                        fontSize: 14.5,
-                                        color: _muted,
-                                      ),
-                                    ),
-                                    GestureDetector(
-                                      onTap: () {
-                                        final email = _emailCtrl.text.trim();
-                                        Navigator.of(context).push(
-                                          MaterialPageRoute(
-                                            builder: (_) => EmailAuthScreen(
-                                              initialEmail: email.isNotEmpty ? email : null,
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                      child: const Text(
-                                        'Create account',
-                                        style: TextStyle(
+                                Builder(
+                                  builder: (context) => Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        '${context.tr('new_to_roadside')} ',
+                                        style: const TextStyle(
                                           fontSize: 14.5,
-                                          fontWeight: FontWeight.w600,
-                                          color: _green,
+                                          color: _muted,
                                         ),
                                       ),
-                                    ),
-                                  ],
+                                      GestureDetector(
+                                        onTap: () {
+                                          final email = _emailCtrl.text.trim();
+                                          Navigator.of(context).push(
+                                            MaterialPageRoute(
+                                              builder: (_) => EmailAuthScreen(
+                                                initialEmail: email.isNotEmpty ? email : null,
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                        child: Text(
+                                          context.tr('create_account'),
+                                          style: const TextStyle(
+                                            fontSize: 14.5,
+                                            fontWeight: FontWeight.w600,
+                                            color: _green,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ],
                             ),
@@ -351,27 +358,29 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                 // ── Footer ──
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-                  child: Column(
-                    children: [
-                      Text(
-                        'Protected by one-time verification.',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: const Color(0xFF9B9BA1),
+                  child: Builder(
+                    builder: (context) => Column(
+                      children: [
+                        Text(
+                          context.tr('protected_otp'),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF9B9BA1),
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          _footerLink('Terms of Service'),
-                          _dot(),
-                          _footerLink('Privacy Policy'),
-                          _dot(),
-                          _footerLink('Help'),
-                        ],
-                      ),
-                    ],
+                        const SizedBox(height: 4),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            _footerLink(context.tr('terms_of_service')),
+                            _dot(),
+                            _footerLink(context.tr('privacy_policy')),
+                            _dot(),
+                            _footerLink(context.tr('help')),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -384,81 +393,85 @@ class _WelcomeScreenState extends State<WelcomeScreen>
 
   // ── Phone field ──
   Widget _buildPhoneField() {
-    return Column(
-      key: const ValueKey('phone'),
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            // Country code button
-            Container(
-              height: 52,
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              decoration: BoxDecoration(
-                color: _field,
-                border: Border.all(color: _line),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text(
-                    '+91',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: _ink,
+    return Builder(
+      builder: (context) => Column(
+        key: const ValueKey('phone'),
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              // Country code button
+              Container(
+                height: 52,
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                decoration: BoxDecoration(
+                  color: _field,
+                  border: Border.all(color: _line),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      '+91',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: _ink,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 5),
-                  Icon(Icons.keyboard_arrow_down_rounded,
-                      size: 16, color: _ink.withValues(alpha: 0.5)),
-                ],
+                    const SizedBox(width: 5),
+                    Icon(Icons.keyboard_arrow_down_rounded,
+                        size: 16, color: _ink.withValues(alpha: 0.5)),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(width: 8),
-            // Phone input
-            Expanded(
-              child: _InputField(
-                controller: _phoneCtrl,
-                hint: 'Phone number',
-                keyboardType: TextInputType.phone,
+              const SizedBox(width: 8),
+              // Phone input
+              Expanded(
+                child: _InputField(
+                  controller: _phoneCtrl,
+                  hint: context.tr('phone'),
+                  keyboardType: TextInputType.phone,
+                ),
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 10),
-        Padding(
-          padding: const EdgeInsets.only(left: 2),
-          child: Text(
-            "We'll text a one-time code to verify it's you.",
-            style: TextStyle(fontSize: 13, color: _muted),
+            ],
           ),
-        ),
-      ],
+          const SizedBox(height: 10),
+          Padding(
+            padding: const EdgeInsets.only(left: 2),
+            child: Text(
+              context.tr('verify_code_hint'),
+              style: const TextStyle(fontSize: 13, color: _muted),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   // ── Email field ──
   Widget _buildEmailField() {
-    return Column(
-      key: const ValueKey('email'),
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _InputField(
-          controller: _emailCtrl,
-          hint: 'Email address',
-          keyboardType: TextInputType.emailAddress,
-        ),
-        const SizedBox(height: 10),
-        Padding(
-          padding: const EdgeInsets.only(left: 2),
-          child: Text(
-            "We'll send a secure sign-in link to your inbox.",
-            style: TextStyle(fontSize: 13, color: _muted),
+    return Builder(
+      builder: (context) => Column(
+        key: const ValueKey('email'),
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _InputField(
+            controller: _emailCtrl,
+            hint: context.tr('email'),
+            keyboardType: TextInputType.emailAddress,
           ),
-        ),
-      ],
+          const SizedBox(height: 10),
+          Padding(
+            padding: const EdgeInsets.only(left: 2),
+            child: Text(
+              context.tr('verify_email_hint'),
+              style: const TextStyle(fontSize: 13, color: _muted),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -507,15 +520,15 @@ class _WelcomeScreenState extends State<WelcomeScreen>
   Widget _footerLink(String text) {
     return Text(
       text,
-      style: TextStyle(fontSize: 12, color: _muted),
+      style: const TextStyle(fontSize: 12, color: _muted),
     );
   }
 
   Widget _dot() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 7),
+    return const Padding(
+      padding: EdgeInsets.symmetric(horizontal: 7),
       child: Text('·',
-          style: TextStyle(fontSize: 12, color: const Color(0xFF9B9BA1))),
+          style: TextStyle(fontSize: 12, color: Color(0xFF9B9BA1))),
     );
   }
 }
@@ -689,18 +702,20 @@ class _SegmentedControl extends StatelessWidget {
                 child: GestureDetector(
                   onTap: () => onChanged(true),
                   behavior: HitTestBehavior.opaque,
-                  child: Center(
-                    child: AnimatedDefaultTextStyle(
-                      duration: const Duration(milliseconds: 250),
-                      style: TextStyle(
-                        fontSize: 14.5,
-                        fontWeight: FontWeight.w600,
-                        color: isPhone
-                            ? const Color(0xFF34343A)
-                            : const Color(0xFF6E6E73),
-                        fontFamily: 'Plus Jakarta Sans',
+                  child: Builder(
+                    builder: (context) => Center(
+                      child: AnimatedDefaultTextStyle(
+                        duration: const Duration(milliseconds: 250),
+                        style: TextStyle(
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w600,
+                          color: isPhone
+                              ? const Color(0xFF34343A)
+                              : const Color(0xFF6E6E73),
+                          fontFamily: 'Plus Jakarta Sans',
+                        ),
+                        child: Text(context.tr('phone')),
                       ),
-                      child: const Text('Phone'),
                     ),
                   ),
                 ),
@@ -709,18 +724,20 @@ class _SegmentedControl extends StatelessWidget {
                 child: GestureDetector(
                   onTap: () => onChanged(false),
                   behavior: HitTestBehavior.opaque,
-                  child: Center(
-                    child: AnimatedDefaultTextStyle(
-                      duration: const Duration(milliseconds: 250),
-                      style: TextStyle(
-                        fontSize: 14.5,
-                        fontWeight: FontWeight.w600,
-                        color: !isPhone
-                            ? const Color(0xFF34343A)
-                            : const Color(0xFF6E6E73),
-                        fontFamily: 'Plus Jakarta Sans',
+                  child: Builder(
+                    builder: (context) => Center(
+                      child: AnimatedDefaultTextStyle(
+                        duration: const Duration(milliseconds: 250),
+                        style: TextStyle(
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w600,
+                          color: !isPhone
+                              ? const Color(0xFF34343A)
+                              : const Color(0xFF6E6E73),
+                          fontFamily: 'Plus Jakarta Sans',
+                        ),
+                        child: Text(context.tr('email_tab')),
                       ),
-                      child: const Text('Email'),
                     ),
                   ),
                 ),
@@ -838,13 +855,15 @@ class _GradientButtonState extends State<_GradientButton> {
                   ),
                 )
               else ...[
-                const Text(
-                  'Continue',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: -0.1,
+                Builder(
+                  builder: (context) => Text(
+                    context.tr('continue'),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: -0.1,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 8),

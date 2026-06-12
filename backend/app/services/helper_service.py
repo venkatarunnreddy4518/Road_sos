@@ -1,4 +1,5 @@
 """Helper discovery, search, sync feed, and provider upsert."""
+import math
 import uuid
 from datetime import datetime, time, timezone
 
@@ -10,6 +11,30 @@ from app.models.enums import HelperType
 from app.models.helper import CategoryHelperType, HelperProfile, ServiceCategory
 from app.models.user import User
 from app.services.geo import bounding_box, haversine_km, is_far
+
+# Distance bands (km) used when scattering demo helpers around the user so the
+# range selector / color bands have data at every radius.
+_SPREAD_RADII_KM = [2.5, 4.0, 6.5, 9.0, 11.5, 14.0]
+
+
+def _offset_latlng(lat: float, lng: float, dist_km: float, bearing_deg: float) -> tuple[float, float]:
+    """Point [dist_km] away from (lat,lng) along [bearing_deg] (flat-earth approx)."""
+    dlat = dist_km / 111.0 * math.cos(math.radians(bearing_deg))
+    dlng = dist_km / (111.0 * max(math.cos(math.radians(lat)), 0.01)) * math.sin(math.radians(bearing_deg))
+    return lat + dlat, lng + dlng
+
+
+def spread_helpers_around(helpers: list[HelperProfile], lat: float, lng: float) -> None:
+    """Reposition helpers deterministically across distance bands around (lat,lng).
+
+    Cycles through [_SPREAD_RADII_KM] and fans them out by the golden angle so the
+    same input always yields the same stable, well-distributed layout.
+    """
+    for i, h in enumerate(helpers):
+        dist = _SPREAD_RADII_KM[i % len(_SPREAD_RADII_KM)]
+        bearing = (i * 137.5) % 360.0  # golden-angle spacing avoids clustering
+        h.latitude, h.longitude = _offset_latlng(lat, lng, dist, bearing)
+        h.address = f"{h.name}, ~{dist:.0f} km away"
 
 
 def compute_open_now(opening_hours: dict | None) -> bool | None:
@@ -57,8 +82,10 @@ def _with_distance(rows: list[HelperProfile], lat: float, lng: float) -> list[di
 
 
 def _ensure_helpers_nearby(db: Session, lat: float, lng: float) -> None:
+    """Scatter curated helpers across distance bands around the user when the area
+    is empty, so the range selector has shops at every radius (within 15 km)."""
     from app.models.enums import DataSource
-    min_lat, max_lat, min_lng, max_lng = bounding_box(lat, lng, 5.0)
+    min_lat, max_lat, min_lng, max_lng = bounding_box(lat, lng, 15.0)
     exists_nearby = db.scalar(
         select(HelperProfile.id)
         .where(
@@ -69,16 +96,11 @@ def _ensure_helpers_nearby(db: Session, lat: float, lng: float) -> None:
         .limit(1)
     )
     if not exists_nearby:
-        curated_helpers = db.scalars(
-            select(HelperProfile).where(HelperProfile.data_source == DataSource.curated)
-        ).all()
+        curated_helpers = list(
+            db.scalars(select(HelperProfile).where(HelperProfile.data_source == DataSource.curated))
+        )
         if curated_helpers:
-            import random
-            rng = random.Random(42)
-            for h in curated_helpers:
-                h.latitude = lat + rng.uniform(-0.03, 0.03)
-                h.longitude = lng + rng.uniform(-0.03, 0.03)
-                h.address = f"{h.name}, Near User Location"
+            spread_helpers_around(curated_helpers, lat, lng)
             db.commit()
 
 

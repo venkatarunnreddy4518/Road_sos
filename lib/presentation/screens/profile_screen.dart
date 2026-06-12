@@ -96,7 +96,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               height: 56,
                               child: CustomPaint(
                                 painter: _AvatarRingPainter(progress: 0.75),
-                                child: Center(
+                                child: const Center(
                                   child: Icon(
                                     Icons.person_outline_rounded,
                                     size: 26,
@@ -160,7 +160,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         child: Row(
                           children: [
                             // Star
-                            SizedBox(
+                            const SizedBox(
                               width: 34,
                               child: Center(
                                 child: Icon(Icons.star_rounded,
