@@ -187,8 +187,8 @@ class CategoryGrid extends StatelessWidget {
                         shape: BoxShape.circle,
                         gradient: RadialGradient(
                           colors: [
-                            Colors.white.withOpacity(0.40),
-                            Colors.white.withOpacity(0.0),
+                            Colors.white.withValues(alpha: 0.40),
+                            Colors.white.withValues(alpha: 0.0),
                           ],
                         ),
                       ),
@@ -206,8 +206,8 @@ class CategoryGrid extends StatelessWidget {
                         shape: BoxShape.circle,
                         gradient: RadialGradient(
                           colors: [
-                            Colors.black.withOpacity(0.12),
-                            Colors.black.withOpacity(0.0),
+                            Colors.black.withValues(alpha: 0.12),
+                            Colors.black.withValues(alpha: 0.0),
                           ],
                         ),
                       ),
@@ -227,8 +227,8 @@ class CategoryGrid extends StatelessWidget {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.25),
-                                  border: Border.all(color: Colors.white.withOpacity(0.35)),
+                                  color: Colors.white.withValues(alpha: 0.25),
+                                  border: Border.all(color: Colors.white.withValues(alpha: 0.35)),
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: Text(
@@ -257,7 +257,7 @@ class CategoryGrid extends StatelessWidget {
                                 label,
                                 style: TextStyle(
                                   fontSize: 10,
-                                  color: Colors.white.withOpacity(0.85),
+                                  color: Colors.white.withValues(alpha: 0.85),
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
@@ -286,7 +286,7 @@ class CategoryGrid extends StatelessWidget {
                                 label,
                                 style: TextStyle(
                                   fontSize: 10,
-                                  color: Colors.white.withOpacity(0.82),
+                                  color: Colors.white.withValues(alpha: 0.82),
                                   fontWeight: FontWeight.w800,
                                   letterSpacing: 0.8,
                                 ),
@@ -358,13 +358,13 @@ class CategoryGrid extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(17),
-        border: Border.all(color: Colors.white.withOpacity(0.5), width: 1.5),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.5), width: 1.5),
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Colors.white.withOpacity(0.95),
-            Colors.white.withOpacity(0.55),
+            Colors.white.withValues(alpha: 0.95),
+            Colors.white.withValues(alpha: 0.55),
           ],
         ),
         boxShadow: const [

@@ -1,10 +1,8 @@
 // lib/presentation/widgets/marketplace_helper_card.dart
 import 'package:flutter/material.dart';
 
-import '../../core/i18n/l10n_ext.dart';
 import '../../data/models/marketplace_helper.dart';
 import '../utils/helper_actions.dart';
-import 'rating_stars.dart';
 
 class MarketplaceHelperCard extends StatelessWidget {
   final MarketplaceHelper helper;

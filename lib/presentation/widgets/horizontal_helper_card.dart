@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 
 import '../../data/models/marketplace_helper.dart';
-import '../utils/helper_actions.dart';
 
 class HorizontalHelperCard extends StatelessWidget {
   final MarketplaceHelper helper;
@@ -99,13 +98,13 @@ class HorizontalHelperCard extends StatelessWidget {
                       height: 34,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white.withOpacity(0.5), width: 1),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.5), width: 1),
                         gradient: LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                           colors: [
-                            Colors.white.withOpacity(0.85),
-                            Colors.white.withOpacity(0.45),
+                            Colors.white.withValues(alpha: 0.85),
+                            Colors.white.withValues(alpha: 0.45),
                           ],
                         ),
                       ),
