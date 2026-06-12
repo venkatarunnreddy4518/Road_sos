@@ -6,6 +6,7 @@ import '../../../core/i18n/l10n_ext.dart';
 import '../../../core/utils/location_service.dart';
 import '../../../data/api/request_api.dart';
 import '../../../data/models/service_request.dart';
+import '../../utils/helper_actions.dart';
 import '../../widgets/status_timeline.dart';
 
 /// Helper's active job: advance status and stream location while active (Story 3).
@@ -100,9 +101,61 @@ class _ProviderJobScreenState extends State<ProviderJobScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(r.note ?? 'Roadside request', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+                  // Who needs help + how to reach them.
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE7F6EE),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Row(
+                      children: [
+                        const CircleAvatar(
+                          radius: 22,
+                          backgroundColor: Colors.white,
+                          child: Icon(Icons.person, color: Color(0xFF0E7C52)),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                r.seekerName?.isNotEmpty == true ? r.seekerName! : 'Seeker',
+                                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                              ),
+                              const SizedBox(height: 2),
+                              const Text('needs your help',
+                                  style: TextStyle(fontSize: 12.5, color: Color(0xFF5B6B62))),
+                            ],
+                          ),
+                        ),
+                        IconButton.filled(
+                          onPressed: () => HelperActions.directions(
+                              r.pickupLat, r.pickupLng,
+                              label: r.seekerName ?? 'Seeker'),
+                          style: IconButton.styleFrom(
+                            backgroundColor: const Color(0xFF0E7C52),
+                            foregroundColor: Colors.white,
+                          ),
+                          icon: const Icon(Icons.directions),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  if (r.note?.isNotEmpty == true)
+                    Text(r.note!, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
                   const SizedBox(height: 20),
                   StatusTimeline(current: r.status),
+                  const SizedBox(height: 16),
+                  OutlinedButton.icon(
+                    onPressed: () => HelperActions.directions(
+                        r.pickupLat, r.pickupLng,
+                        label: r.seekerName ?? 'Seeker'),
+                    icon: const Icon(Icons.navigation_outlined),
+                    label: const Text('Directions to seeker'),
+                  ),
                 ],
               ),
             ),

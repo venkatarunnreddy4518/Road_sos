@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+
 import 'package:provider/provider.dart';
 
 import '../../core/i18n/l10n_ext.dart';
@@ -31,11 +32,13 @@ class HelperResultsScreen extends StatefulWidget {
 
 class _HelperResultsScreenState extends State<HelperResultsScreen> {
   final _api = DiscoveryApi();
+  final _requests = RequestApi();
   final _cache = HelperCache();
   final MapController _mapController = MapController();
   List<MarketplaceHelper> _helpers = [];
   bool _loading = true;
   bool _offline = false;
+  bool _broadcasting = false;
   String? _error;
 
   String _activeFilter = 'Nearest';
@@ -107,6 +110,38 @@ class _HelperResultsScreenState extends State<HelperResultsScreen> {
     final types = widget.category.helperTypes.toSet();
     final filtered = all.where((h) => types.contains(h.helperType)).toList();
     return (filtered.isEmpty ? all : filtered).take(10).toList();
+  }
+
+  /// Broadcasts an open help request from the seeker's real location to ANY
+  /// nearby active helper (no specific shop). Powers the "I'm stuck, whoever is
+  /// passing can help" flow — e.g. out of fuel with no pump nearby.
+  Future<void> _broadcastRequest() async {
+    final auth = context.read<AuthState>();
+    if (!auth.isAuthenticated) {
+      await Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const EmailAuthScreen()),
+      );
+      if (!mounted || !auth.isAuthenticated) return;
+    }
+    setState(() => _broadcasting = true);
+    try {
+      final req = await _requests.create(
+        categoryId: widget.category.id,
+        lat: widget.lat,
+        lng: widget.lng,
+        note: 'Need help: ${widget.category.name}',
+      );
+      if (!mounted) return;
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => RequestTrackingScreen(requestId: req.id)),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+      }
+    } finally {
+      if (mounted) setState(() => _broadcasting = false);
+    }
   }
 
   List<MarketplaceHelper> get _filteredHelpers {
@@ -476,6 +511,67 @@ class _HelperResultsScreenState extends State<HelperResultsScreen> {
                       decoration: BoxDecoration(
                         color: const Color(0xFFE7ECEA),
                         borderRadius: BorderRadius.circular(2.5),
+                      ),
+                    ),
+
+                    // Broadcast SOS — alert ANY nearby active helper.
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                      child: GestureDetector(
+                        onTap: _broadcasting ? null : _broadcastRequest,
+                        child: Container(
+                          height: 52,
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFFF5A623), Color(0xFFE8590C)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(14),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFFE8590C).withValues(alpha: 0.32),
+                                blurRadius: 16,
+                                offset: const Offset(0, 6),
+                              ),
+                            ],
+                          ),
+                          alignment: Alignment.center,
+                          child: _broadcasting
+                              ? const SizedBox(
+                                  width: 22,
+                                  height: 22,
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 2.4, color: Colors.white),
+                                )
+                              : const Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text('🆘', style: TextStyle(fontSize: 18)),
+                                    SizedBox(width: 9),
+                                    Text(
+                                      'Request help now',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w900,
+                                        letterSpacing: 0.2,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                        ),
+                      ),
+                    ),
+                    const Padding(
+                      padding: EdgeInsets.only(bottom: 6),
+                      child: Text(
+                        'Alerts nearby helpers on your route',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Color(0xFF7C887F),
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
 
