@@ -139,7 +139,7 @@ class _AiSettingsScreenState extends State<AiSettingsScreen> {
                 ),
                 subtitle: const Text('Ask the AI assistant for immediate vehicle issue diagnosis.'),
                 value: _aiEnabled,
-                activeColor: const Color(0xFF0E7C52),
+                activeThumbColor: const Color(0xFF0E7C52),
                 onChanged: (val) => setState(() => _aiEnabled = val),
               ),
             ),
@@ -160,7 +160,7 @@ class _AiSettingsScreenState extends State<AiSettingsScreen> {
 
               // Dropdown
               DropdownButtonFormField<AiProvider>(
-                value: _provider,
+                initialValue: _provider,
                 decoration: InputDecoration(
                   labelText: context.tr('ai_provider'),
                   border: OutlineInputBorder(

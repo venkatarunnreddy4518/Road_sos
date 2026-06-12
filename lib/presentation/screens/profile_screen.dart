@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:provider/provider.dart';
 
 import '../../core/i18n/l10n_ext.dart';
+import '../../core/i18n/strings.dart';
 
 import '../state/auth_state.dart';
 import 'auth/email_auth_screen.dart';
@@ -48,11 +49,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
           padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 90),
           children: [
             // ── Top bar ──
-            const Padding(
-              padding: EdgeInsets.only(top: 8, bottom: 14, left: 4),
+            Padding(
+              padding: const EdgeInsets.only(top: 8, bottom: 14, left: 4),
               child: Text(
-                'Profile',
-                style: TextStyle(
+                context.tr('profile'),
+                style: const TextStyle(
                   fontSize: 27,
                   fontWeight: FontWeight.w800,
                   color: _text,
@@ -171,18 +172,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             // Rating text
                             Expanded(
                               child: RichText(
-                                text: const TextSpan(
-                                  style: TextStyle(
+                                text: TextSpan(
+                                  style: const TextStyle(
                                     fontSize: 15.5,
                                     fontWeight: FontWeight.w800,
                                     color: _text,
                                     fontFamily: 'Plus Jakarta Sans',
                                   ),
                                   children: [
-                                    TextSpan(text: '4.80 '),
+                                    const TextSpan(text: '4.80 '),
                                     TextSpan(
-                                      text: 'My Rating',
-                                      style: TextStyle(
+                                      text: context.tr('my_rating'),
+                                      style: const TextStyle(
                                           fontWeight: FontWeight.w800),
                                     ),
                                   ],
@@ -219,53 +220,54 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   children: [
                     _menuRow(
                       icon: Icons.help_outline_rounded,
-                      title: 'Help & support',
+                      title: context.tr('help_support'),
                       isFirst: true,
                       onTap: () {},
                     ),
                     _menuRow(
                       icon: Icons.directions_car_outlined,
-                      title: 'Saved vehicles',
-                      subtitle: '2 vehicles',
+                      title: context.tr('saved_vehicles'),
+                      subtitle: '2 ${context.tr('vehicles_suffix')}',
                       onTap: () {},
                     ),
                     _menuRow(
                       icon: Icons.account_balance_wallet_outlined,
-                      title: 'Payments',
+                      title: context.tr('payments'),
                       onTap: () {},
                     ),
                     _menuRow(
                       icon: Icons.history_rounded,
-                      title: 'My SOS requests',
+                      title: context.tr('my_sos'),
                       onTap: () {},
                     ),
                     _menuRow(
                       icon: Icons.shield_outlined,
-                      title: 'Safety',
+                      title: context.tr('safety'),
                       onTap: () {},
                     ),
                     _menuRow(
                       icon: Icons.phone_outlined,
-                      title: 'Emergency contacts',
-                      subtitle: '2 added',
+                      title: context.tr('emergency_contacts'),
+                      subtitle: '2 ${context.tr('added_suffix')}',
                       onTap: () {},
                     ),
                     _menuRow(
                       icon: Icons.card_giftcard_rounded,
-                      title: 'Refer and earn',
-                      subtitle: 'Get ₹50',
+                      title: context.tr('refer_earn'),
+                      subtitle: context.tr('get_50'),
                       subtitleGreen: true,
                       onTap: () {},
                     ),
                     _menuRow(
                       icon: Icons.emoji_events_outlined,
-                      title: 'My rewards',
+                      title: context.tr('my_rewards'),
                       onTap: () {},
                     ),
                     _menuRow(
                       icon: Icons.language_rounded,
-                      title: 'App language',
-                      pill: 'English',
+                      title: context.tr('app_language'),
+                      pill: AppStrings.languageNames[
+                          context.watch<LocaleController>().code],
                       isLast: true,
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(
@@ -296,7 +298,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: _menuRow(
                   icon: Icons.handyman_outlined,
                   title: context.tr('provider_mode'),
-                  subtitle: 'Receive roadside requests',
+                  subtitle: context.tr('provider_sub'),
                   isFirst: true,
                   isLast: true,
                   onTap: () => Navigator.of(context).push(
@@ -327,9 +329,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Navigator.of(context).popUntil((r) => r.isFirst);
                   }
                 },
-                child: const Text(
-                  'Sign out',
-                  style: TextStyle(
+                child: Text(
+                  context.tr('sign_out'),
+                  style: const TextStyle(
                     fontSize: 14.5,
                     fontWeight: FontWeight.w800,
                   ),
@@ -579,9 +581,9 @@ class _GuestPrompt extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 20),
-                const Text(
-                  'Sign in to continue',
-                  style: TextStyle(
+                Text(
+                  context.tr('sign_in_continue'),
+                  style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
                     color: Color(0xFF14201B),

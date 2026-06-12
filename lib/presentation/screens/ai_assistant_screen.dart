@@ -1,5 +1,4 @@
 // lib/presentation/screens/ai_assistant_screen.dart
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';

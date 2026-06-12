@@ -8,6 +8,7 @@ import '../../../core/utils/location_service.dart';
 import '../../../data/api/profile_api.dart';
 import '../../../data/api/request_api.dart';
 import '../../state/auth_state.dart';
+import '../../utils/helper_actions.dart';
 import 'provider_job_screen.dart';
 
 /// Provider mode: register as a helper (if needed), then see + accept open requests.
@@ -105,20 +106,81 @@ class _ProviderInboxScreenState extends State<ProviderInboxScreen> {
                   : RefreshIndicator(
                       onRefresh: _refresh,
                       child: ListView(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
                         children: _open.map((r) {
                           final dist = (r['distance_km'] as num?)?.toDouble();
+                          final seeker = (r['seeker_name'] as String?)?.trim();
+                          final note = (r['note'] as String?)?.trim();
+                          final lat = (r['pickup_lat'] as num?)?.toDouble();
+                          final lng = (r['pickup_lng'] as num?)?.toDouble();
                           return Card(
-                            child: ListTile(
-                              leading: Icon(Icons.notifications_active, color: Theme.of(context).colorScheme.primary),
-                              title: Text(r['note'] ?? 'Roadside request'),
-                              subtitle: Text(dist != null ? '${dist.toStringAsFixed(1)} km away' : ''),
-                              trailing: FilledButton(
-                                onPressed: () => _accept(r['id']),
-                                style: FilledButton.styleFrom(
-                                  backgroundColor: Theme.of(context).colorScheme.primary,
-                                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                                ),
-                                child: Text(context.tr('accept')),
+                            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            child: Padding(
+                              padding: const EdgeInsets.all(14),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      const CircleAvatar(
+                                        radius: 18,
+                                        backgroundColor: Color(0xFFE7F6EE),
+                                        child: Icon(Icons.person, color: Color(0xFF0E7C52)),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              seeker?.isNotEmpty == true ? seeker! : 'Someone nearby',
+                                              style: const TextStyle(
+                                                  fontWeight: FontWeight.w800, fontSize: 15),
+                                            ),
+                                            if (dist != null)
+                                              Text(
+                                                '${dist.toStringAsFixed(1)} km away',
+                                                style: const TextStyle(
+                                                    color: Color(0xFF7C887F),
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.w600),
+                                              ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  if (note?.isNotEmpty == true) ...[
+                                    const SizedBox(height: 10),
+                                    Text(note!, style: const TextStyle(fontSize: 13.5)),
+                                  ],
+                                  const SizedBox(height: 12),
+                                  Row(
+                                    children: [
+                                      if (lat != null && lng != null)
+                                        Expanded(
+                                          child: OutlinedButton.icon(
+                                            onPressed: () => HelperActions.directions(
+                                                lat, lng,
+                                                label: seeker ?? 'Seeker'),
+                                            icon: const Icon(Icons.directions, size: 18),
+                                            label: const Text('Navigate'),
+                                          ),
+                                        ),
+                                      if (lat != null && lng != null) const SizedBox(width: 10),
+                                      Expanded(
+                                        child: FilledButton(
+                                          onPressed: () => _accept(r['id']),
+                                          style: FilledButton.styleFrom(
+                                            backgroundColor: Theme.of(context).colorScheme.primary,
+                                            foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                                          ),
+                                          child: Text(context.tr('accept')),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
                               ),
                             ),
                           );
