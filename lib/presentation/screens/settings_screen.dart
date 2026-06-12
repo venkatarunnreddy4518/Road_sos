@@ -6,6 +6,7 @@ import '../../core/i18n/strings.dart';
 import '../../data/api/profile_api.dart';
 import '../state/auth_state.dart';
 import '../state/theme_state.dart';
+import 'ai_settings_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -72,6 +73,17 @@ class SettingsScreen extends StatelessWidget {
             title: Text(context.tr('theme_dark')),
             onChanged: (v) {
               if (v != null) themeState.setThemeMode(v);
+            },
+          ),
+          const Divider(),
+          ListTile(
+            leading: const Icon(Icons.psychology, color: Color(0xFF0E7C52)),
+            title: Text(context.tr('ai_settings')),
+            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const AiSettingsScreen()),
+              );
             },
           ),
           if (auth.isAuthenticated) ...[

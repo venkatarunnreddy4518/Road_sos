@@ -89,6 +89,13 @@ class AppStrings {
     'create_account': {'en': 'Create account', 'hi': 'खाता बनाएं', 'te': 'ఖాతా సృష్టించండి', 'ta': 'खाता बनाएँ'},
     'verify_code_hint': {'en': "We'll text a one-time code to verify it's you.", 'hi': "हम आपको एक बार की कोड भेजेंगे।", 'te': "మేము ఒక సారి కోడ్ మీకు పంపుతాము.", 'ta': "நாம் உங்களை சரிபார்க்க ஒரு முறை குறியீட்டை அனுப்புவோம்."},
     'verify_email_hint': {'en': "We'll send a secure sign-in link to your inbox.", 'hi': "हम आपके इनबॉक्स में एक सुरक्षित साइन-इन लिंक भेजेंगे।", 'te': "మేము మీ ఇన్‌బాక్స్‌కు సురక్షిత సైన్-ఇన్ లింక్ పంపుతాము.", 'ta': "நாம் உங்கள் இனबாக்சுக்கு ஒரு பாதுகாப்பான உள்நுழைப்பு இணைப்பை அனுப்புவோம்."},
+    'ai_assistant': {'en': 'AI Assistant', 'hi': 'एआई सहायक', 'te': 'AI అసిస్టెంట్', 'ta': 'AI உதவி'},
+    'ai_settings': {'en': 'AI Settings', 'hi': 'एआई सेटिंग्स', 'te': 'AI సెట్టింగ్‌లు', 'ta': 'AI அமைப்புகள்'},
+    'ai_enabled': {'en': 'Enable AI Assistant', 'hi': 'एआई सहायक सक्षम करें', 'te': 'AI అసిస్టెంట్‌ని ప్రారంభించు', 'ta': 'AI உதவியை இயக்கு'},
+    'ai_provider': {'en': 'AI Provider', 'hi': 'एआई प्रदाता', 'te': 'AI ప్రొవైడర్', 'ta': 'AI வழங்குநர்'},
+    'ai_model': {'en': 'Model Name', 'hi': 'मॉडल का नाम', 'te': 'మోడల్ పేరు', 'ta': 'மாதிரி பெயர்'},
+    'ai_endpoint': {'en': 'Endpoint URL', 'hi': 'एंडपॉइंट URL', 'te': 'ఎండ్ పాయింట్ URL', 'ta': 'எண்ட்பாயிண்ட் URL'},
+    'ai_api_key': {'en': 'API Key', 'hi': 'एपीआई कुंजी', 'te': 'API కీ', 'ta': 'API விசை'},
   };
 
   static String of(String code, String key) {

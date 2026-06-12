@@ -1,4 +1,5 @@
 """End-to-end seeker+helper request lifecycle, including live location and review."""
+import uuid
 from sqlalchemy import select
 
 from app.core.config import settings
@@ -89,7 +90,7 @@ def test_full_lifecycle(client, seed_categories, db):
     dup = client.post("/api/v1/reviews", headers=seeker, json={"request_id": req_id, "rating": 4})
     assert dup.status_code == 409
 
-    helper = db.scalar(select(HelperProfile).where(HelperProfile.id == helper_id))
+    helper = db.scalar(select(HelperProfile).where(HelperProfile.id == uuid.UUID(helper_id)))
     db.refresh(helper)
     assert helper.rating_count == 1
     assert float(helper.rating_avg) == 5.0
