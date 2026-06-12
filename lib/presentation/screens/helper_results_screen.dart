@@ -214,7 +214,7 @@ class _HelperResultsScreenState extends State<HelperResultsScreen> {
     );
   }
 
-  Widget _buildFilterChip(String label) {
+  Widget _buildFilterChip(String label, String key) {
     final isActive = _activeFilter == label;
     final theme = Theme.of(context);
     final border = theme.colorScheme.outline;
@@ -261,7 +261,7 @@ class _HelperResultsScreenState extends State<HelperResultsScreen> {
                   ],
           ),
           child: Text(
-            label,
+            context.tr(key),
             style: TextStyle(
               color: isActive ? Colors.white : const Color(0xFF7C887F),
               fontSize: 12,
@@ -412,10 +412,10 @@ class _HelperResultsScreenState extends State<HelperResultsScreen> {
                             const SizedBox(height: 2),
                             Text(
                               _loading
-                                  ? 'Locating verified helpers...'
+                                  ? context.tr('locating_helpers')
                                   : _radiusKm == null
-                                      ? '${finalHelpers.length} helpers available nearby'
-                                      : '${finalHelpers.length} within $_radiusKm km',
+                                      ? '${finalHelpers.length} ${context.tr("helpers_available_nearby")}'
+                                      : '${finalHelpers.length} ${context.tr("within")} $_radiusKm km',
                               style: TextStyle(
                                 fontSize: 11,
                                 color: Colors.white.withValues(alpha: 0.85),
@@ -544,14 +544,14 @@ class _HelperResultsScreenState extends State<HelperResultsScreen> {
                                   child: CircularProgressIndicator(
                                       strokeWidth: 2.4, color: Colors.white),
                                 )
-                              : const Row(
+                              : Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Text('🆘', style: TextStyle(fontSize: 18)),
-                                    SizedBox(width: 9),
+                                    const Text('🆘', style: TextStyle(fontSize: 18)),
+                                    const SizedBox(width: 9),
                                     Text(
-                                      'Request help now',
-                                      style: TextStyle(
+                                      context.tr('request_help_now'),
+                                      style: const TextStyle(
                                         color: Colors.white,
                                         fontSize: 16,
                                         fontWeight: FontWeight.w900,
@@ -563,11 +563,11 @@ class _HelperResultsScreenState extends State<HelperResultsScreen> {
                         ),
                       ),
                     ),
-                    const Padding(
-                      padding: EdgeInsets.only(bottom: 6),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 6),
                       child: Text(
-                        'Alerts nearby helpers on your route',
-                        style: TextStyle(
+                        context.tr('alerts_nearby'),
+                        style: const TextStyle(
                           fontSize: 11,
                           color: Color(0xFF7C887F),
                           fontWeight: FontWeight.w600,
@@ -583,7 +583,7 @@ class _HelperResultsScreenState extends State<HelperResultsScreen> {
                         scrollDirection: Axis.horizontal,
                         children: [
                           for (final km in _radiusOptions)
-                            _buildRadiusChip(km == null ? 'All' : '$km km', km),
+                            _buildRadiusChip(km == null ? context.tr('all') : '$km km', km),
                         ],
                       ),
                     ),
@@ -613,10 +613,10 @@ class _HelperResultsScreenState extends State<HelperResultsScreen> {
                       child: ListView(
                         scrollDirection: Axis.horizontal,
                         children: [
-                          _buildFilterChip('Nearest'),
-                          _buildFilterChip('Top Rated'),
-                          _buildFilterChip('Open Now'),
-                          _buildFilterChip('With SMS'),
+                          _buildFilterChip('Nearest', 'filter_nearest'),
+                          _buildFilterChip('Top Rated', 'filter_top_rated'),
+                          _buildFilterChip('Open Now', 'filter_open_now'),
+                          _buildFilterChip('With SMS', 'filter_with_sms'),
                         ],
                       ),
                     ),

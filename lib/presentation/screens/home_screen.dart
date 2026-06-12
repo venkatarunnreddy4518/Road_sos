@@ -89,11 +89,11 @@ class _HomeScreenState extends State<HomeScreen> {
         padding: const EdgeInsets.only(top: 8, bottom: 18),
         child: Row(
           children: [
-            _buildNavItem(0, '🏠', 'Home'),
-            _buildNavItem(1, '🕐', 'History'),
-            _buildNavItem(2, '📡', 'Nearby'),
-            _buildNavItem(3, '🚗', 'Travel'),
-            _buildNavItem(4, '👤', 'Profile'),
+            _buildNavItem(0, '🏠', context.tr('nav_home')),
+            _buildNavItem(1, '🕐', context.tr('history')),
+            _buildNavItem(2, '📡', context.tr('nav_nearby')),
+            _buildNavItem(3, '🚗', context.tr('nav_travel')),
+            _buildNavItem(4, '👤', context.tr('profile')),
           ],
         ),
       ),
@@ -307,10 +307,10 @@ class _DiscoverTabState extends State<_DiscoverTab> {
                       children: [
                         Text(
                           _locationDenied
-                              ? 'Location is off'
+                              ? context.tr('location_off')
                               : _hasRealLocation
                                   ? _addressLine1
-                                  : 'Locating you…',
+                                  : context.tr('locating'),
                           style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w800,
@@ -321,7 +321,7 @@ class _DiscoverTabState extends State<_DiscoverTab> {
                         ),
                         Text(
                           _locationDenied
-                              ? 'Tap to enable for accurate help'
+                              ? context.tr('location_off_sub')
                               : _addressLine2,
                           style: const TextStyle(
                             fontSize: 10,
@@ -357,7 +357,7 @@ class _DiscoverTabState extends State<_DiscoverTab> {
                         ),
                         const SizedBox(width: 3),
                         Text(
-                          _locationDenied ? 'Enable' : 'GPS',
+                          _locationDenied ? context.tr('enable') : context.tr('gps'),
                           style: TextStyle(
                             color: _locationDenied
                                 ? const Color(0xFF8A6D00)
@@ -424,22 +424,22 @@ class _DiscoverTabState extends State<_DiscoverTab> {
                 children: [
                   const Text('🛡️', style: TextStyle(fontSize: 24)),
                   const SizedBox(width: 12),
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'More verified helpers online now',
-                          style: TextStyle(
+                          context.tr('promo_title'),
+                          style: const TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w800,
                             color: Color(0xFF0E7C52),
                           ),
                         ),
-                        SizedBox(height: 2),
+                        const SizedBox(height: 2),
                         Text(
-                          'All helpers are background checked.',
-                          style: TextStyle(
+                          context.tr('promo_sub'),
+                          style: const TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w600,
                             color: Color(0xFF7C887F),
@@ -509,9 +509,9 @@ class _DiscoverTabState extends State<_DiscoverTab> {
                           children: [
                             Row(
                               children: [
-                                const Text(
-                                  'AI Roadside Mechanic',
-                                  style: TextStyle(
+                                Text(
+                                  context.tr('ai_mechanic_title'),
+                                  style: const TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w900,
                                     color: Colors.white,
@@ -524,9 +524,9 @@ class _DiscoverTabState extends State<_DiscoverTab> {
                                     color: Colors.white24,
                                     borderRadius: BorderRadius.all(Radius.circular(6)),
                                   ),
-                                  child: const Text(
-                                    'NEW',
-                                    style: TextStyle(
+                                  child: Text(
+                                    context.tr('new_badge'),
+                                    style: const TextStyle(
                                       fontSize: 8,
                                       fontWeight: FontWeight.w900,
                                       color: Colors.white,
@@ -537,7 +537,7 @@ class _DiscoverTabState extends State<_DiscoverTab> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              'Troubleshoot issues and find nearest help instantly!',
+                              context.tr('ai_mechanic_sub'),
                               style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w500,
@@ -557,11 +557,11 @@ class _DiscoverTabState extends State<_DiscoverTab> {
         ),
 
         // Emergency Services Label
-        const Padding(
-          padding: EdgeInsets.fromLTRB(16, 14, 16, 8),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
           child: Text(
-            'EMERGENCY SERVICES',
-            style: TextStyle(
+            context.tr('emergency_services'),
+            style: const TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w800,
               letterSpacing: 1.2,
@@ -584,11 +584,11 @@ class _DiscoverTabState extends State<_DiscoverTab> {
           ),
 
           // Open Near You Rail
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 20, 16, 8),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
             child: Text(
-              'OPEN NEAR YOU',
-              style: TextStyle(
+              context.tr('open_near_you'),
+              style: const TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 1.2,
@@ -601,10 +601,10 @@ class _DiscoverTabState extends State<_DiscoverTab> {
             height: 136,
             margin: const EdgeInsets.only(bottom: 12),
             child: _nearby.isEmpty
-                ? const Center(
+                ? Center(
                     child: Text(
-                      'No helpers nearby',
-                      style: TextStyle(fontSize: 12, color: Color(0xFF7C887F)),
+                      context.tr('no_helpers_nearby'),
+                      style: const TextStyle(fontSize: 12, color: Color(0xFF7C887F)),
                     ),
                   )
                 : ListView.builder(
@@ -624,11 +624,11 @@ class _DiscoverTabState extends State<_DiscoverTab> {
           ),
 
           // Safety Advice Rail
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 12, 16, 8),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
             child: Text(
-              'SAFETY ADVICE',
-              style: TextStyle(
+              context.tr('safety_advice'),
+              style: const TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 1.2,
@@ -643,21 +643,21 @@ class _DiscoverTabState extends State<_DiscoverTab> {
             child: ListView(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              children: const [
+              children: [
                 _SafetyAdviceCard(
                   emoji: '💡',
-                  title: 'Turn on Hazards',
-                  desc: 'Switch on hazard lights immediately to warn passing traffic.',
+                  title: context.tr('safety1_title'),
+                  desc: context.tr('safety1_desc'),
                 ),
                 _SafetyAdviceCard(
                   emoji: '🚗',
-                  title: 'Move Off Road',
-                  desc: 'Pull safely onto the shoulder or a safe spot away from lanes.',
+                  title: context.tr('safety2_title'),
+                  desc: context.tr('safety2_desc'),
                 ),
                 _SafetyAdviceCard(
                   emoji: '📍',
-                  title: 'Share Location',
-                  desc: 'Send your GPS coordinates to family or emergency contacts.',
+                  title: context.tr('safety3_title'),
+                  desc: context.tr('safety3_desc'),
                 ),
               ],
             ),
@@ -726,10 +726,10 @@ class _DiscoverTabState extends State<_DiscoverTab> {
                         child: const Text('🛟', style: TextStyle(fontSize: 20)),
                       ),
                       const SizedBox(width: 12),
-                      const Column(
+                      Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
+                          const Text(
                             'Roadside SOS',
                             style: TextStyle(
                               fontSize: 18,
@@ -739,8 +739,8 @@ class _DiscoverTabState extends State<_DiscoverTab> {
                             ),
                           ),
                           Text(
-                            'Highway Assistance Marketplace',
-                            style: TextStyle(
+                            context.tr('app_subtitle'),
+                            style: const TextStyle(
                               fontSize: 10,
                               color: Color(0xFF7C887F),
                               fontWeight: FontWeight.w600,
@@ -798,7 +798,7 @@ class _DiscoverTabState extends State<_DiscoverTab> {
                         const _PulsingGreenDot(),
                         const SizedBox(width: 6),
                         Text(
-                          '${_nearby.length} helpers nearby',
+                          '${_nearby.length} ${context.tr('helpers_nearby_suffix')}',
                           style: const TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w800,
@@ -907,7 +907,7 @@ class _DiscoverTabState extends State<_DiscoverTab> {
                         const _PulsingGreenDot(),
                         const SizedBox(width: 6),
                         Text(
-                          '${_nearby.length} helpers nearby',
+                          '${_nearby.length} ${context.tr('helpers_nearby_suffix')}',
                           style: const TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w800,
@@ -975,13 +975,13 @@ class _DiscoverTabState extends State<_DiscoverTab> {
                           BoxShadow(color: Color(0x330E7C52), blurRadius: 12, offset: Offset(0, 2)),
                         ],
                       ),
-                      child: const Row(
+                      child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text('📍 ', style: TextStyle(fontSize: 12)),
+                          const Text('📍 ', style: TextStyle(fontSize: 12)),
                           Text(
-                            'Pickup Point',
-                            style: TextStyle(
+                            context.tr('pickup_point'),
+                            style: const TextStyle(
                               color: Colors.white,
                               fontSize: 12,
                               fontWeight: FontWeight.w800,
@@ -1202,13 +1202,13 @@ class _ShimmerSearchBarState extends State<_ShimmerSearchBar> with SingleTickerP
                 ),
               ],
             ),
-            child: const Row(
+            child: Row(
               children: [
-                Icon(Icons.search, color: Colors.white, size: 20),
-                SizedBox(width: 10),
+                const Icon(Icons.search, color: Colors.white, size: 20),
+                const SizedBox(width: 10),
                 Text(
-                  'Where do you need help?',
-                  style: TextStyle(
+                  context.tr('where_help'),
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 14,
                     fontWeight: FontWeight.w700,

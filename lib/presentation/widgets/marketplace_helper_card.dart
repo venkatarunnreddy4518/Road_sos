@@ -1,6 +1,7 @@
 // lib/presentation/widgets/marketplace_helper_card.dart
 import 'package:flutter/material.dart';
 
+import '../../core/i18n/l10n_ext.dart';
 import '../../data/models/marketplace_helper.dart';
 import '../utils/helper_actions.dart';
 
@@ -123,7 +124,7 @@ class MarketplaceHelperCard extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          'km away',
+                          context.tr('km_away_suffix'),
                           style: TextStyle(
                             fontSize: 10,
                             color: mutedText,
@@ -161,13 +162,13 @@ class MarketplaceHelperCard extends StatelessWidget {
                               ),
                             ],
                           ),
-                          child: const Row(
+                          child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Text('📞 ', style: TextStyle(fontSize: 10, color: Colors.white)),
+                              const Text('📞 ', style: TextStyle(fontSize: 10, color: Colors.white)),
                               Text(
-                                'Call',
-                                style: TextStyle(
+                                context.tr('call'),
+                                style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 12,
                                   fontWeight: FontWeight.w700,
@@ -195,9 +196,9 @@ class MarketplaceHelperCard extends StatelessWidget {
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Text('💬 ', style: TextStyle(fontSize: 10, color: theme.colorScheme.onSurface)),
+                              const Text('💬 ', style: TextStyle(fontSize: 10)),
                               Text(
-                                'SMS',
+                                context.tr('sms'),
                                 style: TextStyle(
                                   color: theme.colorScheme.onSurface,
                                   fontSize: 12,
@@ -230,9 +231,9 @@ class MarketplaceHelperCard extends StatelessWidget {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Text('🧭 ', style: TextStyle(fontSize: 10, color: theme.colorScheme.onSurface)),
+                            const Text('🧭 ', style: TextStyle(fontSize: 10)),
                             Text(
-                              'Directions',
+                              context.tr('directions'),
                               style: TextStyle(
                                 color: theme.colorScheme.onSurface,
                                 fontSize: 12,
@@ -261,9 +262,9 @@ class MarketplaceHelperCard extends StatelessWidget {
           color: const Color(0xFFFFFBEB), // soft yellow/amber
           borderRadius: BorderRadius.circular(20),
         ),
-        child: const Text(
-          'Hours Unknown',
-          style: TextStyle(
+        child: Text(
+          context.tr('hours_unknown'),
+          style: const TextStyle(
             color: Color(0xFFD97706),
             fontSize: 9,
             fontWeight: FontWeight.w800,
@@ -278,9 +279,9 @@ class MarketplaceHelperCard extends StatelessWidget {
               color: const Color(0xFFE7F6EE), // soft green
               borderRadius: BorderRadius.circular(20),
             ),
-            child: const Text(
-              'Open Now',
-              style: TextStyle(
+            child: Text(
+              context.tr('open_now'),
+              style: const TextStyle(
                 color: Color(0xFF0E7C52),
                 fontSize: 9,
                 fontWeight: FontWeight.w800,
@@ -293,9 +294,9 @@ class MarketplaceHelperCard extends StatelessWidget {
               color: const Color(0xFFFDF2F2), // soft red
               borderRadius: BorderRadius.circular(20),
             ),
-            child: const Text(
-              'Closed',
-              style: TextStyle(
+            child: Text(
+              context.tr('closed'),
+              style: const TextStyle(
                 color: Color(0xFFDC2626),
                 fontSize: 9,
                 fontWeight: FontWeight.w800,
