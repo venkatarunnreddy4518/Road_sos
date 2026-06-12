@@ -19,18 +19,17 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   // ── Design tokens ──
-  static const _bg = Color(0xFFF6F8F7);
-  static const _card = Color(0xFFFFFFFF);
-  static const _border = Color(0xFFE7ECEA);
-  static const _line = Color(0xFFEEF1F0);
-  static const _green = Color(0xFF0E7C52);
-
-  static const _greenSoft = Color(0xFFE7F6EE);
+  Color get _bg => Theme.of(context).scaffoldBackgroundColor;
+  Color get _card => Theme.of(context).colorScheme.surface;
+  Color get _border => Theme.of(context).colorScheme.outline;
+  Color get _line => Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1F2B24) : const Color(0xFFEEF1F0);
+  Color get _green => Theme.of(context).colorScheme.primary;
+  Color get _greenSoft => Theme.of(context).brightness == Brightness.dark ? const Color(0xFF143022) : const Color(0xFFE7F6EE);
+  Color get _text => Theme.of(context).colorScheme.onSurface;
+  Color get _muted => Theme.of(context).colorScheme.tertiary;
+  Color get _iconColor => Theme.of(context).brightness == Brightness.dark ? const Color(0xFFA1B2A7) : const Color(0xFF44505F);
+  Color get _chevColor => Theme.of(context).brightness == Brightness.dark ? const Color(0xFF3E4E45) : const Color(0xFFC2C9CE);
   static const _amber = Color(0xFFF5A623);
-  static const _text = Color(0xFF14201B);
-  static const _muted = Color(0xFF7C887F);
-  static const _iconColor = Color(0xFF44505F);
-  static const _chevColor = Color(0xFFC2C9CE);
 
   @override
   Widget build(BuildContext context) {
@@ -53,7 +52,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               padding: const EdgeInsets.only(top: 8, bottom: 14, left: 4),
               child: Text(
                 context.tr('profile'),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 27,
                   fontWeight: FontWeight.w800,
                   color: _text,
@@ -97,13 +96,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               height: 56,
                               child: CustomPaint(
                                 painter: _AvatarRingPainter(progress: 0.75),
-                                child: const Center(
-                                  child: Icon(
-                                    Icons.person_outline_rounded,
-                                    size: 26,
-                                    color: _muted,
-                                  ),
+                              child: Center(
+                                child: Icon(
+                                  Icons.person_outline_rounded,
+                                  size: 26,
+                                  color: _muted,
                                 ),
+                              ),
                               ),
                             ),
                             const SizedBox(width: 14),
@@ -116,7 +115,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     user.displayName.isNotEmpty
                                         ? user.displayName
                                         : 'User',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 16.5,
                                       fontWeight: FontWeight.w800,
                                       color: _text,
@@ -127,7 +126,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   const SizedBox(height: 3),
                                   Text(
                                     user.phone ?? user.email ?? '',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 14,
                                       color: _muted,
                                       fontWeight: FontWeight.w500,
@@ -143,8 +142,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
 
                     // Divider
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Divider(height: 1, color: _line),
                     ),
 
@@ -173,7 +172,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             Expanded(
                               child: RichText(
                                 text: TextSpan(
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 15.5,
                                     fontWeight: FontWeight.w800,
                                     color: _text,
@@ -316,7 +315,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: OutlinedButton(
                 style: OutlinedButton.styleFrom(
                   foregroundColor: const Color(0xFFC0392B),
-                  side: const BorderSide(color: _border, width: 1.5),
+                  side: BorderSide(color: _border, width: 1.5),
                   backgroundColor: _card,
                   padding: const EdgeInsets.symmetric(vertical: 13),
                   shape: RoundedRectangleBorder(
@@ -358,8 +357,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   // ── Chevron icon ──
-  static Widget _chevron() {
-    return const Icon(
+  Widget _chevron() {
+    return Icon(
       Icons.chevron_right_rounded,
       size: 20,
       color: _chevColor,
@@ -407,7 +406,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     children: [
                       Text(
                         title,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 15.5,
                           fontWeight: FontWeight.w700,
                           color: _text,
@@ -440,7 +439,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                     child: Text(
                       pill,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w800,
                         color: _green,
@@ -559,8 +558,17 @@ class _GuestPrompt extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final bg = theme.scaffoldBackgroundColor;
+    final card = theme.colorScheme.surface;
+    final text = theme.colorScheme.onSurface;
+    final muted = theme.colorScheme.tertiary;
+    final green = theme.colorScheme.primary;
+    final greenSoft = isDark ? const Color(0xFF143022) : const Color(0xFFE7F6EE);
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F8F7),
+      backgroundColor: bg,
       body: SafeArea(
         child: Center(
           child: Padding(
@@ -572,30 +580,30 @@ class _GuestPrompt extends StatelessWidget {
                   width: 72,
                   height: 72,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE7F6EE),
+                    color: greenSoft,
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  child: const Center(
+                  child: Center(
                     child: Icon(Icons.person_outline_rounded,
-                        size: 36, color: Color(0xFF0E7C52)),
+                        size: 36, color: green),
                   ),
                 ),
                 const SizedBox(height: 20),
                 Text(
                   context.tr('sign_in_continue'),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
-                    color: Color(0xFF14201B),
+                    color: text,
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   context.tr('sign_in_profile_prompt'),
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
-                    color: Color(0xFF7C887F),
+                    color: muted,
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -604,15 +612,15 @@ class _GuestPrompt extends StatelessWidget {
                   child: Container(
                     height: 48,
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
+                      gradient: LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
-                        colors: [Color(0xFF18B26B), Color(0xFF0E7C52)],
+                        colors: [theme.colorScheme.secondary, theme.colorScheme.primary],
                       ),
                       borderRadius: BorderRadius.circular(14),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF0E7C52).withValues(alpha: 0.3),
+                          color: green.withValues(alpha: 0.3),
                           blurRadius: 14,
                           offset: const Offset(0, 4),
                         ),

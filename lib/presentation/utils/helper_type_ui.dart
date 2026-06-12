@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:roadside_help/core/i18n/l10n_ext.dart';
 import 'package:roadside_help/domain/entities/helper.dart';
 
-String helperTypeTitle(HelperType type) {
+String helperTypeTitle(BuildContext context, HelperType type) {
   return switch (type) {
-    HelperType.PUNCTURE_SHOP => 'Tyre repair',
-    HelperType.PETROL_PUMP => 'Fuel delivery',
-    HelperType.MECHANIC => 'Mechanic',
+    HelperType.PUNCTURE_SHOP => context.tr('type_tyre_repair'),
+    HelperType.PETROL_PUMP => context.tr('type_fuel_delivery'),
+    HelperType.MECHANIC => context.tr('type_mechanic'),
   };
 }
 

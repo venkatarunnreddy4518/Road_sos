@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:roadside_help/core/i18n/l10n_ext.dart';
 import 'package:roadside_help/core/utils/distance_calculator.dart';
 import 'package:roadside_help/domain/entities/helper.dart';
 import 'package:roadside_help/presentation/utils/helper_type_ui.dart';
@@ -104,7 +105,7 @@ class HelperCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        helperTypeTitle(helper.type),
+                        helperTypeTitle(context, helper.type),
                         style: TextStyle(
                           color: tertiaryColor,
                           fontSize: 12,
@@ -129,7 +130,7 @@ class HelperCard extends StatelessWidget {
                           if (isFar)
                             _InfoChip(
                               icon: Icons.warning_amber_rounded,
-                              label: 'Far away',
+                              label: context.tr('far_away'),
                               color: tertiaryColor,
                             ),
                         ],
@@ -141,7 +142,7 @@ class HelperCard extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              helper.openingHours ?? 'Hours unknown',
+              helper.openingHours ?? context.tr('hours_unknown'),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
@@ -157,7 +158,7 @@ class HelperCard extends StatelessWidget {
                   child: OutlinedButton.icon(
                     onPressed: _openMaps,
                     icon: const Icon(Icons.directions, size: 18),
-                    label: const Text('Directions'),
+                    label: Text(context.tr('directions')),
                   ),
                 ),
                 if (helper.smsCapable) ...[
@@ -165,7 +166,7 @@ class HelperCard extends StatelessWidget {
                   IconButton.outlined(
                     onPressed: _makeSMS,
                     icon: const Icon(Icons.message),
-                    tooltip: 'SMS',
+                    tooltip: context.tr('sms'),
                     style: IconButton.styleFrom(
                       foregroundColor: primaryColor,
                       side: BorderSide(color: Theme.of(context).colorScheme.outline),
@@ -177,7 +178,7 @@ class HelperCard extends StatelessWidget {
                   child: ElevatedButton.icon(
                     onPressed: _makeCall,
                     icon: const Icon(Icons.phone, size: 18),
-                    label: const Text('Call'),
+                    label: Text(context.tr('call')),
                   ),
                 ),
               ],

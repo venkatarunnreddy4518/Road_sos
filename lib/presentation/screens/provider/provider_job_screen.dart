@@ -120,20 +120,20 @@ class _ProviderJobScreenState extends State<ProviderJobScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                r.seekerName?.isNotEmpty == true ? r.seekerName! : 'Seeker',
+                               Text(
+                                r.seekerName?.isNotEmpty == true ? r.seekerName! : context.tr('someone_nearby'),
                                 style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
                               ),
                               const SizedBox(height: 2),
-                              const Text('needs your help',
-                                  style: TextStyle(fontSize: 12.5, color: Color(0xFF5B6B62))),
+                              Text(context.tr('needs_your_help'),
+                                  style: const TextStyle(fontSize: 12.5, color: Color(0xFF5B6B62))),
                             ],
                           ),
                         ),
                         IconButton.filled(
                           onPressed: () => HelperActions.directions(
                               r.pickupLat, r.pickupLng,
-                              label: r.seekerName ?? 'Seeker'),
+                              label: r.seekerName ?? context.tr('someone_nearby')),
                           style: IconButton.styleFrom(
                             backgroundColor: const Color(0xFF0E7C52),
                             foregroundColor: Colors.white,
@@ -152,9 +152,9 @@ class _ProviderJobScreenState extends State<ProviderJobScreen> {
                   OutlinedButton.icon(
                     onPressed: () => HelperActions.directions(
                         r.pickupLat, r.pickupLng,
-                        label: r.seekerName ?? 'Seeker'),
+                        label: r.seekerName ?? context.tr('someone_nearby')),
                     icon: const Icon(Icons.navigation_outlined),
-                    label: const Text('Directions to seeker'),
+                    label: Text(context.tr('directions_to_seeker')),
                   ),
                 ],
               ),
@@ -169,7 +169,12 @@ class _ProviderJobScreenState extends State<ProviderJobScreen> {
                       backgroundColor: Theme.of(context).colorScheme.primary,
                       foregroundColor: Theme.of(context).colorScheme.onPrimary),
                   onPressed: _busy ? null : () => _advance(next),
-                  child: Text('Mark as ${next.label}'),
+                  child: Text(switch (next) {
+                    RequestStatus.onTheWay => context.tr('mark_on_the_way'),
+                    RequestStatus.arrived => context.tr('mark_arrived'),
+                    RequestStatus.completed => context.tr('mark_completed'),
+                    _ => 'Mark as ${next.label}',
+                  }),
                 ),
               ),
             ),

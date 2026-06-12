@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:roadside_help/core/i18n/l10n_ext.dart';
 import 'package:roadside_help/core/utils/distance_calculator.dart';
 import 'package:roadside_help/domain/entities/helper.dart';
 import 'package:roadside_help/presentation/demo/demo_helpers.dart';
@@ -123,18 +124,18 @@ class _TopPanel extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          const _RouteInput(
+           _RouteInput(
             icon: Icons.my_location,
-            color: Color(0xFF18A957),
-            label: 'Pickup',
+            color: const Color(0xFF18A957),
+            label: context.tr('pickup'),
             value: 'MG Road, Bengaluru',
           ),
           const Divider(height: 16),
           _RouteInput(
             icon: helperTypeIcon(selectedType),
             color: helperTypeColor(selectedType),
-            label: 'Need help with',
-            value: helperTypeTitle(selectedType),
+            label: context.tr('need_help_with'),
+            value: helperTypeTitle(context, selectedType),
           ),
         ],
       ),
@@ -310,7 +311,7 @@ class _RideHelpSheet extends StatelessWidget {
               child: FilledButton.icon(
                 onPressed: onViewAll,
                 icon: const Icon(Icons.arrow_forward),
-                label: Text('View ${helperTypeTitle(selectedType).toLowerCase()} options'),
+                label: Text(context.tr('view_options').replaceAll('{type}', helperTypeTitle(context, selectedType))),
                 style: FilledButton.styleFrom(
                   backgroundColor: const Color(0xFF111111),
                   foregroundColor: Colors.white,

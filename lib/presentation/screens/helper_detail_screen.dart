@@ -59,7 +59,7 @@ class _HelperDetailScreenState extends State<HelperDetailScreen> {
     }
     if (widget.categoryId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Pick a category from Home to request this helper.')),
+        SnackBar(content: Text(context.tr('pick_category_prompt'))),
       );
       return;
     }
@@ -139,7 +139,7 @@ class _HelperDetailScreenState extends State<HelperDetailScreen> {
                           ]),
                           const SizedBox(height: 20),
                           if (_reviews.isNotEmpty)
-                            const Text('Reviews', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+                            Text(context.tr('reviews'), style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
                           ..._reviews.map((rv) => ListTile(
                                 contentPadding: EdgeInsets.zero,
                                 leading: const Icon(Icons.account_circle, size: 36, color: Colors.black26),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:roadside_help/core/i18n/l10n_ext.dart';
 
 
 import '../../../data/api/auth_api.dart';
@@ -148,7 +149,7 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen>
           ),
         ),
         title: Text(
-          _codeSent ? 'Verify OTP' : 'Phone sign in',
+          _codeSent ? context.tr('verify_otp') : context.tr('phone_sign_in'),
           style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w700,
@@ -192,7 +193,7 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen>
                   ),
                   const SizedBox(height: 20),
                   Text(
-                    _codeSent ? 'Enter verification code' : 'Phone sign in',
+                    _codeSent ? context.tr('enter_verify_code') : context.tr('phone_sign_in'),
                     style: const TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.w700,
@@ -203,8 +204,8 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen>
                   const SizedBox(height: 6),
                   Text(
                     _codeSent
-                        ? 'We sent a 6-digit code to ${_phone.text}'
-                        : 'We\'ll send you a one-time verification code',
+                        ? '${context.tr('we_sent_code')} ${_phone.text}'
+                        : context.tr('send_otp_hint'),
                     textAlign: TextAlign.center,
                     style: const TextStyle(fontSize: 13, color: _muted),
                   ),
@@ -230,7 +231,7 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen>
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         // ── Phone field ──
-                        _label('Phone number'),
+                        _label(context.tr('phone')),
                         const SizedBox(height: 6),
                         _textField(
                           controller: _phone,
@@ -244,17 +245,17 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen>
                           const SizedBox(height: 16),
 
                           // ── Name (optional) ──
-                          _label('Name (optional)'),
+                          _label(context.tr('name_optional')),
                           const SizedBox(height: 6),
                           _textField(
                             controller: _name,
-                            hint: 'Your name',
+                            hint: context.tr('your_name'),
                             prefixIcon: Icons.person_outline_rounded,
                           ),
                           const SizedBox(height: 16),
 
                           // ── OTP code ──
-                          _label('Verification code'),
+                          _label(context.tr('verification_code')),
                           const SizedBox(height: 6),
                           _textField(
                             controller: _code,
@@ -281,7 +282,7 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen>
                                       size: 16, color: _green),
                                   const SizedBox(width: 8),
                                   Text(
-                                    'Dev mode: your code is $_devCode',
+                                    '${context.tr('dev_mode_hint')} $_devCode',
                                     style: const TextStyle(
                                         fontSize: 12, color: _green),
                                   ),
@@ -324,7 +325,7 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen>
 
                         // ── Action button ──
                         _GradientButton(
-                          label: _codeSent ? 'Verify code' : 'Send code',
+                          label: _codeSent ? context.tr('verify_code') : context.tr('send_code'),
                           busy: _busy,
                           onTap:
                               _busy ? null : (_codeSent ? _verify : _sendCode),
@@ -335,9 +336,9 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen>
                           Center(
                             child: GestureDetector(
                               onTap: _busy ? null : _sendCode,
-                              child: const Text(
-                                'Resend code',
-                                style: TextStyle(
+                              child: Text(
+                                context.tr('resend_code'),
+                                style: const TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
                                   color: _green,

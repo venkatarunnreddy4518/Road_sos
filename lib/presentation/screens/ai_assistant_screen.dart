@@ -51,11 +51,11 @@ Example: [SUGGEST_BOOKING: puncture | Left rear tyre has a flat due to a nail]
   void initState() {
     super.initState();
     _loadCategories();
-    // Add default welcoming message
+    // Add default welcoming message placeholder key
     _messages.add(
       ChatMessage(
         role: 'assistant',
-        content: 'Hello! I am your AI Roadside Mechanic. Tell me what\'s wrong with your vehicle, and I will help you diagnose the issue, provide safety tips, and guide you to find the right help.',
+        content: 'ai_welcome_msg',
       ),
     );
   }
@@ -170,7 +170,7 @@ Example: [SUGGEST_BOOKING: puncture | Left rear tyre has a flat due to a nail]
 
     if (matchedCategory == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No categories available yet. Please check your internet connection.')),
+        SnackBar(content: Text(context.tr('needs_connection'))),
       );
       return;
     }
@@ -298,6 +298,9 @@ Example: [SUGGEST_BOOKING: puncture | Left rear tyre has a flat due to a nail]
               itemBuilder: (context, index) {
                 final msg = _messages[index];
                 final isUser = msg.role == 'user';
+                final content = msg.content == 'ai_welcome_msg'
+                    ? context.tr('ai_welcome_msg')
+                    : msg.content;
 
                 return Align(
                   alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
@@ -319,7 +322,7 @@ Example: [SUGGEST_BOOKING: puncture | Left rear tyre has a flat due to a nail]
                       ),
                     ),
                     child: Text(
-                      msg.content,
+                      content,
                       style: TextStyle(
                         color: isUser ? Colors.white : (isDark ? Colors.white : Colors.black87),
                         fontSize: 14,
@@ -344,7 +347,7 @@ Example: [SUGGEST_BOOKING: puncture | Left rear tyre has a flat due to a nail]
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    'AI Mechanic is typing...',
+                    context.tr('ai_typing'),
                     style: TextStyle(fontSize: 12, color: theme.colorScheme.tertiary),
                   ),
                 ],
@@ -361,20 +364,20 @@ Example: [SUGGEST_BOOKING: puncture | Left rear tyre has a flat due to a nail]
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 children: [
                   _QuickPromptChip(
-                    label: '🛞 Flat Tyre',
-                    onTap: () => _onQuickPrompt('I have a tyre puncture and need assistance changing it.'),
+                    label: context.tr('ai_chip_puncture'),
+                    onTap: () => _onQuickPrompt(context.tr('ai_prompt_puncture')),
                   ),
                   _QuickPromptChip(
-                    label: '🌡️ Overheating Engine',
-                    onTap: () => _onQuickPrompt('My engine temperature indicator is in the red. What should I do?'),
+                    label: context.tr('ai_chip_overheat'),
+                    onTap: () => _onQuickPrompt(context.tr('ai_prompt_overheat')),
                   ),
                   _QuickPromptChip(
-                    label: '🔋 Dead Battery',
-                    onTap: () => _onQuickPrompt('My car battery is dead and I need a jump start.'),
+                    label: context.tr('ai_chip_battery'),
+                    onTap: () => _onQuickPrompt(context.tr('ai_prompt_battery')),
                   ),
                   _QuickPromptChip(
-                    label: '⛽ Out of Fuel',
-                    onTap: () => _onQuickPrompt('I have run out of fuel on the highway and need refuel assistance.'),
+                    label: context.tr('ai_chip_fuel'),
+                    onTap: () => _onQuickPrompt(context.tr('ai_prompt_fuel')),
                   ),
                 ],
               ),
@@ -399,8 +402,8 @@ Example: [SUGGEST_BOOKING: puncture | Left rear tyre has a flat due to a nail]
                       Expanded(
                         child: TextField(
                           controller: _inputController,
-                          decoration: const InputDecoration(
-                            hintText: 'Describe your issue...',
+                          decoration: InputDecoration(
+                            hintText: context.tr('ai_input_hint'),
                             border: InputBorder.none,
                           ),
                           onSubmitted: _sendPrompt,

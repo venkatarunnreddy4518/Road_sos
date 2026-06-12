@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:roadside_help/core/i18n/l10n_ext.dart';
 import 'package:roadside_help/data/repositories/helper_repository.dart';
 import 'package:roadside_help/domain/entities/helper.dart';
 import 'package:roadside_help/domain/usecases/find_nearest_helpers.dart';
@@ -46,7 +47,7 @@ class _HelperListScreenState extends State<HelperListScreen> {
                 expandedHeight: 280,
                 backgroundColor: Colors.white,
                 foregroundColor: const Color(0xFF111111),
-                title: Text(helperTypeTitle(widget.type)),
+                title: Text(helperTypeTitle(context, widget.type)),
                 flexibleSpace: FlexibleSpaceBar(
                   background: _HelperMapHeader(
                     type: widget.type,
@@ -64,9 +65,9 @@ class _HelperListScreenState extends State<HelperListScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
-                              'Choose a partner',
-                              style: TextStyle(
+                            Text(
+                              context.tr('choose_partner'),
+                              style: const TextStyle(
                                 color: Color(0xFF111111),
                                 fontSize: 22,
                                 fontWeight: FontWeight.w900,
@@ -74,7 +75,7 @@ class _HelperListScreenState extends State<HelperListScreen> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              loading ? 'Finding nearby partners' : 'Sorted by arrival time',
+                              loading ? context.tr('finding_partners') : context.tr('sorted_arrival'),
                               style: const TextStyle(
                                 color: Color(0xFF6E7168),
                                 fontSize: 13,
@@ -90,13 +91,13 @@ class _HelperListScreenState extends State<HelperListScreen> {
                           color: const Color(0xFF111111),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: const Row(
+                        child: Row(
                           children: [
-                            Icon(Icons.swap_vert, color: Colors.white, size: 16),
-                            SizedBox(width: 4),
+                            const Icon(Icons.swap_vert, color: Colors.white, size: 16),
+                            const SizedBox(width: 4),
                             Text(
-                              'Nearest',
-                              style: TextStyle(
+                              context.tr('filter_nearest'),
+                              style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 12,
                                 fontWeight: FontWeight.w800,
@@ -198,7 +199,7 @@ class _HelperMapHeader extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        helperTypeTitle(type),
+                        helperTypeTitle(context, type),
                         style: const TextStyle(
                           color: Color(0xFF111111),
                           fontSize: 16,
@@ -207,7 +208,7 @@ class _HelperMapHeader extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        loading ? 'Checking live availability' : '$helperCount partners near MG Road',
+                        loading ? context.tr('checking_availability') : '$helperCount ${context.tr('partners_near')}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(

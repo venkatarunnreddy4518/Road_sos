@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:roadside_help/core/i18n/l10n_ext.dart';
 
 
 import '../../../data/api/auth_api.dart';
@@ -117,7 +118,7 @@ class _EmailAuthScreenState extends State<EmailAuthScreen>
           ),
         ),
         title: Text(
-          _isLogin ? 'Sign in' : 'Create account',
+          _isLogin ? context.tr('sign_in') : context.tr('create_account'),
           style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w700,
@@ -161,7 +162,7 @@ class _EmailAuthScreenState extends State<EmailAuthScreen>
                   ),
                   const SizedBox(height: 20),
                   Text(
-                    _isLogin ? 'Welcome back' : 'Create your account',
+                    _isLogin ? context.tr('welcome_back') : context.tr('create_your_account'),
                     style: const TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.w700,
@@ -172,8 +173,8 @@ class _EmailAuthScreenState extends State<EmailAuthScreen>
                   const SizedBox(height: 6),
                   Text(
                     _isLogin
-                        ? 'Enter your credentials to sign in'
-                        : 'Fill in the details to get started',
+                        ? context.tr('enter_credentials')
+                        : context.tr('fill_details'),
                     style: const TextStyle(fontSize: 13, color: _muted),
                   ),
                   const SizedBox(height: 28),
@@ -201,11 +202,11 @@ class _EmailAuthScreenState extends State<EmailAuthScreen>
                         children: [
                           // ── Name (signup only) ──
                           if (!_isLogin) ...[
-                            _label('Full name'),
+                            _label(context.tr('full_name')),
                             const SizedBox(height: 6),
                             _textField(
                               controller: _name,
-                              hint: 'Your full name',
+                              hint: context.tr('your_full_name'),
                               prefixIcon: Icons.person_outline_rounded,
                               validator: (v) => (v == null || v.trim().isEmpty)
                                   ? 'Required'
@@ -215,7 +216,7 @@ class _EmailAuthScreenState extends State<EmailAuthScreen>
                           ],
 
                           // ── Email ──
-                          _label('Email address'),
+                          _label(context.tr('email_address')),
                           const SizedBox(height: 6),
                           _textField(
                             controller: _email,
@@ -232,13 +233,13 @@ class _EmailAuthScreenState extends State<EmailAuthScreen>
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              _label('Password'),
+                              _label(context.tr('password')),
                               if (_isLogin)
                                 GestureDetector(
                                   onTap: () {},
-                                  child: const Text(
-                                    'Forgot?',
-                                    style: TextStyle(
+                                  child: Text(
+                                    context.tr('forgot_prompt'),
+                                    style: const TextStyle(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,
                                       color: _green,
@@ -302,7 +303,7 @@ class _EmailAuthScreenState extends State<EmailAuthScreen>
 
                           // ── Submit button ──
                           _GradientButton(
-                            label: _isLogin ? 'Sign in' : 'Create account',
+                            label: _isLogin ? context.tr('sign_in') : context.tr('create_account'),
                             busy: _busy,
                             onTap: _busy ? null : _submit,
                           ),
@@ -318,14 +319,14 @@ class _EmailAuthScreenState extends State<EmailAuthScreen>
                     children: [
                       Text(
                         _isLogin
-                            ? "Don't have an account? "
-                            : 'Already have an account? ',
+                            ? context.tr('no_account_prompt')
+                            : context.tr('have_account_prompt'),
                         style: const TextStyle(fontSize: 13, color: _muted),
                       ),
                       GestureDetector(
                         onTap: () => setState(() => _isLogin = !_isLogin),
                         child: Text(
-                          _isLogin ? 'Sign up' : 'Sign in',
+                          _isLogin ? context.tr('signup') : context.tr('sign_in'),
                           style: const TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w700,

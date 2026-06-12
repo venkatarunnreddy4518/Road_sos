@@ -100,7 +100,7 @@ class _ProviderInboxScreenState extends State<ProviderInboxScreen> {
                       onRefresh: _refresh,
                       child: ListView(children: [
                         const SizedBox(height: 120),
-                        Center(child: Text('No ${context.tr('incoming_requests').toLowerCase()}')),
+                        Center(child: Text(context.tr('no_incoming_requests'))),
                       ]),
                     )
                   : RefreshIndicator(
@@ -133,13 +133,13 @@ class _ProviderInboxScreenState extends State<ProviderInboxScreen> {
                                           crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
                                             Text(
-                                              seeker?.isNotEmpty == true ? seeker! : 'Someone nearby',
+                                              seeker?.isNotEmpty == true ? seeker! : context.tr('someone_nearby'),
                                               style: const TextStyle(
                                                   fontWeight: FontWeight.w800, fontSize: 15),
                                             ),
                                             if (dist != null)
                                               Text(
-                                                '${dist.toStringAsFixed(1)} km away',
+                                                '${dist.toStringAsFixed(1)} ${context.tr('km_away_suffix')}',
                                                 style: const TextStyle(
                                                     color: Color(0xFF7C887F),
                                                     fontSize: 12,
@@ -162,9 +162,9 @@ class _ProviderInboxScreenState extends State<ProviderInboxScreen> {
                                           child: OutlinedButton.icon(
                                             onPressed: () => HelperActions.directions(
                                                 lat, lng,
-                                                label: seeker ?? 'Seeker'),
+                                                label: seeker ?? context.tr('someone_nearby')),
                                             icon: const Icon(Icons.directions, size: 18),
-                                            label: const Text('Navigate'),
+                                            label: Text(context.tr('navigate')),
                                           ),
                                         ),
                                       if (lat != null && lng != null) const SizedBox(width: 10),
@@ -255,19 +255,29 @@ class _RegisterHelperState extends State<_RegisterHelper> {
       padding: const EdgeInsets.all(20),
       children: [
         const SizedBox(height: 4),
-        Text('Register your service to receive nearby roadside requests.',
+        Text(context.tr('register_desc'),
             style: TextStyle(color: Theme.of(context).colorScheme.tertiary)),
         const SizedBox(height: 20),
         TextField(
           controller: _name,
-          decoration: const InputDecoration(labelText: 'Service name', border: OutlineInputBorder()),
+          decoration: InputDecoration(labelText: context.tr('service_name'), border: const OutlineInputBorder()),
         ),
         const SizedBox(height: 12),
         DropdownButtonFormField<String>(
           initialValue: _type,
-          decoration: const InputDecoration(labelText: 'Service type', border: OutlineInputBorder()),
+          decoration: InputDecoration(labelText: context.tr('service_type'), border: const OutlineInputBorder()),
           items: _types.entries
-              .map((e) => DropdownMenuItem(value: e.key, child: Text(e.value)))
+              .map((e) {
+                final label = switch (e.key) {
+                  'mechanic' => context.tr('type_mechanic'),
+                  'puncture_shop' => context.tr('type_tyre_repair'),
+                  'petrol_pump' => context.tr('type_fuel_delivery'),
+                  'towing' => context.tr('cat_towing'),
+                  'battery' => context.tr('cat_battery'),
+                  _ => e.value,
+                };
+                return DropdownMenuItem(value: e.key, child: Text(label));
+              })
               .toList(),
           onChanged: (v) => setState(() => _type = v ?? 'mechanic'),
         ),
@@ -275,7 +285,7 @@ class _RegisterHelperState extends State<_RegisterHelper> {
         TextField(
           controller: _phone,
           keyboardType: TextInputType.phone,
-          decoration: const InputDecoration(labelText: 'Contact phone', border: OutlineInputBorder()),
+          decoration: InputDecoration(labelText: context.tr('contact_phone'), border: const OutlineInputBorder()),
         ),
         const SizedBox(height: 20),
         ElevatedButton(

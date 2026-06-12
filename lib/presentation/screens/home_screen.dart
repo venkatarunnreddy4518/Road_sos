@@ -34,7 +34,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildNavItem(int index, String icon, String label) {
     final isActive = _tab == index;
-    final color = isActive ? const Color(0xFF0E7C52) : const Color(0xFF7C887F);
+    final theme = Theme.of(context);
+    final color = isActive ? theme.colorScheme.primary : theme.colorScheme.tertiary;
 
     return Expanded(
       child: InkWell(
@@ -57,8 +58,8 @@ class _HomeScreenState extends State<HomeScreen> {
               Container(
                 width: 4,
                 height: 4,
-                decoration: const BoxDecoration(
-                  color: Color(0xFF0E7C52),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary,
                   shape: BoxShape.circle,
                 ),
               ),
@@ -82,9 +83,9 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       body: pages[_tab],
       bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          border: Border(top: BorderSide(color: Color(0xFFE7ECEA), width: 1.5)),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          border: Border(top: BorderSide(color: Theme.of(context).colorScheme.outline, width: 1.5)),
         ),
         padding: const EdgeInsets.only(top: 8, bottom: 18),
         child: Row(
@@ -284,93 +285,99 @@ class _DiscoverTabState extends State<_DiscoverTab> {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: GestureDetector(
             onTap: _useMyLocation,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(30),
-                border: Border.all(
-                  color: _locationDenied
-                      ? const Color(0xFFF5C518)
-                      : const Color(0xFFE7ECEA),
-                  width: 1.5,
-                ),
-              ),
-              child: Row(
-                children: [
-                  Text(_locationDenied ? '📍 ' : '🧭 ',
-                      style: const TextStyle(fontSize: 14)),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _locationDenied
-                              ? context.tr('location_off')
-                              : _hasRealLocation
-                                  ? _addressLine1
-                                  : context.tr('locating'),
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w800,
-                            color: Color(0xFF14201B),
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        Text(
-                          _locationDenied
-                              ? context.tr('location_off_sub')
-                              : _addressLine2,
-                          style: const TextStyle(
-                            fontSize: 10,
-                            color: Color(0xFF7C887F),
-                            fontWeight: FontWeight.w500,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
+            child: Builder(
+              builder: (context) {
+                final theme = Theme.of(context);
+                final isDark = theme.brightness == Brightness.dark;
+                final chipBg = _locationDenied
+                    ? (isDark ? const Color(0xFF2E250A) : const Color(0xFFFFF7E0))
+                    : (isDark ? const Color(0xFF112E20) : const Color(0xFFE7F6EE));
+                final chipText = _locationDenied
+                    ? (isDark ? const Color(0xFFFFC107) : const Color(0xFF8A6D00))
+                    : (isDark ? const Color(0xFF22C7A9) : const Color(0xFF0E7C52));
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surface,
+                    borderRadius: BorderRadius.circular(30),
+                    border: Border.all(
                       color: _locationDenied
-                          ? const Color(0xFFFFF7E0)
-                          : const Color(0xFFE7F6EE),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          _locationDenied
-                              ? Icons.location_off
-                              : Icons.my_location,
-                          size: 11,
-                          color: _locationDenied
-                              ? const Color(0xFF8A6D00)
-                              : const Color(0xFF0E7C52),
-                        ),
-                        const SizedBox(width: 3),
-                        Text(
-                          _locationDenied ? context.tr('enable') : context.tr('gps'),
-                          style: TextStyle(
-                            color: _locationDenied
-                                ? const Color(0xFF8A6D00)
-                                : const Color(0xFF0E7C52),
-                            fontSize: 10,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ],
+                          ? const Color(0xFFF5C518)
+                          : theme.colorScheme.outline,
+                      width: 1.5,
                     ),
                   ),
-                ],
-              ),
+                  child: Row(
+                    children: [
+                      Text(_locationDenied ? '📍 ' : '🧭 ',
+                          style: const TextStyle(fontSize: 14)),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _locationDenied
+                                  ? context.tr('location_off')
+                                  : _hasRealLocation
+                                      ? _addressLine1
+                                      : context.tr('locating'),
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w800,
+                                color: theme.colorScheme.onSurface,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            Text(
+                              _locationDenied
+                                  ? context.tr('location_off_sub')
+                                  : _addressLine2,
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: theme.colorScheme.tertiary,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: chipBg,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              _locationDenied
+                                  ? Icons.location_off
+                                  : Icons.my_location,
+                              size: 11,
+                              color: chipText,
+                            ),
+                            const SizedBox(width: 3),
+                            Text(
+                              _locationDenied ? context.tr('enable') : context.tr('gps'),
+                              style: TextStyle(
+                                color: chipText,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
             ),
           ),
         ),
@@ -386,173 +393,193 @@ class _DiscoverTabState extends State<_DiscoverTab> {
         ),
 
         if (_offline)
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFF1F0),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.wifi_off, size: 18, color: Color(0xFFB3261E)),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    _cacheAge != null
-                        ? '${context.tr('offline_banner')} · ${context.tr('last_updated')} ${_fmtAge(_cacheAge!)}'
-                        : context.tr('offline_banner'),
-                    style: const TextStyle(fontSize: 12, color: Color(0xFFB3261E)),
-                  ),
+          Builder(
+            builder: (context) {
+              final isDark = Theme.of(context).brightness == Brightness.dark;
+              final offlineBg = isDark ? const Color(0xFF2D1211) : const Color(0xFFFFF1F0);
+              final offlineText = isDark ? const Color(0xFFFF6B6B) : const Color(0xFFB3261E);
+              return Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: offlineBg,
+                  borderRadius: BorderRadius.circular(8),
                 ),
-              ],
-            ),
+                child: Row(
+                  children: [
+                    Icon(Icons.wifi_off, size: 18, color: offlineText),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _cacheAge != null
+                            ? '${context.tr('offline_banner')} · ${context.tr('last_updated')} ${_fmtAge(_cacheAge!)}'
+                            : context.tr('offline_banner'),
+                        style: TextStyle(fontSize: 12, color: offlineText),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
           ),
 
         // Promo Banner
         if (_showPromo)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: const Color(0xFFE7F6EE),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFFCDECE0), width: 1.5),
-              ),
-              child: Row(
-                children: [
-                  const Text('🛡️', style: TextStyle(fontSize: 24)),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          context.tr('promo_title'),
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w800,
-                            color: Color(0xFF0E7C52),
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          context.tr('promo_sub'),
-                          style: const TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF7C887F),
-                          ),
-                        ),
-                      ],
-                    ),
+          Builder(
+            builder: (context) {
+              final isDark = Theme.of(context).brightness == Brightness.dark;
+              final promoBg = isDark ? const Color(0xFF112E20) : const Color(0xFFE7F6EE);
+              final promoBorder = isDark ? const Color(0xFF194D36) : const Color(0xFFCDECE0);
+              final promoText = isDark ? const Color(0xFF22C7A9) : const Color(0xFF0E7C52);
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: promoBg,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: promoBorder, width: 1.5),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.close, size: 16, color: Color(0xFF0E7C52)),
-                    onPressed: () {
-                      setState(() {
-                        _showPromo = false;
-                      });
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-        // AI Mechanic Card
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF0E7C52), Color(0xFF18B26B)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x330E7C52),
-                  blurRadius: 16,
-                  offset: Offset(0, 8),
-                ),
-              ],
-            ),
-            clipBehavior: Clip.hardEdge,
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const AiAssistantScreen()),
-                  );
-                },
-                child: Padding(
-                  padding: const EdgeInsets.all(18),
                   child: Row(
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
-                        ),
-                        child: const Icon(Icons.psychology, color: Colors.white, size: 28),
-                      ),
-                      const SizedBox(width: 16),
+                      const Text('🛡️', style: TextStyle(fontSize: 24)),
+                      const SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Row(
-                              children: [
-                                Text(
-                                  context.tr('ai_mechanic_title'),
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w900,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                const SizedBox(width: 6),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                  decoration: const BoxDecoration(
-                                    color: Colors.white24,
-                                    borderRadius: BorderRadius.all(Radius.circular(6)),
-                                  ),
-                                  child: Text(
-                                    context.tr('new_badge'),
-                                    style: const TextStyle(
-                                      fontSize: 8,
-                                      fontWeight: FontWeight.w900,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 4),
                             Text(
-                              context.tr('ai_mechanic_sub'),
+                              context.tr('promo_title'),
                               style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.white.withValues(alpha: 0.85),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w800,
+                                color: promoText,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              context.tr('promo_sub'),
+                              style: const TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF7C887F),
                               ),
                             ),
                           ],
                         ),
                       ),
-                      const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 18),
+                      IconButton(
+                        icon: Icon(Icons.close, size: 16, color: promoText),
+                        onPressed: () {
+                          setState(() {
+                            _showPromo = false;
+                          });
+                        },
+                      ),
                     ],
                   ),
                 ),
-              ),
-            ),
+              );
+            }
+          ),
+
+        // AI Mechanic Card
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Builder(
+            builder: (context) {
+              final theme = Theme.of(context);
+              return Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [theme.colorScheme.primary, theme.colorScheme.secondary],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: theme.colorScheme.primary.withValues(alpha: 0.2),
+                      blurRadius: 16,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                clipBehavior: Clip.hardEdge,
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const AiAssistantScreen()),
+                      );
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.all(18),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+                            ),
+                            child: const Icon(Icons.psychology, color: Colors.white, size: 28),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Text(
+                                      context.tr('ai_mechanic_title'),
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w900,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: const BoxDecoration(
+                                        color: Colors.white24,
+                                        borderRadius: BorderRadius.all(Radius.circular(6)),
+                                      ),
+                                      child: Text(
+                                        context.tr('new_badge'),
+                                        style: const TextStyle(
+                                          fontSize: 8,
+                                          fontWeight: FontWeight.w900,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  context.tr('ai_mechanic_sub'),
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.white.withValues(alpha: 0.85),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 18),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }
           ),
         ),
 
@@ -602,9 +629,13 @@ class _DiscoverTabState extends State<_DiscoverTab> {
             margin: const EdgeInsets.only(bottom: 12),
             child: _nearby.isEmpty
                 ? Center(
-                    child: Text(
-                      context.tr('no_helpers_nearby'),
-                      style: const TextStyle(fontSize: 12, color: Color(0xFF7C887F)),
+                    child: Builder(
+                      builder: (context) {
+                        return Text(
+                          context.tr('no_helpers_nearby'),
+                          style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.tertiary),
+                        );
+                      }
                     ),
                   )
                 : ListView.builder(
@@ -706,8 +737,8 @@ class _DiscoverTabState extends State<_DiscoverTab> {
               children: [
                 Container(
                   padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
-                  decoration: const BoxDecoration(
-                    border: Border(bottom: BorderSide(color: Color(0xFFF6F8F7), width: 1.5)),
+                  decoration: BoxDecoration(
+                    border: Border(bottom: BorderSide(color: Theme.of(context).scaffoldBackgroundColor, width: 1.5)),
                   ),
                   child: Row(
                     children: [
@@ -715,8 +746,8 @@ class _DiscoverTabState extends State<_DiscoverTab> {
                         width: 38,
                         height: 38,
                         decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF18B26B), Color(0xFF0E7C52)],
+                          gradient: LinearGradient(
+                            colors: [Theme.of(context).colorScheme.secondary, Theme.of(context).colorScheme.primary],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
@@ -729,20 +760,20 @@ class _DiscoverTabState extends State<_DiscoverTab> {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'Roadside SOS',
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w900,
-                              color: Color(0xFF14201B),
+                              color: Theme.of(context).colorScheme.onSurface,
                               letterSpacing: -0.5,
                             ),
                           ),
                           Text(
                             context.tr('app_subtitle'),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 10,
-                              color: Color(0xFF7C887F),
+                              color: Theme.of(context).colorScheme.tertiary,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -1016,9 +1047,9 @@ class _DiscoverTabState extends State<_DiscoverTab> {
               padding: const EdgeInsets.only(top: mapHeight - 32),
               children: [
                 Container(
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surface,
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
                   ),
                   child: _buildContentList(isDesktop: true),
                 ),
@@ -1227,14 +1258,14 @@ class _NearbyPlaceholderTab extends StatelessWidget {
   const _NearbyPlaceholderTab();
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
+    return Scaffold(
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text('📡', style: TextStyle(fontSize: 40)),
-            SizedBox(height: 10),
-            Text('Nearby Helpers Map & List', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const Text('📡', style: TextStyle(fontSize: 40)),
+            const SizedBox(height: 10),
+            Text(context.tr('nearby_placeholder'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           ],
         ),
       ),
@@ -1246,14 +1277,14 @@ class _TravelPlaceholderTab extends StatelessWidget {
   const _TravelPlaceholderTab();
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
+    return Scaffold(
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text('🚗', style: TextStyle(fontSize: 40)),
-            SizedBox(height: 10),
-            Text('Travel Mode & Route Support', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const Text('🚗', style: TextStyle(fontSize: 40)),
+            const SizedBox(height: 10),
+            Text(context.tr('travel_placeholder'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           ],
         ),
       ),
