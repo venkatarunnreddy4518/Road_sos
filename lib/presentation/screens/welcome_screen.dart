@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/i18n/l10n_ext.dart';
+import '../../data/api/apple_auth_service.dart';
 import '../../data/api/google_auth_service.dart';
 import '../state/auth_state.dart';
+import '../widgets/google_sign_in_button.dart';
 import 'auth/email_auth_screen.dart';
 import 'auth/phone_otp_screen.dart';
 
@@ -98,6 +100,21 @@ class _WelcomeScreenState extends State<WelcomeScreen>
     setState(() => _busy = true);
     try {
       final user = await GoogleAuthService().signIn();
+      if (user != null && mounted) context.read<AuthState>().onSignedIn(user);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('$e')));
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _apple() async {
+    setState(() => _busy = true);
+    try {
+      final user = await AppleAuthService().signIn();
       if (user != null && mounted) context.read<AuthState>().onSignedIn(user);
     } catch (e) {
       if (mounted) {
@@ -289,12 +306,26 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                                 ),
                                 const SizedBox(height: 26),
 
-                                // ── Google button ──
+                                // ── Google button (official GIS button on web) ──
                                 Builder(
-                                  builder: (context) => _GhostButton(
-                                    label: context.tr('continue_google'),
-                                    icon: Icons.g_mobiledata_rounded,
-                                    onTap: _busy ? null : _google,
+                                  builder: (context) => GoogleSignInButton(
+                                    onSignedIn: (user) {
+                                      if (mounted) {
+                                        context.read<AuthState>().onSignedIn(user);
+                                      }
+                                    },
+                                    onError: (e) {
+                                      if (mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text('$e')),
+                                        );
+                                      }
+                                    },
+                                    fallback: _GhostButton(
+                                      label: context.tr('continue_google'),
+                                      icon: Icons.g_mobiledata_rounded,
+                                      onTap: _busy ? null : _google,
+                                    ),
                                   ),
                                 ),
                                 const SizedBox(height: 11),
@@ -304,9 +335,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                                   builder: (context) => _GhostButton(
                                     label: context.tr('continue_apple'),
                                     icon: Icons.apple_rounded,
-                                    onTap: () {
-                                      // TODO: Apple Sign-In
-                                    },
+                                    onTap: _busy ? null : _apple,
                                   ),
                                 ),
                                 const SizedBox(height: 22),

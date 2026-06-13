@@ -66,6 +66,16 @@ class AuthApi {
     return _consume(Map<String, dynamic>.from(d));
   }
 
+  /// Apple sign-in. In prototype mock mode, pass devEmail/devName.
+  Future<AppUser> apple({String? idToken, String? devEmail, String? devName}) async {
+    final d = await _client.post('/auth/apple', auth: false, body: {
+      'id_token': idToken,
+      'dev_email': devEmail,
+      'dev_name': devName,
+    });
+    return _consume(Map<String, dynamic>.from(d));
+  }
+
   Future<AppUser> me() async {
     final d = await _client.get('/auth/me');
     return AppUser.fromJson(Map<String, dynamic>.from(d));

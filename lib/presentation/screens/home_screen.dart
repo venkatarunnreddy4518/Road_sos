@@ -32,38 +32,33 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _tab = 0;
 
+  // ── Design tokens from HTML ──
+  static const Color _border = Color(0xFFECEEF4);
+  static const Color _primary = Color(0xFF2563EB);
+
   Widget _buildNavItem(int index, String icon, String label) {
     final isActive = _tab == index;
     final theme = Theme.of(context);
-    final color = isActive ? theme.colorScheme.primary : theme.colorScheme.tertiary;
+    final color = isActive ? _primary : theme.colorScheme.tertiary;
 
     return Expanded(
       child: InkWell(
         onTap: () => setState(() => _tab = index),
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(icon, style: TextStyle(fontSize: 20, color: color)),
-            const SizedBox(height: 3),
+            const SizedBox(height: 4),
             Text(
               label,
               style: TextStyle(
                 color: color,
-                fontSize: 10,
-                fontWeight: isActive ? FontWeight.w800 : FontWeight.w500,
+                fontSize: 11,
+                fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
+                fontFamily: 'Outfit',
               ),
             ),
-            if (isActive) ...[
-              const SizedBox(height: 3),
-              Container(
-                width: 4,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.primary,
-                  shape: BoxShape.circle,
-                ),
-              ),
-            ],
           ],
         ),
       ),
@@ -82,21 +77,116 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       body: pages[_tab],
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          border: Border(top: BorderSide(color: Theme.of(context).colorScheme.outline, width: 1.5)),
-        ),
-        padding: const EdgeInsets.only(top: 8, bottom: 18),
-        child: Row(
-          children: [
-            _buildNavItem(0, '🏠', context.tr('nav_home')),
-            _buildNavItem(1, '🕐', context.tr('history')),
-            _buildNavItem(2, '📡', context.tr('nav_nearby')),
-            _buildNavItem(3, '🚗', context.tr('nav_travel')),
-            _buildNavItem(4, '👤', context.tr('profile')),
-          ],
-        ),
+      bottomNavigationBar: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          // 1. Main navigation bar background & border
+          Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              border: Border(
+                top: BorderSide(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Theme.of(context).colorScheme.outline
+                      : _border,
+                  width: 1.5,
+                ),
+              ),
+            ),
+            padding: EdgeInsets.only(
+              top: 10,
+              bottom: 18 + MediaQuery.of(context).padding.bottom,
+              left: 6,
+              right: 6,
+            ),
+            child: Row(
+              children: [
+                _buildNavItem(0, '🏠', context.tr('nav_home')),
+                _buildNavItem(1, '🕐', context.tr('history')),
+                const SizedBox(width: 64), // Spacer for notch cutout
+                _buildNavItem(3, '🚗', context.tr('nav_travel')),
+                _buildNavItem(4, '👤', context.tr('profile')),
+              ],
+            ),
+          ),
+          // 2. Notch cutout background circle
+          Positioned(
+            top: -22,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).scaffoldBackgroundColor,
+                  shape: BoxShape.circle,
+                ),
+                child: Stack(
+                  children: [
+                    // Bottom mask to blend notch with the white bar below
+                    Positioned(
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      height: 32,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.surface,
+                          borderRadius: const BorderRadius.only(
+                            bottomLeft: Radius.circular(32),
+                            bottomRight: Radius.circular(32),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          // 3. Circular gradient FAB inside the notch
+          Positioned(
+            top: -16, // centered inside the 64px notch (-22 + (64-52)/2)
+            left: 0,
+            right: 0,
+            child: Center(
+              child: GestureDetector(
+                onTap: () => setState(() => _tab = 2),
+                child: Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: const LinearGradient(
+                      colors: [_primary, Color(0xFF60A5FA)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: _primary.withValues(alpha: 0.4),
+                        blurRadius: 14,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  alignment: Alignment.center,
+                  child: const Text(
+                    'SOS',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.5,
+                      fontFamily: 'Outfit',
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
