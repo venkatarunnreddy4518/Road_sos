@@ -15,6 +15,14 @@ os.environ.setdefault(
     os.environ.get("TEST_DATABASE_URL", "sqlite:///./roadside_help_test.db"),
 )
 
+# Force deterministic provider behaviour (mock/dev mode) regardless of the
+# developer's local .env, so tests don't break when real credentials are present.
+for _provider_var in (
+    "GOOGLE_CLIENT_ID", "APPLE_CLIENT_ID",
+    "TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN", "TWILIO_FROM_NUMBER",
+):
+    os.environ[_provider_var] = ""
+
 from app.db.session import get_db  # noqa: E402
 from app.main import app  # noqa: E402
 from app.models import Base  # noqa: E402

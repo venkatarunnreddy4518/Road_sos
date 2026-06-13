@@ -40,6 +40,7 @@ class PhoneVerifyOtp(BaseModel):
 
 class GoogleSignIn(BaseModel):
     id_token: str | None = None
+    access_token: str | None = None  # web OAuth2 popup flow (token client)
     # dev/mock-mode fallback fields
     dev_email: EmailStr | None = None
     dev_name: str | None = None

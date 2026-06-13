@@ -56,10 +56,12 @@ class AuthApi {
     return _consume(Map<String, dynamic>.from(d));
   }
 
-  /// Google sign-in. In prototype mock mode, pass devEmail/devName.
-  Future<AppUser> google({String? idToken, String? devEmail, String? devName}) async {
+  /// Google sign-in. Web passes accessToken (OAuth2 popup); mobile passes idToken;
+  /// prototype mock mode passes devEmail/devName.
+  Future<AppUser> google({String? idToken, String? accessToken, String? devEmail, String? devName}) async {
     final d = await _client.post('/auth/google', auth: false, body: {
       'id_token': idToken,
+      'access_token': accessToken,
       'dev_email': devEmail,
       'dev_name': devName,
     });
