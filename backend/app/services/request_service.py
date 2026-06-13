@@ -27,7 +27,9 @@ _TERMINAL = {RequestStatus.completed, RequestStatus.cancelled}
 
 
 def _now() -> datetime:
-    return datetime.now(timezone.utc).replace(tzinfo=None)
+    """Aware UTC. Columns are TIMESTAMPTZ, so storing naive datetimes would be
+    misinterpreted in the server's local timezone instead of UTC."""
+    return datetime.now(timezone.utc)
 
 
 def _helper_for_user(db: Session, user: User) -> HelperProfile:

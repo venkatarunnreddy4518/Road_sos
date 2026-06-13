@@ -36,7 +36,7 @@ def create_review(db: Session, seeker: User, request_id: uuid.UUID, rating: int,
         seeker_user_id=seeker.id,
         rating=rating,
         comment=comment,
-        created_at=datetime.now(timezone.utc).replace(tzinfo=None),
+        created_at=datetime.now(timezone.utc),
     )
     db.add(review)
     db.flush()

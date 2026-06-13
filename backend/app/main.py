@@ -37,5 +37,6 @@ def health():
     return {
         "status": "ok",
         "google_mock_mode": settings.google_mock_mode,
+        "apple_mock_mode": settings.apple_mock_mode,
         "sms_mock_mode": settings.sms_mock_mode,
     }

@@ -25,6 +25,10 @@ class Settings(BaseSettings):
     # Google OAuth: accept one or more client IDs (comma-separated) for ID-token audience checks.
     google_client_id: str | None = None
 
+    # Apple Sign In: Service ID (web) and/or app bundle id(s), comma-separated, used as the
+    # ID-token audience. When unset, Apple runs in dev/mock mode.
+    apple_client_id: str | None = None
+
     # Twilio SMS (real OTP delivery). All three required to leave mock mode.
     twilio_account_sid: str | None = None
     twilio_auth_token: str | None = None
@@ -44,6 +48,16 @@ class Settings(BaseSettings):
     @property
     def google_mock_mode(self) -> bool:
         return not self.google_client_ids
+
+    @property
+    def apple_client_ids(self) -> list[str]:
+        if not self.apple_client_id:
+            return []
+        return [c.strip() for c in self.apple_client_id.split(",") if c.strip()]
+
+    @property
+    def apple_mock_mode(self) -> bool:
+        return not self.apple_client_ids
 
     @property
     def sms_mock_mode(self) -> bool:
