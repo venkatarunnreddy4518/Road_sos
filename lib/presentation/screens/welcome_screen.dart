@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 
 import '../../core/i18n/l10n_ext.dart';
 import '../../data/api/apple_auth_service.dart';
-import '../../data/api/google_auth_service.dart';
 import '../state/auth_state.dart';
 import '../widgets/google_sign_in_button.dart';
 import 'auth/email_auth_screen.dart';
@@ -93,21 +92,6 @@ class _WelcomeScreenState extends State<WelcomeScreen>
           builder: (_) => EmailAuthScreen(initialEmail: email.isNotEmpty ? email : null),
         ),
       );
-    }
-  }
-
-  Future<void> _google() async {
-    setState(() => _busy = true);
-    try {
-      final user = await GoogleAuthService().signIn();
-      if (user != null && mounted) context.read<AuthState>().onSignedIn(user);
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('$e')));
-      }
-    } finally {
-      if (mounted) setState(() => _busy = false);
     }
   }
 
@@ -306,7 +290,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                                 ),
                                 const SizedBox(height: 26),
 
-                                // ── Google button (official GIS button on web) ──
+                                // ── Google button (standard "Continue with Google") ──
                                 Builder(
                                   builder: (context) => GoogleSignInButton(
                                     onSignedIn: (user) {
@@ -321,10 +305,10 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                                         );
                                       }
                                     },
-                                    fallback: _GhostButton(
+                                    builder: (onTap, loading) => _GhostButton(
                                       label: context.tr('continue_google'),
                                       icon: Icons.g_mobiledata_rounded,
-                                      onTap: _busy ? null : _google,
+                                      onTap: loading ? null : onTap,
                                     ),
                                   ),
                                 ),

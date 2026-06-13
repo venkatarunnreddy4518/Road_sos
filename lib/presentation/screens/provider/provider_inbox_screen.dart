@@ -5,8 +5,10 @@ import 'package:provider/provider.dart';
 
 import '../../../core/i18n/l10n_ext.dart';
 import '../../../core/utils/location_service.dart';
+import '../../../data/api/discovery_api.dart';
 import '../../../data/api/profile_api.dart';
 import '../../../data/api/request_api.dart';
+import '../../../data/models/category.dart';
 import '../../state/auth_state.dart';
 import '../../utils/helper_actions.dart';
 import 'provider_job_screen.dart';
@@ -23,6 +25,7 @@ class _ProviderInboxScreenState extends State<ProviderInboxScreen> {
   final _requests = RequestApi();
   Timer? _poll;
   List<Map<String, dynamic>> _open = [];
+  List<ServiceCategory> _categories = [];
   bool _loading = true;
   double _lat = 17.4239;
   double _lng = 78.4738;
@@ -45,6 +48,9 @@ class _ProviderInboxScreenState extends State<ProviderInboxScreen> {
       _lat = pos.latitude;
       _lng = pos.longitude;
     }
+    try {
+      _categories = await DiscoveryApi().categories();
+    } catch (_) {}
     if (!mounted) return;
     if (context.read<AuthState>().user?.isHelper ?? false) {
       _startPolling();
@@ -62,14 +68,198 @@ class _ProviderInboxScreenState extends State<ProviderInboxScreen> {
     try {
       final res = await _requests.open(lat: _lat, lng: _lng);
       if (mounted) {
+        final oldIds = _open.map((r) => r['id'] as String).toSet();
+        final newRequests = res.where((r) => !oldIds.contains(r['id'] as String)).toList();
+        final wasLoading = _loading;
+
         setState(() {
           _open = res;
           _loading = false;
         });
+
+        if (!wasLoading && newRequests.isNotEmpty) {
+          for (final req in newRequests) {
+            _showIncomingRequestAlert(req);
+          }
+        }
       }
     } catch (_) {
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  void _showIncomingRequestAlert(Map<String, dynamic> req) {
+    final seeker = (req['seeker_name'] as String?)?.trim();
+    final note = (req['note'] as String?)?.trim();
+    final dist = (req['distance_km'] as num?)?.toDouble();
+    final id = req['id'] as String;
+
+    final catId = req['category_id'] as String?;
+    final cat = _categories.firstWhere(
+      (c) => c.id == catId,
+      orElse: () => ServiceCategory(
+        id: '',
+        key: '',
+        name: 'Emergency Request',
+        icon: 'build',
+        sortOrder: 0,
+        helperTypes: [],
+      ),
+    );
+
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext dialogContext) {
+        final isDark = Theme.of(dialogContext).brightness == Brightness.dark;
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+          title: Row(
+            children: [
+              const Text('🚨 ', style: TextStyle(fontSize: 22)),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'SOS Incoming Alert!',
+                  style: TextStyle(
+                    fontFamily: 'Outfit',
+                    fontWeight: FontWeight.w900,
+                    color: Theme.of(dialogContext).colorScheme.error,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'A motorist nearby requested immediate assistance:',
+                style: TextStyle(
+                  fontFamily: 'Outfit',
+                  fontSize: 13,
+                  color: Colors.grey,
+                ),
+              ),
+              const SizedBox(height: 14),
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: isDark ? const Color(0xFF475569) : const Color(0xFFE2E8F0),
+                    width: 1.5,
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          cat.icon == 'tire_repair'
+                              ? '🛞'
+                              : cat.icon == 'local_gas_station'
+                                  ? '⛽'
+                                  : cat.icon == 'battery_charging_full'
+                                      ? '🔋'
+                                      : cat.icon == 'fire_truck'
+                                          ? '🚒'
+                                          : '🔧',
+                          style: const TextStyle(fontSize: 20),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            cat.name,
+                            style: TextStyle(
+                              fontFamily: 'Outfit',
+                              fontWeight: FontWeight.w800,
+                              fontSize: 14,
+                              color: isDark ? Colors.white : const Color(0xFF0F172A),
+                            ),
+                          ),
+                            ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      'Seeker: ${seeker?.isNotEmpty == true ? seeker! : 'Someone Nearby'}',
+                      style: TextStyle(
+                        fontFamily: 'Outfit',
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                        color: isDark ? Colors.white70 : const Color(0xFF334155),
+                      ),
+                    ),
+                    if (dist != null) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        'Distance: ${dist.toStringAsFixed(1)} km away',
+                        style: const TextStyle(
+                          fontFamily: 'Outfit',
+                          fontSize: 12,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ],
+                    if (note?.isNotEmpty == true) ...[
+                      const SizedBox(height: 10),
+                      const Divider(height: 1),
+                      const SizedBox(height: 10),
+                      Text(
+                        'Note: "$note"',
+                        style: TextStyle(
+                          fontFamily: 'Outfit',
+                          fontStyle: FontStyle.italic,
+                          fontSize: 12,
+                          color: isDark ? Colors.white60 : const Color(0xFF475569),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text(
+                'Ignore',
+                style: TextStyle(
+                  fontFamily: 'Outfit',
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              ),
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                _accept(id);
+              },
+              child: const Text(
+                'Accept SOS',
+                style: TextStyle(
+                  fontFamily: 'Outfit',
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Future<void> _accept(String id) async {
@@ -113,6 +303,20 @@ class _ProviderInboxScreenState extends State<ProviderInboxScreen> {
                           final note = (r['note'] as String?)?.trim();
                           final lat = (r['pickup_lat'] as num?)?.toDouble();
                           final lng = (r['pickup_lng'] as num?)?.toDouble();
+
+                          final catId = r['category_id'] as String?;
+                          final cat = _categories.firstWhere(
+                            (c) => c.id == catId,
+                            orElse: () => ServiceCategory(
+                              id: '',
+                              key: '',
+                              name: 'Emergency Request',
+                              icon: 'build',
+                              sortOrder: 0,
+                              helperTypes: [],
+                            ),
+                          );
+
                           return Card(
                             margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                             child: Padding(
@@ -122,20 +326,52 @@ class _ProviderInboxScreenState extends State<ProviderInboxScreen> {
                                 children: [
                                   Row(
                                     children: [
-                                      const CircleAvatar(
+                                      CircleAvatar(
                                         radius: 18,
-                                        backgroundColor: Color(0xFFE7F6EE),
-                                        child: Icon(Icons.person, color: Color(0xFF0E7C52)),
+                                        backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                                        child: Text(
+                                          cat.icon == 'tire_repair'
+                                              ? '🛞'
+                                              : cat.icon == 'local_gas_station'
+                                                  ? '⛽'
+                                                  : cat.icon == 'battery_charging_full'
+                                                      ? '🔋'
+                                                      : cat.icon == 'fire_truck'
+                                                          ? '🚒'
+                                                          : '🔧',
+                                          style: const TextStyle(fontSize: 16),
+                                        ),
                                       ),
                                       const SizedBox(width: 10),
                                       Expanded(
                                         child: Column(
                                           crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
-                                            Text(
-                                              seeker?.isNotEmpty == true ? seeker! : context.tr('someone_nearby'),
-                                              style: const TextStyle(
-                                                  fontWeight: FontWeight.w800, fontSize: 15),
+                                            Row(
+                                              children: [
+                                                Expanded(
+                                                  child: Text(
+                                                    seeker?.isNotEmpty == true ? seeker! : context.tr('someone_nearby'),
+                                                    style: const TextStyle(
+                                                        fontWeight: FontWeight.w800, fontSize: 15),
+                                                  ),
+                                                ),
+                                                Container(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                                  decoration: BoxDecoration(
+                                                    color: Theme.of(context).colorScheme.primary.withOpacity(0.08),
+                                                    borderRadius: BorderRadius.circular(8),
+                                                  ),
+                                                  child: Text(
+                                                    cat.name,
+                                                    style: TextStyle(
+                                                      fontSize: 10,
+                                                      fontWeight: FontWeight.w800,
+                                                      color: Theme.of(context).colorScheme.primary,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
                                             ),
                                             if (dist != null)
                                               Text(

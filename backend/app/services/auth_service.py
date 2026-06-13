@@ -179,6 +179,39 @@ def _verify_google_token(id_token: str) -> dict:
     return {"sub": data["sub"], "email": data.get("email"), "name": data.get("name", "Google User")}
 
 
+def _verify_google_access_token(access_token: str) -> dict:
+    """Verify a Google OAuth access token (web popup flow): check the audience via
+    tokeninfo (security), then fetch the profile via userinfo."""
+    try:
+        ti = httpx.get(
+            "https://oauth2.googleapis.com/tokeninfo", params={"access_token": access_token}, timeout=10
+        )
+    except httpx.HTTPError as e:
+        raise AppError("unauthenticated", "Could not verify Google token.", status_code=401) from e
+    if ti.status_code != 200:
+        raise AppError("unauthenticated", "Invalid Google token.", status_code=401)
+    info = ti.json()
+    if info.get("aud") not in settings.google_client_ids:
+        raise AppError("unauthenticated", "Google token audience mismatch.", status_code=401)
+
+    sub, email, name = info.get("sub"), info.get("email"), "Google User"
+    try:
+        ui = httpx.get(
+            "https://www.googleapis.com/oauth2/v3/userinfo",
+            headers={"Authorization": f"Bearer {access_token}"}, timeout=10,
+        )
+        if ui.status_code == 200:
+            u = ui.json()
+            sub = u.get("sub", sub)
+            email = u.get("email", email)
+            name = u.get("name") or name
+    except httpx.HTTPError:
+        pass
+    if not sub:
+        raise AppError("unauthenticated", "Could not resolve Google account.", status_code=401)
+    return {"sub": sub, "email": email, "name": name}
+
+
 def _oauth_upsert(db: Session, provider: AuthProvider, profile: dict) -> dict:
     """Find or create a user for a verified social profile and link the provider identity.
     Links to an existing account when the verified email matches; otherwise creates one."""
@@ -202,15 +235,23 @@ def _oauth_upsert(db: Session, provider: AuthProvider, profile: dict) -> dict:
     return _result(db, user)
 
 
-def google_sign_in(db: Session, id_token: str | None, dev_email: str | None, dev_name: str | None) -> dict:
+def google_sign_in(
+    db: Session,
+    id_token: str | None,
+    dev_email: str | None,
+    dev_name: str | None,
+    access_token: str | None = None,
+) -> dict:
     if settings.google_mock_mode:
         if not dev_email:
             raise AppError("validation_error", "dev_email required in Google mock mode.", status_code=422)
         profile = {"sub": f"google-dev:{dev_email}", "email": dev_email, "name": dev_name or "Google User"}
-    else:
-        if not id_token:
-            raise AppError("validation_error", "id_token required.", status_code=422)
+    elif access_token:
+        profile = _verify_google_access_token(access_token)
+    elif id_token:
         profile = _verify_google_token(id_token)
+    else:
+        raise AppError("validation_error", "id_token or access_token required.", status_code=422)
     return _oauth_upsert(db, AuthProvider.google, profile)
 
 

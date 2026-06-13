@@ -31,3 +31,6 @@ Thumbs.db
 .env*
 !.env.example
 .vercel
+
+# Local server logs
+*.log

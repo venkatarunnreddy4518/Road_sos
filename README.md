@@ -1,151 +1,271 @@
-# Roadside Help — Two-Sided Marketplace (Prototype)
+# Roadside SOS — Two-Sided Assistance Marketplace
 
-An Uber/Rapido-style roadside-assistance app: a stranded user finds the nearest helper
-(puncture shop, petrol pump, mechanic, towing, battery), requests them, and tracks them live —
-while helpers receive and fulfil requests in a provider mode. Offline-first discovery, working
-OpenStreetMap maps, multi-language UI, accounts, and ratings.
+[![Flutter](https://img.shields.io/badge/Flutter-3.x-02569B?logo=flutter&logoColor=white)](https://flutter.dev)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.100%2B-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14%2B-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org)
+[![SQLite](https://img.shields.io/badge/SQLite-3-003B57?logo=sqlite&logoColor=white)](https://www.sqlite.org)
+[![Code Style: Ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Built entirely with the **Spec Kit** workflow. See
-[`specs/002-roadside-marketplace`](specs/002-roadside-marketplace) for the spec, plan, data model,
-API contract, and task list.
+An Uber-style, two-sided marketplace prototype for roadside emergencies. Stranded users (seekers) can locate nearby help (puncture shops, petrol pumps, mechanics, towing, battery jump-starts), submit real-time assistance requests, and track helper location live on interactive maps. Active helpers (providers) can log in to a dedicated **Provider Mode** to receive local requests, accept jobs (first-accept-wins), and update their status/location.
 
-## Architecture
+---
+
+## 🏗️ System Architecture
+
+The application is built on a decoupled, mobile-and-API split architecture:
+- **Frontend Client**: A multi-platform Flutter app running on iOS, Android, and Web, using `provider` state management, `flutter_map` for OpenStreetMap integration, and an offline-first SQLite cache.
+- **Backend API**: A high-performance, asynchronous FastAPI service powered by SQLAlchemy 2.0 and PostgreSQL.
+- **Offline Sync**: In offline-only conditions, the client automatically degrades to use cached nearest-helper lists and executes direct local call/SMS fallbacks based on the device's GPS coordinates.
+
+### High-Level Architectural Flow
+
+```mermaid
+graph TD
+    subgraph Client ["Flutter Client App (Dart 3 / Flutter 3)"]
+        UI["Presentation Layer (Screens/Widgets)"]
+        State["State Management (Provider)"]
+        Domain["Domain Usecases & Entities"]
+        Repo["Repositories (Data Sync & Auth)"]
+        LocalCache["SQLite Cache (sqflite)"]
+        SecureStorage["Secure Token Store"]
+    end
+
+    subgraph Backend ["FastAPI Backend (Python 3.11+)"]
+        API["REST API Router (FastAPI)"]
+        Service["Business Logic Service Layer"]
+        ORM["SQLAlchemy 2.0 ORM Engine"]
+    end
+
+    subgraph Database ["Data Store"]
+        Postgres[(PostgreSQL 14+)]
+    end
+
+    UI --> State
+    State --> Domain
+    Domain --> Repo
+    Repo --> LocalCache
+    Repo --> SecureStorage
+    Repo -- "HTTPS REST API (JWT)" --> API
+    API --> Service
+    Service --> ORM
+    ORM --> Postgres
+```
+
+---
+
+## 🔄 Marketplace Lifecycle (Sequence Flow)
+
+The following sequence diagram outlines the end-to-end request submission, assignment (first-accept-wins), real-time tracking, and reviews loop:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Seeker as Stranded User
+    participant App as Seeker App
+    participant BE as FastAPI Backend
+    participant DB as PostgreSQL
+    actor Helper as Roadside Mechanic
+    participant ProvApp as Provider App
+
+    Seeker->>App: Tap Emergency Category (e.g. Puncture)
+    App->>BE: GET /api/v1/helpers/nearby?lat=...&lng=...
+    BE->>DB: Query helpers with Haversine distance
+    DB-->>BE: Return active helper list
+    BE-->>App: Return nearby helpers (or cache if offline)
+    App->>Seeker: Display helpers on OSM Map
+
+    Seeker->>App: Tap "Request Help Now" (SOS)
+    App->>BE: POST /api/v1/requests (lat, lng, note)
+    BE->>DB: Insert request (status: REQUESTED)
+    BE-->>App: Return Request ID
+    App->>Seeker: Transition to Tracking Screen
+
+    Note over ProvApp, Helper: Provider Mode Active
+    BE->>ProvApp: Poll / Long-Poll / Push notification
+    ProvApp->>Helper: Alert: New Request Nearby!
+    Helper->>ProvApp: Tap "Accept Request"
+    ProvApp->>BE: POST /api/v1/requests/{id}/accept
+    BE->>DB: Check & update status (ACCEPTED - First Accept Wins)
+    BE-->>ProvApp: Accept successful (Assign Helper)
+    
+    loop Real-time Tracking
+        ProvApp->>BE: POST /api/v1/locations/update (lat, lng)
+        BE->>DB: Save helper position
+        App->>BE: GET /api/v1/requests/{id}/status
+        BE-->>App: Return current status + helper coordinates
+        App->>Seeker: Move helper marker on map & update timeline
+    end
+
+    Helper->>ProvApp: Tap "Mark Arrived" & "Complete Service"
+    ProvApp->>BE: POST /api/v1/requests/{id}/status (ARRIVED -> COMPLETED)
+    BE->>DB: Finalize request status
+    App->>Seeker: Show rating & review dialog
+    Seeker->>App: Rate 1-5 Stars + Comment
+    App->>BE: POST /api/v1/reviews
+    BE->>DB: Update helper rolling average rating
+```
+
+---
+
+## ✨ Key Features
+
+- **Decoupled Auth Systems**: Native support for Phone OTP sign-in, Google sign-in, Email+Password, and immediate Guest access. Features pre-built sandboxed development mocks when third-party OAuth/SMS API keys are missing.
+- **Premium Premium-Notch Navbar**: Custom-built bottom navigation system including a center-docked premium SOS FAB nestled inside a geometric notch cutout with dynamic theme support (matching iOS/Android navigation guidelines).
+- **Haversine Distance Mapping**: Real-time server-side geospatial query processing using indexing and mathematical coordinate distance (Haversine) without heavy GIS dependencies.
+- **Live Tracking Panel**: Draggable, glassmorphic bottom sheets displaying status timelines, pickup pointers, and active tracking markers on OpenStreetMap.
+- **Localization Integration**: Dynamic locale selector (supporting **English, हिन्दी, తెలుగు, தமிழ்**) that completes a full-app language update under 2 seconds and persists preferences across launches.
+- **Provider Console**: Live client inbox displaying open local requests, quick directions navigation, and status updating triggers.
+
+---
+
+## 🗄️ Database Model (PostgreSQL)
+
+The backend schema features six normalized tables representing the marketplace entities:
 
 ```
-Flutter app (lib/)  ──HTTPS REST──▶  FastAPI backend (backend/)  ──▶  PostgreSQL
-   │  flutter_map / OSM, geolocator, url_launcher                        (normalized schema)
-   └─ SQLite cache for offline-first helper discovery
+                  ┌──────────────────────┐
+                  │        users         │◄────────────────┐
+                  ├──────────────────────┤                 │
+                  │ id (PK)              │                 │
+                  │ email, phone, role   │                 │
+                  └──────────┬───────────┘                 │
+                             │ 1                           │ 1
+                             ▼ *                           │
+                  ┌──────────────────────┐        ┌────────┴─────────────┐
+                  │   auth_identities    │        │   helper_profiles    │
+                  ├──────────────────────┤        ├──────────────────────┤
+                  │ provider, uid        │        │ id (PK)              │
+                  │ user_id (FK)         │        │ user_id (FK)         │
+                  └──────────────────────┘        │ rating_avg, lat, lng │
+                                                  └────────▲─────────────┘
+                                                           │ 1
+                                                           ▼ *
+┌──────────────────────┐ *                        ┌────────┴─────────────┐
+│  service_categories  │◄─────────────────────────┤   service_requests   │
+├──────────────────────┤                          ├──────────────────────┤
+│ id (PK)              │ 1                        │ id (PK), status      │
+│ name, helper_types   │                          │ seeker_id (FK:user)  │
+└──────────────────────┘                          │ helper_id (FK:profile│
+                                                  └────────▲─────────────┘
+                                                           │ 1
+                                                           ▼ *
+                                                  ┌────────┴─────────────┐
+                                                  │       reviews        │
+                                                  ├──────────────────────┤
+                                                  │ request_id (FK)      │
+                                                  │ rating (1-5), note   │
+                                                  └──────────────────────┘
 ```
 
-- **Frontend**: Flutter (mobile + web), `provider` state, `flutter_map`/OSM, `flutter_secure_storage`.
-- **Backend**: FastAPI + SQLAlchemy + Alembic + PostgreSQL, JWT auth, bcrypt hashing.
-- **Auth**: phone OTP, email+password, Google, and guest (OTP/Google have dev mocks).
+---
 
-## How to run
+## 🚀 Local Quickstart & Build Configuration
 
-You run **two things**: the backend API (Python + PostgreSQL) and the Flutter app (web).
-Commands below are for **Windows PowerShell** (the project's primary environment).
+All commands are prepared for **Windows PowerShell** (the primary development environment).
 
 ### Prerequisites
+- Flutter SDK (v3.x / Dart 3.x) with Web enabled (`flutter config --enable-web`)
+- Python (v3.11+)
+- PostgreSQL (v14+ running locally)
 
-| Tool | Version | Check |
-|------|---------|-------|
-| Flutter SDK | 3.x (Dart 3) | `flutter --version` |
-| Python | 3.11+ | `python --version` |
-| PostgreSQL | 14+ (running) | service `postgresql-x64-XX` Running |
+---
 
-Enable Flutter web once: `flutter config --enable-web`.
-
-### Step 1 — Database (one time)
-
-Create the database, using **your** PostgreSQL `postgres` password (set during install):
-
+### Step 1: Initialize PostgreSQL Database
+Create the database and set up a user/role with your local PostgreSQL password:
 ```powershell
-# replace YOURPASS; this creates the app database
-$env:PGPASSWORD="YOURPASS"
+# Set PostgreSQL password for createdb access
+$env:PGPASSWORD="YOUR_POSTGRES_PASSWORD"
+
+# Create the primary application database
 & "$env:ProgramFiles\PostgreSQL\18\bin\createdb.exe" -U postgres roadside_help
 ```
 
-### Step 2 — Backend API
+---
 
-```powershell
-cd backend
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
+### Step 2: Spin up the FastAPI Backend API
+1. Navigate to the backend folder and create a Python virtual environment:
+   ```powershell
+   cd backend
+   python -m venv .venv
+   .\.venv\Scripts\Activate.ps1
+   ```
+2. Install Python packages and create your environment file:
+   ```powershell
+   pip install -r requirements.txt
+   Copy-Item .env.example .env
+   ```
+3. Update `backend/.env` with your Postgres password and a random secret:
+   ```env
+   DATABASE_URL=postgresql+psycopg://postgres:YOUR_POSTGRES_PASSWORD@localhost:5432/roadside_help
+   JWT_SECRET=super-secure-key-string-change-this
+   ```
+4. Run Alembic schema migrations and seed database with categories and demo mechanics:
+   ```powershell
+   alembic upgrade head
+   python -m app.seed.run
+   ```
+5. Launch the live Uvicorn API server:
+   ```powershell
+   uvicorn app.main:app --reload --port 8000
+   ```
+   - OpenAPI Docs: <http://localhost:8000/docs>
+   - Server Health Check: <http://localhost:8000/health>
 
-Copy-Item .env.example .env       # then edit .env (see below)
-alembic upgrade head              # create tables
-python -m app.seed.run            # seed categories + ~15 demo helpers
-uvicorn app.main:app --reload --port 8000
-```
+---
 
-Edit **`backend/.env`** so `DATABASE_URL` has your real password, and set a `JWT_SECRET`:
+### Step 3: Run or Build the Flutter App (Web/Local)
+Start a new terminal session at the project root folder.
 
-```
-DATABASE_URL=postgresql+psycopg://postgres:YOURPASS@localhost:5432/roadside_help
-JWT_SECRET=any-long-random-string
-```
-
-Verify the API is up:
-- Health: <http://localhost:8000/health>
-- Swagger docs: <http://localhost:8000/docs>
-
-> **Dev/mock auth** (no external accounts needed): phone OTP returns a `dev_code` and accepts
-> `000000`; Google sign-in uses a demo identity. To wire **real** Twilio SMS and Google sign-in,
-> follow [docs/PROVIDERS.md](docs/PROVIDERS.md) (put secrets in `backend/.env`; pass Google client
-> ids to the app via `--dart-define`).
-
-### Step 3 — Flutter app (web)
-
-In a **second terminal** at the project root:
-
+#### Running locally in Chrome:
 ```powershell
 flutter pub get
 flutter run -d chrome --dart-define=API_BASE_URL=http://localhost:8000
 ```
 
-The app opens in Chrome. Sign in (or **Continue as guest**), pick a category, and you'll see the
-seeded helpers. To exercise the two-sided flow, run a second client and register it as a helper
-(Profile → Provider mode).
-
-### Run on a phone / emulator
-
-Native `android/` and `ios/` are generated and pre-configured with the required permissions
-(internet, location) and intent/URL-scheme entries for call/SMS/directions.
-
+#### Compiling static assets for web deployment (e.g. Vercel hosting):
+Because Vercel serves the app statically via precompiled assets defined in `vercel.json`'s `outputDirectory: "build/web"`, any new local code edits must be built and committed back to the repository:
 ```powershell
-flutter devices                                  # list connected devices/emulators
-# Android emulator (10.0.2.2 = your host machine):
-flutter run -d emulator-5554 --dart-define=API_BASE_URL=http://10.0.2.2:8000
-# Physical Android phone on the same Wi-Fi (use your PC's LAN IP):
-flutter run -d <deviceId> --dart-define=API_BASE_URL=http://192.168.x.x:8000
-# build an installable debug APK:
-flutter build apk --debug --dart-define=API_BASE_URL=http://10.0.2.2:8000
+# Compile production-ready web assets
+flutter build web
+
+# Add new compiled builds (bypassing generic gitignore rules)
+git add -f build/web/
+git commit -m "build: compile web assets for production"
+git push github
 ```
 
-> iOS requires macOS + Xcode to build/run. Cleartext HTTP to the local backend is enabled for
-> dev on both platforms; use HTTPS in production.
+---
 
-### Troubleshooting
+## 🧪 Running the Quality Suite
 
-| Symptom | Fix |
-|---------|-----|
-| `password authentication failed for user "postgres"` | Wrong password in `DATABASE_URL` — use your real Postgres password. |
-| App shows "Offline — showing cached helpers" | Backend not reachable; confirm `uvicorn` is running on :8000 and `API_BASE_URL` matches. |
-| Browser blocks the API (CORS) | `CORS_ORIGINS=*` is set by default in `.env.example`; keep it for local dev. |
-| Empty helper list | Run `python -m app.seed.run`. |
+Strict coding style, security scans, and code coverage checks are automatically validated in the CI pipeline:
 
-Full demo walkthrough: [specs/002-roadside-marketplace/quickstart.md](specs/002-roadside-marketplace/quickstart.md).
+### FastAPI Backend Checks
+```powershell
+cd backend
+.\.venv\Scripts\Activate.ps1
 
-## Features (by user story)
+# Formatter and Code Linter
+ruff check .
+ruff format --check .
 
-| Story | What it delivers |
-|-------|------------------|
-| US1 | Sign in (4 methods) · home with search + category grid · nearest helpers · call/SMS/directions |
-| US2 | Submit a request · live status timeline + moving helper marker · cancel · rate on completion |
-| US3 | Provider mode: register, see open requests, accept (first-accept-wins), advance status, share location |
-| US4 | Profile (name/phone/vehicle), request history (both roles), 1–5★ reviews with helper averages |
-| US5 | Switch language anytime (English, हिन्दी, తెలుగు, தமிழ்), persisted across launches |
+# Static Type Checking
+mypy app/
 
-## Tests
+# Security Scan (Secret leaks and CVEs)
+bandit -r app/ -ll
 
-```bash
-flutter test                      # client unit/widget tests
-cd backend && pytest              # backend unit/contract/integration (needs PostgreSQL)
+# Integration & Contract Tests with Coverage Threshold (>=80%)
+pytest --cov=app --cov-fail-under=80
 ```
 
-## Project layout
+### Flutter Frontend Checks
+```powershell
+# Analyze Dart codebase for compiler/static warnings
+flutter analyze
 
-```
-backend/                          FastAPI + PostgreSQL service
-lib/
-├── core/        network (api client, token store), i18n, utils (geo, location)
-├── data/        models, api clients
-└── presentation/ screens (welcome, auth, home, search, helper detail, tracking,
-                  provider, profile, history, settings), widgets, state
-specs/002-roadside-marketplace/   spec · plan · research · data-model · contracts · tasks
+# Run Flutter widget and unit tests
+flutter test
 ```
 
-> Payments are out of scope for this prototype. OTP/Google sign-in use clearly-labelled dev
-> fallbacks unless real provider credentials are configured.

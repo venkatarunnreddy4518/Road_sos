@@ -45,7 +45,9 @@ def verify_otp(body: PhoneVerifyOtp, db: Session = Depends(get_db)):
 
 @router.post("/google", response_model=AuthResult)
 def google(body: GoogleSignIn, db: Session = Depends(get_db)):
-    return auth_service.google_sign_in(db, body.id_token, body.dev_email, body.dev_name)
+    return auth_service.google_sign_in(
+        db, body.id_token, body.dev_email, body.dev_name, body.access_token
+    )
 
 
 @router.post("/apple", response_model=AuthResult)
