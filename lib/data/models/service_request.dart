@@ -66,6 +66,7 @@ class ServiceRequest {
   final double pickupLat;
   final double pickupLng;
   final String? note;
+  final String? seekerName;
   final HelperLocation? helperLocation;
 
   ServiceRequest({
@@ -78,6 +79,7 @@ class ServiceRequest {
     required this.pickupLat,
     required this.pickupLng,
     this.note,
+    this.seekerName,
     this.helperLocation,
   });
 
@@ -91,6 +93,7 @@ class ServiceRequest {
         pickupLat: (j['pickup_lat'] as num).toDouble(),
         pickupLng: (j['pickup_lng'] as num).toDouble(),
         note: j['note'],
+        seekerName: j['seeker_name'],
         helperLocation: j['helper_location'] == null
             ? null
             : HelperLocation.fromJson(Map<String, dynamic>.from(j['helper_location'])),

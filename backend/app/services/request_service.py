@@ -27,7 +27,9 @@ _TERMINAL = {RequestStatus.completed, RequestStatus.cancelled}
 
 
 def _now() -> datetime:
-    return datetime.now(timezone.utc).replace(tzinfo=None)
+    """Aware UTC. Columns are TIMESTAMPTZ, so storing naive datetimes would be
+    misinterpreted in the server's local timezone instead of UTC."""
+    return datetime.now(timezone.utc)
 
 
 def _helper_for_user(db: Session, user: User) -> HelperProfile:
@@ -53,6 +55,8 @@ def serialize(db: Session, req: ServiceRequest) -> dict:
         if loc
         else None
     )
+    seeker = db.get(User, req.seeker_user_id)
+    data["seeker_name"] = seeker.display_name if seeker else None
     return data
 
 
@@ -134,6 +138,8 @@ def list_open_for_helper(db: Session, user: User, lat: float, lng: float, radius
             continue
         data = {c.name: getattr(r, c.name) for c in r.__table__.columns}
         data["distance_km"] = round(dist, 2)
+        seeker = db.get(User, r.seeker_user_id)
+        data["seeker_name"] = seeker.display_name if seeker else None
         out.append(data)
     out.sort(key=lambda d: d["distance_km"])
     return out

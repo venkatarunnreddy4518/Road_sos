@@ -50,10 +50,10 @@ class _PulsingUserMarkerState extends State<PulsingUserMarker> with TickerProvid
                 shape: BoxShape.circle,
                 gradient: SweepGradient(
                   colors: [
-                    const Color(0xFF18B26B).withOpacity(0.0),
-                    const Color(0xFF18B26B).withOpacity(0.0),
-                    const Color(0xFF18B26B).withOpacity(0.28),
-                    const Color(0xFF18B26B).withOpacity(0.0),
+                    const Color(0xFF18B26B).withValues(alpha: 0.0),
+                    const Color(0xFF18B26B).withValues(alpha: 0.0),
+                    const Color(0xFF18B26B).withValues(alpha: 0.28),
+                    const Color(0xFF18B26B).withValues(alpha: 0.0),
                   ],
                   stops: const [0.0, 0.83, 0.97, 1.0],
                 ),
@@ -70,7 +70,7 @@ class _PulsingUserMarkerState extends State<PulsingUserMarker> with TickerProvid
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: const Color(0xFF18B26B).withOpacity(1.0 - _pulseController.value),
+                    color: const Color(0xFF18B26B).withValues(alpha: 1.0 - _pulseController.value),
                     width: 2,
                   ),
                 ),
@@ -87,7 +87,7 @@ class _PulsingUserMarkerState extends State<PulsingUserMarker> with TickerProvid
               border: Border.all(color: const Color(0xFF0E7C52), width: 3.5),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF0E7C52).withOpacity(0.3),
+                  color: const Color(0xFF0E7C52).withValues(alpha: 0.3),
                   blurRadius: 6,
                   offset: const Offset(0, 2),
                 ),
@@ -110,9 +110,13 @@ class _PulsingUserMarkerState extends State<PulsingUserMarker> with TickerProvid
 }
 
 /// Helper marker showing a pinging/rippling radar effect.
+///
+/// [color] overrides the dot/ripple color (used for distance-band coding on the
+/// results map). When omitted, falls back to the emergency/standard palette.
 class PingingHelperMarker extends StatefulWidget {
   final bool isEmergency;
-  const PingingHelperMarker({super.key, required this.isEmergency});
+  final Color? color;
+  const PingingHelperMarker({super.key, this.isEmergency = false, this.color});
 
   @override
   State<PingingHelperMarker> createState() => _PingingHelperMarkerState();
@@ -138,7 +142,8 @@ class _PingingHelperMarkerState extends State<PingingHelperMarker> with SingleTi
 
   @override
   Widget build(BuildContext context) {
-    final color = widget.isEmergency ? const Color(0xFFF5A623) : const Color(0xFF0E7C52);
+    final color = widget.color ??
+        (widget.isEmergency ? const Color(0xFFF5A623) : const Color(0xFF0E7C52));
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
@@ -151,7 +156,7 @@ class _PingingHelperMarkerState extends State<PingingHelperMarker> with SingleTi
               height: 10 + (20 * _controller.value),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: color.withOpacity(0.3 * (1.0 - _controller.value)),
+                color: color.withValues(alpha: 0.3 * (1.0 - _controller.value)),
               ),
             ),
             // Dot

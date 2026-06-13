@@ -6,6 +6,7 @@ class AuthProvider(str, enum.Enum):
     phone = "phone"
     email = "email"
     google = "google"
+    apple = "apple"
 
 
 class HelperType(str, enum.Enum):

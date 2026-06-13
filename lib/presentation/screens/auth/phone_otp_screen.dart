@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:roadside_help/core/i18n/l10n_ext.dart';
 
 
 import '../../../data/api/auth_api.dart';
 import '../../state/auth_state.dart';
 
 class PhoneOtpScreen extends StatefulWidget {
-  const PhoneOtpScreen({super.key});
+  final String? initialPhone;
+  const PhoneOtpScreen({super.key, this.initialPhone});
 
   @override
   State<PhoneOtpScreen> createState() => _PhoneOtpScreenState();
@@ -14,7 +16,7 @@ class PhoneOtpScreen extends StatefulWidget {
 
 class _PhoneOtpScreenState extends State<PhoneOtpScreen>
     with SingleTickerProviderStateMixin {
-  final _phone = TextEditingController();
+  late final TextEditingController _phone;
   final _code = TextEditingController();
   final _name = TextEditingController();
   final _api = AuthApi();
@@ -41,12 +43,20 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen>
   @override
   void initState() {
     super.initState();
+    _phone = TextEditingController(text: widget.initialPhone);
     _fadeCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 500),
     );
     _fadeAnim = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOut);
     _fadeCtrl.forward();
+
+    // Auto-trigger OTP request if phone number was pre-populated
+    if (widget.initialPhone != null && widget.initialPhone!.trim().length >= 6) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _sendCode();
+      });
+    }
   }
 
   @override
@@ -73,29 +83,49 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen>
         _codeSent = true;
         _devCode = dev;
       });
+    } on ArgumentError catch (e) {
+      setState(() => _error = e.message);
     } catch (e) {
-      setState(() => _error = '$e');
+      final errorMsg = _formatError(e);
+      setState(() => _error = errorMsg);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
   }
 
   Future<void> _verify() async {
+    if (_code.text.trim().length < 4) {
+      setState(() => _error = 'Enter a valid verification code');
+      return;
+    }
     setState(() {
       _busy = true;
       _error = null;
     });
     try {
       final user = await _api.verifyOtp(_phone.text.trim(), _code.text.trim(),
-          name: _name.text.trim());
+          name: _name.text.trim().isEmpty ? null : _name.text.trim());
       if (!mounted) return;
       context.read<AuthState>().onSignedIn(user);
       Navigator.of(context).popUntil((r) => r.isFirst);
+    } on ArgumentError catch (e) {
+      setState(() => _error = e.message);
     } catch (e) {
-      setState(() => _error = '$e');
+      final errorMsg = _formatError(e);
+      setState(() => _error = errorMsg);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
+  }
+
+  String _formatError(dynamic error) {
+    final str = '$error';
+    if (str.contains('Invalid or expired code')) return 'Invalid or expired code. Please request a new one.';
+    if (str.contains('Connection refused') || str.contains('Failed host lookup')) {
+      return 'Unable to connect. Check your internet connection.';
+    }
+    if (str.contains('SocketException')) return 'Network error. Please try again.';
+    return str;
   }
 
   @override
@@ -119,7 +149,7 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen>
           ),
         ),
         title: Text(
-          _codeSent ? 'Verify OTP' : 'Phone sign in',
+          _codeSent ? context.tr('verify_otp') : context.tr('phone_sign_in'),
           style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w700,
@@ -150,7 +180,7 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen>
                       borderRadius: BorderRadius.circular(14),
                       boxShadow: [
                         BoxShadow(
-                          color: _greenDeep.withOpacity(0.2),
+                          color: _greenDeep.withValues(alpha: 0.2),
                           blurRadius: 16,
                           offset: const Offset(0, 4),
                         ),
@@ -163,7 +193,7 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen>
                   ),
                   const SizedBox(height: 20),
                   Text(
-                    _codeSent ? 'Enter verification code' : 'Phone sign in',
+                    _codeSent ? context.tr('enter_verify_code') : context.tr('phone_sign_in'),
                     style: const TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.w700,
@@ -174,8 +204,8 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen>
                   const SizedBox(height: 6),
                   Text(
                     _codeSent
-                        ? 'We sent a 6-digit code to ${_phone.text}'
-                        : 'We\'ll send you a one-time verification code',
+                        ? '${context.tr('we_sent_code')} ${_phone.text}'
+                        : context.tr('send_otp_hint'),
                     textAlign: TextAlign.center,
                     style: const TextStyle(fontSize: 13, color: _muted),
                   ),
@@ -191,7 +221,7 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen>
                       border: Border.all(color: _lineSoft),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.04),
+                          color: Colors.black.withValues(alpha: 0.04),
                           blurRadius: 24,
                           offset: const Offset(0, 4),
                         ),
@@ -201,7 +231,7 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen>
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         // ── Phone field ──
-                        _label('Phone number'),
+                        _label(context.tr('phone')),
                         const SizedBox(height: 6),
                         _textField(
                           controller: _phone,
@@ -215,17 +245,17 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen>
                           const SizedBox(height: 16),
 
                           // ── Name (optional) ──
-                          _label('Name (optional)'),
+                          _label(context.tr('name_optional')),
                           const SizedBox(height: 6),
                           _textField(
                             controller: _name,
-                            hint: 'Your name',
+                            hint: context.tr('your_name'),
                             prefixIcon: Icons.person_outline_rounded,
                           ),
                           const SizedBox(height: 16),
 
                           // ── OTP code ──
-                          _label('Verification code'),
+                          _label(context.tr('verification_code')),
                           const SizedBox(height: 6),
                           _textField(
                             controller: _code,
@@ -252,7 +282,7 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen>
                                       size: 16, color: _green),
                                   const SizedBox(width: 8),
                                   Text(
-                                    'Dev mode: your code is $_devCode',
+                                    '${context.tr('dev_mode_hint')} $_devCode',
                                     style: const TextStyle(
                                         fontSize: 12, color: _green),
                                   ),
@@ -295,7 +325,7 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen>
 
                         // ── Action button ──
                         _GradientButton(
-                          label: _codeSent ? 'Verify code' : 'Send code',
+                          label: _codeSent ? context.tr('verify_code') : context.tr('send_code'),
                           busy: _busy,
                           onTap:
                               _busy ? null : (_codeSent ? _verify : _sendCode),
@@ -306,9 +336,9 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen>
                           Center(
                             child: GestureDetector(
                               onTap: _busy ? null : _sendCode,
-                              child: const Text(
-                                'Resend code',
-                                style: TextStyle(
+                              child: Text(
+                                context.tr('resend_code'),
+                                style: const TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
                                   color: _green,
@@ -355,7 +385,7 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen>
       style: const TextStyle(fontSize: 14, color: _ink),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: TextStyle(fontSize: 14, color: _muted.withOpacity(0.5)),
+        hintStyle: TextStyle(fontSize: 14, color: _muted.withValues(alpha: 0.5)),
         prefixIcon: prefixIcon != null
             ? Icon(prefixIcon, size: 18, color: _muted)
             : null,
@@ -422,7 +452,7 @@ class _GradientButtonState extends State<_GradientButton> {
             borderRadius: BorderRadius.circular(11),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF0B6E47).withOpacity(0.3),
+                color: const Color(0xFF0B6E47).withValues(alpha: 0.3),
                 blurRadius: 14,
                 offset: const Offset(0, 4),
               ),

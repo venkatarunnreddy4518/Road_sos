@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:roadside_help/core/i18n/l10n_ext.dart';
 
 
 import '../../../data/api/auth_api.dart';
 import '../../state/auth_state.dart';
 
 class EmailAuthScreen extends StatefulWidget {
-  const EmailAuthScreen({super.key});
+  final String? initialEmail;
+  const EmailAuthScreen({super.key, this.initialEmail});
 
   @override
   State<EmailAuthScreen> createState() => _EmailAuthScreenState();
@@ -16,7 +18,7 @@ class _EmailAuthScreenState extends State<EmailAuthScreen>
     with SingleTickerProviderStateMixin {
   final _form = GlobalKey<FormState>();
   final _name = TextEditingController();
-  final _email = TextEditingController();
+  late final TextEditingController _email;
   final _password = TextEditingController();
   bool _isLogin = true;
   bool _busy = false;
@@ -42,6 +44,7 @@ class _EmailAuthScreenState extends State<EmailAuthScreen>
   @override
   void initState() {
     super.initState();
+    _email = TextEditingController(text: widget.initialEmail);
     _fadeCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 500),
@@ -73,11 +76,25 @@ class _EmailAuthScreenState extends State<EmailAuthScreen>
       if (!mounted) return;
       context.read<AuthState>().onSignedIn(user);
       Navigator.of(context).popUntil((r) => r.isFirst);
+    } on ArgumentError catch (e) {
+      setState(() => _error = e.message);
     } catch (e) {
-      setState(() => _error = '$e');
+      final errorMsg = _formatError(e);
+      setState(() => _error = errorMsg);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
+  }
+
+  String _formatError(dynamic error) {
+    final str = '$error';
+    if (str.contains('Invalid email or password')) return 'Invalid email or password';
+    if (str.contains('Email already registered')) return 'This email is already registered. Please sign in instead.';
+    if (str.contains('Connection refused') || str.contains('Failed host lookup')) {
+      return 'Unable to connect. Check your internet connection.';
+    }
+    if (str.contains('SocketException')) return 'Network error. Please try again.';
+    return str;
   }
 
   @override
@@ -101,7 +118,7 @@ class _EmailAuthScreenState extends State<EmailAuthScreen>
           ),
         ),
         title: Text(
-          _isLogin ? 'Sign in' : 'Create account',
+          _isLogin ? context.tr('sign_in') : context.tr('create_account'),
           style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w700,
@@ -132,7 +149,7 @@ class _EmailAuthScreenState extends State<EmailAuthScreen>
                       borderRadius: BorderRadius.circular(14),
                       boxShadow: [
                         BoxShadow(
-                          color: _greenDeep.withOpacity(0.2),
+                          color: _greenDeep.withValues(alpha: 0.2),
                           blurRadius: 16,
                           offset: const Offset(0, 4),
                         ),
@@ -145,7 +162,7 @@ class _EmailAuthScreenState extends State<EmailAuthScreen>
                   ),
                   const SizedBox(height: 20),
                   Text(
-                    _isLogin ? 'Welcome back' : 'Create your account',
+                    _isLogin ? context.tr('welcome_back') : context.tr('create_your_account'),
                     style: const TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.w700,
@@ -156,8 +173,8 @@ class _EmailAuthScreenState extends State<EmailAuthScreen>
                   const SizedBox(height: 6),
                   Text(
                     _isLogin
-                        ? 'Enter your credentials to sign in'
-                        : 'Fill in the details to get started',
+                        ? context.tr('enter_credentials')
+                        : context.tr('fill_details'),
                     style: const TextStyle(fontSize: 13, color: _muted),
                   ),
                   const SizedBox(height: 28),
@@ -172,7 +189,7 @@ class _EmailAuthScreenState extends State<EmailAuthScreen>
                       border: Border.all(color: _lineSoft),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.04),
+                          color: Colors.black.withValues(alpha: 0.04),
                           blurRadius: 24,
                           offset: const Offset(0, 4),
                         ),
@@ -185,11 +202,11 @@ class _EmailAuthScreenState extends State<EmailAuthScreen>
                         children: [
                           // ── Name (signup only) ──
                           if (!_isLogin) ...[
-                            _label('Full name'),
+                            _label(context.tr('full_name')),
                             const SizedBox(height: 6),
                             _textField(
                               controller: _name,
-                              hint: 'Your full name',
+                              hint: context.tr('your_full_name'),
                               prefixIcon: Icons.person_outline_rounded,
                               validator: (v) => (v == null || v.trim().isEmpty)
                                   ? 'Required'
@@ -199,7 +216,7 @@ class _EmailAuthScreenState extends State<EmailAuthScreen>
                           ],
 
                           // ── Email ──
-                          _label('Email address'),
+                          _label(context.tr('email_address')),
                           const SizedBox(height: 6),
                           _textField(
                             controller: _email,
@@ -216,13 +233,13 @@ class _EmailAuthScreenState extends State<EmailAuthScreen>
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              _label('Password'),
+                              _label(context.tr('password')),
                               if (_isLogin)
                                 GestureDetector(
                                   onTap: () {},
-                                  child: const Text(
-                                    'Forgot?',
-                                    style: TextStyle(
+                                  child: Text(
+                                    context.tr('forgot_prompt'),
+                                    style: const TextStyle(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,
                                       color: _green,
@@ -286,7 +303,7 @@ class _EmailAuthScreenState extends State<EmailAuthScreen>
 
                           // ── Submit button ──
                           _GradientButton(
-                            label: _isLogin ? 'Sign in' : 'Create account',
+                            label: _isLogin ? context.tr('sign_in') : context.tr('create_account'),
                             busy: _busy,
                             onTap: _busy ? null : _submit,
                           ),
@@ -302,14 +319,14 @@ class _EmailAuthScreenState extends State<EmailAuthScreen>
                     children: [
                       Text(
                         _isLogin
-                            ? "Don't have an account? "
-                            : 'Already have an account? ',
+                            ? context.tr('no_account_prompt')
+                            : context.tr('have_account_prompt'),
                         style: const TextStyle(fontSize: 13, color: _muted),
                       ),
                       GestureDetector(
                         onTap: () => setState(() => _isLogin = !_isLogin),
                         child: Text(
-                          _isLogin ? 'Sign up' : 'Sign in',
+                          _isLogin ? context.tr('signup') : context.tr('sign_in'),
                           style: const TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
@@ -357,7 +374,7 @@ class _EmailAuthScreenState extends State<EmailAuthScreen>
       validator: validator,
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: TextStyle(fontSize: 14, color: _muted.withOpacity(0.5)),
+        hintStyle: TextStyle(fontSize: 14, color: _muted.withValues(alpha: 0.5)),
         prefixIcon: prefixIcon != null
             ? Icon(prefixIcon, size: 18, color: _muted)
             : null,
@@ -434,7 +451,7 @@ class _GradientButtonState extends State<_GradientButton> {
             borderRadius: BorderRadius.circular(11),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF0B6E47).withOpacity(0.3),
+                color: const Color(0xFF0B6E47).withValues(alpha: 0.3),
                 blurRadius: 14,
                 offset: const Offset(0, 4),
               ),

@@ -8,6 +8,7 @@ import '../../../core/utils/location_service.dart';
 import '../../../data/api/profile_api.dart';
 import '../../../data/api/request_api.dart';
 import '../../state/auth_state.dart';
+import '../../utils/helper_actions.dart';
 import 'provider_job_screen.dart';
 
 /// Provider mode: register as a helper (if needed), then see + accept open requests.
@@ -99,26 +100,87 @@ class _ProviderInboxScreenState extends State<ProviderInboxScreen> {
                       onRefresh: _refresh,
                       child: ListView(children: [
                         const SizedBox(height: 120),
-                        Center(child: Text('No ${context.tr('incoming_requests').toLowerCase()}')),
+                        Center(child: Text(context.tr('no_incoming_requests'))),
                       ]),
                     )
                   : RefreshIndicator(
                       onRefresh: _refresh,
                       child: ListView(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
                         children: _open.map((r) {
                           final dist = (r['distance_km'] as num?)?.toDouble();
+                          final seeker = (r['seeker_name'] as String?)?.trim();
+                          final note = (r['note'] as String?)?.trim();
+                          final lat = (r['pickup_lat'] as num?)?.toDouble();
+                          final lng = (r['pickup_lng'] as num?)?.toDouble();
                           return Card(
-                            child: ListTile(
-                              leading: Icon(Icons.notifications_active, color: Theme.of(context).colorScheme.primary),
-                              title: Text(r['note'] ?? 'Roadside request'),
-                              subtitle: Text(dist != null ? '${dist.toStringAsFixed(1)} km away' : ''),
-                              trailing: FilledButton(
-                                onPressed: () => _accept(r['id']),
-                                style: FilledButton.styleFrom(
-                                  backgroundColor: Theme.of(context).colorScheme.primary,
-                                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                                ),
-                                child: Text(context.tr('accept')),
+                            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            child: Padding(
+                              padding: const EdgeInsets.all(14),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      const CircleAvatar(
+                                        radius: 18,
+                                        backgroundColor: Color(0xFFE7F6EE),
+                                        child: Icon(Icons.person, color: Color(0xFF0E7C52)),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              seeker?.isNotEmpty == true ? seeker! : context.tr('someone_nearby'),
+                                              style: const TextStyle(
+                                                  fontWeight: FontWeight.w800, fontSize: 15),
+                                            ),
+                                            if (dist != null)
+                                              Text(
+                                                '${dist.toStringAsFixed(1)} ${context.tr('km_away_suffix')}',
+                                                style: const TextStyle(
+                                                    color: Color(0xFF7C887F),
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.w600),
+                                              ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  if (note?.isNotEmpty == true) ...[
+                                    const SizedBox(height: 10),
+                                    Text(note!, style: const TextStyle(fontSize: 13.5)),
+                                  ],
+                                  const SizedBox(height: 12),
+                                  Row(
+                                    children: [
+                                      if (lat != null && lng != null)
+                                        Expanded(
+                                          child: OutlinedButton.icon(
+                                            onPressed: () => HelperActions.directions(
+                                                lat, lng,
+                                                label: seeker ?? context.tr('someone_nearby')),
+                                            icon: const Icon(Icons.directions, size: 18),
+                                            label: Text(context.tr('navigate')),
+                                          ),
+                                        ),
+                                      if (lat != null && lng != null) const SizedBox(width: 10),
+                                      Expanded(
+                                        child: FilledButton(
+                                          onPressed: () => _accept(r['id']),
+                                          style: FilledButton.styleFrom(
+                                            backgroundColor: Theme.of(context).colorScheme.primary,
+                                            foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                                          ),
+                                          child: Text(context.tr('accept')),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
                               ),
                             ),
                           );
@@ -193,19 +255,29 @@ class _RegisterHelperState extends State<_RegisterHelper> {
       padding: const EdgeInsets.all(20),
       children: [
         const SizedBox(height: 4),
-        Text('Register your service to receive nearby roadside requests.',
+        Text(context.tr('register_desc'),
             style: TextStyle(color: Theme.of(context).colorScheme.tertiary)),
         const SizedBox(height: 20),
         TextField(
           controller: _name,
-          decoration: const InputDecoration(labelText: 'Service name', border: OutlineInputBorder()),
+          decoration: InputDecoration(labelText: context.tr('service_name'), border: const OutlineInputBorder()),
         ),
         const SizedBox(height: 12),
         DropdownButtonFormField<String>(
           initialValue: _type,
-          decoration: const InputDecoration(labelText: 'Service type', border: OutlineInputBorder()),
+          decoration: InputDecoration(labelText: context.tr('service_type'), border: const OutlineInputBorder()),
           items: _types.entries
-              .map((e) => DropdownMenuItem(value: e.key, child: Text(e.value)))
+              .map((e) {
+                final label = switch (e.key) {
+                  'mechanic' => context.tr('type_mechanic'),
+                  'puncture_shop' => context.tr('type_tyre_repair'),
+                  'petrol_pump' => context.tr('type_fuel_delivery'),
+                  'towing' => context.tr('cat_towing'),
+                  'battery' => context.tr('cat_battery'),
+                  _ => e.value,
+                };
+                return DropdownMenuItem(value: e.key, child: Text(label));
+              })
               .toList(),
           onChanged: (v) => setState(() => _type = v ?? 'mechanic'),
         ),
@@ -213,7 +285,7 @@ class _RegisterHelperState extends State<_RegisterHelper> {
         TextField(
           controller: _phone,
           keyboardType: TextInputType.phone,
-          decoration: const InputDecoration(labelText: 'Contact phone', border: OutlineInputBorder()),
+          decoration: InputDecoration(labelText: context.tr('contact_phone'), border: const OutlineInputBorder()),
         ),
         const SizedBox(height: 20),
         ElevatedButton(

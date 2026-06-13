@@ -48,6 +48,7 @@ class ServiceRequestOut(BaseModel):
     completed_at: datetime | None = None
     cancelled_at: datetime | None = None
     helper_location: HelperLocation | None = None
+    seeker_name: str | None = None
 
 
 class OpenRequestForHelper(BaseModel):
@@ -61,3 +62,4 @@ class OpenRequestForHelper(BaseModel):
     note: str | None = None
     requested_at: datetime
     distance_km: float | None = None
+    seeker_name: str | None = None

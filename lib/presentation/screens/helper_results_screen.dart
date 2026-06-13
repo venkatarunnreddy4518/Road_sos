@@ -4,14 +4,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 
+import 'package:provider/provider.dart';
+
 import '../../core/i18n/l10n_ext.dart';
 import '../../data/api/discovery_api.dart';
+import '../../data/api/request_api.dart';
 import '../../data/models/category.dart';
 import '../../data/models/marketplace_helper.dart';
 import '../../data/repositories/helper_cache.dart';
+import '../state/auth_state.dart';
 import '../widgets/marketplace_helper_card.dart';
 import '../widgets/map_markers.dart';
+import 'auth/email_auth_screen.dart';
 import 'helper_detail_screen.dart';
+import 'request_tracking_screen.dart';
 
 /// Nearest helpers for a chosen category (FR-010/FR-011).
 class HelperResultsScreen extends StatefulWidget {
@@ -26,14 +32,47 @@ class HelperResultsScreen extends StatefulWidget {
 
 class _HelperResultsScreenState extends State<HelperResultsScreen> {
   final _api = DiscoveryApi();
+  final _requests = RequestApi();
   final _cache = HelperCache();
   final MapController _mapController = MapController();
   List<MarketplaceHelper> _helpers = [];
   bool _loading = true;
   bool _offline = false;
+  bool _broadcasting = false;
   String? _error;
 
   String _activeFilter = 'Nearest';
+
+  /// Selected search radius in km. null => show all (no radius cap).
+  int? _radiusKm = 5;
+
+  /// The selectable radius bands (km). null = "All".
+  static const List<int?> _radiusOptions = [5, 10, 15, 25, null];
+
+  /// Distance-band color: closest = green, then amber, orange, red (far).
+  static Color bandColor(double? km) {
+    final d = km ?? 99999;
+    if (d <= 5) return const Color(0xFF0E7C52); // green — closest
+    if (d <= 10) return const Color(0xFFF5A623); // amber
+    if (d <= 15) return const Color(0xFFFF7043); // orange
+    return const Color(0xFFE53935); // red — far
+  }
+
+  /// Map zoom that frames the given radius nicely around the user.
+  static double zoomForRadius(int? km) {
+    switch (km) {
+      case 5:
+        return 13.2;
+      case 10:
+        return 12.2;
+      case 15:
+        return 11.7;
+      case 25:
+        return 11.0;
+      default:
+        return 11.0; // All
+    }
+  }
 
   @override
   void initState() {
@@ -44,8 +83,9 @@ class _HelperResultsScreenState extends State<HelperResultsScreen> {
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
+      // Fetch a wide set so the radius bands have data to filter against.
       final res = await _api.nearby(
-          lat: widget.lat, lng: widget.lng, category: widget.category.key, limit: 10);
+          lat: widget.lat, lng: widget.lng, category: widget.category.key, limit: 50);
       if (!mounted) return;
       setState(() {
         _helpers = res;
@@ -72,8 +112,45 @@ class _HelperResultsScreenState extends State<HelperResultsScreen> {
     return (filtered.isEmpty ? all : filtered).take(10).toList();
   }
 
+  /// Broadcasts an open help request from the seeker's real location to ANY
+  /// nearby active helper (no specific shop). Powers the "I'm stuck, whoever is
+  /// passing can help" flow — e.g. out of fuel with no pump nearby.
+  Future<void> _broadcastRequest() async {
+    final auth = context.read<AuthState>();
+    if (!auth.isAuthenticated) {
+      await Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const EmailAuthScreen()),
+      );
+      if (!mounted || !auth.isAuthenticated) return;
+    }
+    setState(() => _broadcasting = true);
+    try {
+      final req = await _requests.create(
+        categoryId: widget.category.id,
+        lat: widget.lat,
+        lng: widget.lng,
+        note: 'Need help: ${widget.category.name}',
+      );
+      if (!mounted) return;
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => RequestTrackingScreen(requestId: req.id)),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+      }
+    } finally {
+      if (mounted) setState(() => _broadcasting = false);
+    }
+  }
+
   List<MarketplaceHelper> get _filteredHelpers {
     List<MarketplaceHelper> list = List.from(_helpers);
+
+    // Range filter — keep only helpers within the selected radius band.
+    if (_radiusKm != null) {
+      list = list.where((h) => (h.distanceKm ?? 99999) <= _radiusKm!).toList();
+    }
 
     if (_activeFilter == 'Nearest') {
       list.sort((a, b) => (a.distanceKm ?? 999.0).compareTo(b.distanceKm ?? 999.0));
@@ -88,7 +165,56 @@ class _HelperResultsScreenState extends State<HelperResultsScreen> {
     return list;
   }
 
-  Widget _buildFilterChip(String label) {
+  Widget _buildRadiusChip(String label, int? km) {
+    final isActive = _radiusKm == km;
+
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: InkWell(
+        onTap: () {
+          setState(() => _radiusKm = km);
+          // Reframe the map to the chosen range.
+          try {
+            _mapController.move(LatLng(widget.lat, widget.lng), zoomForRadius(km));
+          } catch (_) {}
+        },
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+          decoration: BoxDecoration(
+            color: isActive ? const Color(0xFF0E7C52) : Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: isActive ? const Color(0xFF0E7C52) : const Color(0xFFE7ECEA),
+              width: 1.5,
+            ),
+          ),
+          alignment: Alignment.center,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.my_location,
+                size: 13,
+                color: isActive ? Colors.white : const Color(0xFF7C887F),
+              ),
+              const SizedBox(width: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  color: isActive ? Colors.white : const Color(0xFF7C887F),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFilterChip(String label, String key) {
     final isActive = _activeFilter == label;
     final theme = Theme.of(context);
     final border = theme.colorScheme.outline;
@@ -135,7 +261,7 @@ class _HelperResultsScreenState extends State<HelperResultsScreen> {
                   ],
           ),
           child: Text(
-            label,
+            context.tr(key),
             style: TextStyle(
               color: isActive ? Colors.white : const Color(0xFF7C887F),
               fontSize: 12,
@@ -160,7 +286,6 @@ class _HelperResultsScreenState extends State<HelperResultsScreen> {
     );
 
     final helperMarkers = finalHelpers.map((h) {
-      final isEmergency = h.helperType.contains('puncture') || h.helperType.contains('battery');
       return Marker(
         point: LatLng(h.latitude, h.longitude),
         width: 30,
@@ -175,12 +300,26 @@ class _HelperResultsScreenState extends State<HelperResultsScreen> {
               ),
             ));
           },
-          child: PingingHelperMarker(isEmergency: isEmergency),
+          child: PingingHelperMarker(color: bandColor(h.distanceKm)),
         ),
       );
     }).toList();
 
     final markers = [userMarker, ...helperMarkers];
+
+    // Concentric range rings (5 / 10 / 15 km) drawn around the user, each in its
+    // band color so the user can read distance at a glance. Outer drawn first.
+    final rangeCircles = <CircleMarker>[
+      for (final km in const [15.0, 10.0, 5.0])
+        CircleMarker(
+          point: LatLng(widget.lat, widget.lng),
+          radius: km * 1000,
+          useRadiusInMeter: true,
+          color: bandColor(km).withValues(alpha: 0.06),
+          borderColor: bandColor(km).withValues(alpha: 0.45),
+          borderStrokeWidth: 1.5,
+        ),
+    ];
 
     return Scaffold(
       body: Stack(
@@ -191,7 +330,7 @@ class _HelperResultsScreenState extends State<HelperResultsScreen> {
               mapController: _mapController,
               options: MapOptions(
                 initialCenter: LatLng(widget.lat, widget.lng),
-                initialZoom: 14.5,
+                initialZoom: zoomForRadius(_radiusKm),
               ),
               children: [
                 TileLayer(
@@ -202,6 +341,7 @@ class _HelperResultsScreenState extends State<HelperResultsScreen> {
                   userAgentPackageName: 'com.roadsidehelp.app',
                   maxZoom: 19,
                 ),
+                CircleLayer(circles: rangeCircles),
                 MarkerLayer(markers: markers),
               ],
             ),
@@ -220,8 +360,8 @@ class _HelperResultsScreenState extends State<HelperResultsScreen> {
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        const Color(0xFF0E7C52).withOpacity(0.85),
-                        const Color(0xFF18B26B).withOpacity(0.75),
+                        const Color(0xFF0E7C52).withValues(alpha: 0.85),
+                        const Color(0xFF18B26B).withValues(alpha: 0.75),
                       ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
@@ -232,7 +372,7 @@ class _HelperResultsScreenState extends State<HelperResultsScreen> {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.12),
+                        color: Colors.black.withValues(alpha: 0.12),
                         blurRadius: 12,
                         offset: const Offset(0, 4),
                       ),
@@ -246,9 +386,9 @@ class _HelperResultsScreenState extends State<HelperResultsScreen> {
                           width: 40,
                           height: 40,
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.15),
+                            color: Colors.white.withValues(alpha: 0.15),
                             shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white.withOpacity(0.25), width: 1.5),
+                            border: Border.all(color: Colors.white.withValues(alpha: 0.25), width: 1.5),
                           ),
                           alignment: Alignment.center,
                           child: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 18),
@@ -272,11 +412,13 @@ class _HelperResultsScreenState extends State<HelperResultsScreen> {
                             const SizedBox(height: 2),
                             Text(
                               _loading
-                                  ? 'Locating verified helpers...'
-                                  : '${finalHelpers.length} helpers available nearby',
+                                  ? context.tr('locating_helpers')
+                                  : _radiusKm == null
+                                      ? '${finalHelpers.length} ${context.tr("helpers_available_nearby")}'
+                                      : '${finalHelpers.length} ${context.tr("within")} $_radiusKm km',
                               style: TextStyle(
                                 fontSize: 11,
-                                color: Colors.white.withOpacity(0.85),
+                                color: Colors.white.withValues(alpha: 0.85),
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -289,9 +431,9 @@ class _HelperResultsScreenState extends State<HelperResultsScreen> {
                           width: 40,
                           height: 40,
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.15),
+                            color: Colors.white.withValues(alpha: 0.15),
                             shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white.withOpacity(0.25), width: 1.5),
+                            border: Border.all(color: Colors.white.withValues(alpha: 0.25), width: 1.5),
                           ),
                           alignment: Alignment.center,
                           child: _loading
@@ -372,6 +514,98 @@ class _HelperResultsScreenState extends State<HelperResultsScreen> {
                       ),
                     ),
 
+                    // Broadcast SOS — alert ANY nearby active helper.
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                      child: GestureDetector(
+                        onTap: _broadcasting ? null : _broadcastRequest,
+                        child: Container(
+                          height: 52,
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFFF5A623), Color(0xFFE8590C)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(14),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFFE8590C).withValues(alpha: 0.32),
+                                blurRadius: 16,
+                                offset: const Offset(0, 6),
+                              ),
+                            ],
+                          ),
+                          alignment: Alignment.center,
+                          child: _broadcasting
+                              ? const SizedBox(
+                                  width: 22,
+                                  height: 22,
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 2.4, color: Colors.white),
+                                )
+                              : Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Text('🆘', style: TextStyle(fontSize: 18)),
+                                    const SizedBox(width: 9),
+                                    Text(
+                                      context.tr('request_help_now'),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w900,
+                                        letterSpacing: 0.2,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 6),
+                      child: Text(
+                        context.tr('alerts_nearby'),
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: Color(0xFF7C887F),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+
+                    // Radius selector row — pick the search range.
+                    Container(
+                      height: 36,
+                      padding: const EdgeInsets.only(left: 16, bottom: 4),
+                      child: ListView(
+                        scrollDirection: Axis.horizontal,
+                        children: [
+                          for (final km in _radiusOptions)
+                            _buildRadiusChip(km == null ? context.tr('all') : '$km km', km),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+
+                    // Distance-band color legend.
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 16),
+                      child: Row(
+                        children: [
+                          _LegendDot(color: Color(0xFF0E7C52), label: '≤5 km'),
+                          SizedBox(width: 12),
+                          _LegendDot(color: Color(0xFFF5A623), label: '≤10 km'),
+                          SizedBox(width: 12),
+                          _LegendDot(color: Color(0xFFFF7043), label: '≤15 km'),
+                          SizedBox(width: 12),
+                          _LegendDot(color: Color(0xFFE53935), label: '15 km+'),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+
                     // Filter chips row (Sticky)
                     Container(
                       height: 38,
@@ -379,10 +613,10 @@ class _HelperResultsScreenState extends State<HelperResultsScreen> {
                       child: ListView(
                         scrollDirection: Axis.horizontal,
                         children: [
-                          _buildFilterChip('Nearest'),
-                          _buildFilterChip('Top Rated'),
-                          _buildFilterChip('Open Now'),
-                          _buildFilterChip('With SMS'),
+                          _buildFilterChip('Nearest', 'filter_nearest'),
+                          _buildFilterChip('Top Rated', 'filter_top_rated'),
+                          _buildFilterChip('Open Now', 'filter_open_now'),
+                          _buildFilterChip('With SMS', 'filter_with_sms'),
                         ],
                       ),
                     ),
@@ -469,6 +703,43 @@ class _HelperResultsScreenState extends State<HelperResultsScreen> {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// A small colored dot + label used in the distance-band legend.
+class _LegendDot extends StatelessWidget {
+  final Color color;
+  final String label;
+  const _LegendDot({required this.color, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 9,
+          height: 9,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white, width: 1),
+            boxShadow: [
+              BoxShadow(color: color.withValues(alpha: 0.4), blurRadius: 3),
+            ],
+          ),
+        ),
+        const SizedBox(width: 4),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF7C887F),
+          ),
+        ),
+      ],
     );
   }
 }

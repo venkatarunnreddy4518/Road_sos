@@ -68,24 +68,24 @@ class AppTheme {
   }
 
   static ThemeData get darkTheme {
-    const primaryGreen = Color(0xFF0E7C52);
-    const brightGreen = Color(0xFF18B26B);
-    const bg = Color(0xFFF6F8F7);
-    const card = Color(0xFFFFFFFF);
-    const border = Color(0xFFE7ECEA);
-    const text = Color(0xFF14201B);
-    const muted = Color(0xFF7C887F);
+    const primaryGreen = Color(0xFF109B66);
+    const brightGreen = Color(0xFF22C7A9);
+    const bg = Color(0xFF0D110F);
+    const card = Color(0xFF161C19);
+    const border = Color(0xFF26322C);
+    const text = Color(0xFFF0F4F2);
+    const muted = Color(0xFF8B9E94);
 
     return ThemeData(
       useMaterial3: true,
-      brightness: Brightness.light,
+      brightness: Brightness.dark,
       scaffoldBackgroundColor: bg,
       fontFamily: 'Plus Jakarta Sans',
-      colorScheme: const ColorScheme.light(
+      colorScheme: const ColorScheme.dark(
         primary: primaryGreen,
         onPrimary: Colors.white,
         secondary: brightGreen,
-        onSecondary: Colors.white,
+        onSecondary: Colors.black,
         tertiary: muted,
         surface: card,
         onSurface: text,

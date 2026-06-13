@@ -5,6 +5,7 @@ from app.core.deps import get_current_user
 from app.db.session import get_db
 from app.models.user import User
 from app.schemas.auth import (
+    AppleSignIn,
     AuthResult,
     EmailLogin,
     EmailRegister,
@@ -45,6 +46,11 @@ def verify_otp(body: PhoneVerifyOtp, db: Session = Depends(get_db)):
 @router.post("/google", response_model=AuthResult)
 def google(body: GoogleSignIn, db: Session = Depends(get_db)):
     return auth_service.google_sign_in(db, body.id_token, body.dev_email, body.dev_name)
+
+
+@router.post("/apple", response_model=AuthResult)
+def apple(body: AppleSignIn, db: Session = Depends(get_db)):
+    return auth_service.apple_sign_in(db, body.id_token, body.dev_email, body.dev_name)
 
 
 @router.post("/refresh", response_model=TokenPair)

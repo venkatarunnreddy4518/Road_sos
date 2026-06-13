@@ -1,6 +1,7 @@
 // lib/presentation/widgets/category_grid.dart
 import 'package:flutter/material.dart';
 
+import '../../core/i18n/l10n_ext.dart';
 import '../../data/models/category.dart';
 
 /// Bento category grid matching the requested bento mockup layout.
@@ -41,8 +42,8 @@ class CategoryGrid extends StatelessWidget {
                       ? _buildBentoCard(
                           context,
                           category: puncture,
-                          label: 'ROADSIDE',
-                          name: 'Puncture\nFix',
+                          label: context.tr('lbl_roadside'),
+                          name: context.tr('cat_puncture'),
                           emoji: '🛞',
                           isTall: true,
                           gradient: const LinearGradient(
@@ -65,8 +66,8 @@ class CategoryGrid extends StatelessWidget {
                             ? _buildBentoCard(
                                 context,
                                 category: fuel,
-                                label: 'EMERGENCY',
-                                name: 'Out of Fuel',
+                                label: context.tr('lbl_emergency'),
+                                name: context.tr('cat_fuel'),
                                 emoji: '⛽',
                                 gradient: const LinearGradient(
                                   begin: Alignment.topLeft,
@@ -83,8 +84,8 @@ class CategoryGrid extends StatelessWidget {
                             ? _buildBentoCard(
                                 context,
                                 category: battery,
-                                label: 'BATTERY',
-                                name: 'Jump Start',
+                                label: context.tr('lbl_battery'),
+                                name: context.tr('cat_battery'),
                                 emoji: '🔋',
                                 gradient: const LinearGradient(
                                   begin: Alignment.topLeft,
@@ -106,10 +107,10 @@ class CategoryGrid extends StatelessWidget {
               ? _buildBentoCard(
                   context,
                   category: breakdown,
-                  name: 'Mechanic / Breakdown',
+                  name: context.tr('cat_breakdown'),
                   emoji: '🛠️',
                   isWide: true,
-                  badgeText: '⚙️ On-site repair',
+                  badgeText: context.tr('badge_onsite'),
                   gradient: const LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
@@ -123,8 +124,8 @@ class CategoryGrid extends StatelessWidget {
               ? _buildBentoCard(
                   context,
                   category: towing,
-                  name: 'Towing Service',
-                  label: 'Tow to a workshop or your destination',
+                  name: context.tr('cat_towing'),
+                  label: context.tr('towing_sub'),
                   emoji: '🚛',
                   isWide: true,
                   gradient: const LinearGradient(
@@ -187,8 +188,8 @@ class CategoryGrid extends StatelessWidget {
                         shape: BoxShape.circle,
                         gradient: RadialGradient(
                           colors: [
-                            Colors.white.withOpacity(0.40),
-                            Colors.white.withOpacity(0.0),
+                            Colors.white.withValues(alpha: 0.40),
+                            Colors.white.withValues(alpha: 0.0),
                           ],
                         ),
                       ),
@@ -206,8 +207,8 @@ class CategoryGrid extends StatelessWidget {
                         shape: BoxShape.circle,
                         gradient: RadialGradient(
                           colors: [
-                            Colors.black.withOpacity(0.12),
-                            Colors.black.withOpacity(0.0),
+                            Colors.black.withValues(alpha: 0.12),
+                            Colors.black.withValues(alpha: 0.0),
                           ],
                         ),
                       ),
@@ -227,8 +228,8 @@ class CategoryGrid extends StatelessWidget {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.25),
-                                  border: Border.all(color: Colors.white.withOpacity(0.35)),
+                                  color: Colors.white.withValues(alpha: 0.25),
+                                  border: Border.all(color: Colors.white.withValues(alpha: 0.35)),
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: Text(
@@ -257,7 +258,7 @@ class CategoryGrid extends StatelessWidget {
                                 label,
                                 style: TextStyle(
                                   fontSize: 10,
-                                  color: Colors.white.withOpacity(0.85),
+                                  color: Colors.white.withValues(alpha: 0.85),
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
@@ -286,7 +287,7 @@ class CategoryGrid extends StatelessWidget {
                                 label,
                                 style: TextStyle(
                                   fontSize: 10,
-                                  color: Colors.white.withOpacity(0.82),
+                                  color: Colors.white.withValues(alpha: 0.82),
                                   fontWeight: FontWeight.w800,
                                   letterSpacing: 0.8,
                                 ),
@@ -330,9 +331,9 @@ class CategoryGrid extends StatelessWidget {
                           ),
                         ],
                       ),
-                      child: const Text(
-                        'FAST',
-                        style: TextStyle(
+                      child: Text(
+                        context.tr('fast'),
+                        style: const TextStyle(
                           color: Color(0xFFF76707),
                           fontSize: 9,
                           fontWeight: FontWeight.w800,
@@ -358,13 +359,13 @@ class CategoryGrid extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(17),
-        border: Border.all(color: Colors.white.withOpacity(0.5), width: 1.5),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.5), width: 1.5),
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Colors.white.withOpacity(0.95),
-            Colors.white.withOpacity(0.55),
+            Colors.white.withValues(alpha: 0.95),
+            Colors.white.withValues(alpha: 0.55),
           ],
         ),
         boxShadow: const [
