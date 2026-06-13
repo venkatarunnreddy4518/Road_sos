@@ -4,6 +4,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'dart:async';
 
 import '../../core/i18n/l10n_ext.dart';
 import '../../core/utils/location_service.dart';
@@ -222,6 +223,53 @@ class _DiscoverTabState extends State<_DiscoverTab> {
   String _addressLine1 = 'Locating you…';
   String _addressLine2 = '';
 
+  Timer? _debounceTimer;
+
+  void _onMapMove(LatLng center) {
+    if (_debounceTimer?.isActive ?? false) _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 600), () {
+      if (!mounted) return;
+      _updateLocationFromMapCenter(center.latitude, center.longitude);
+    });
+  }
+
+  void _updateLocationFromMapCenter(double latitude, double longitude) {
+    setState(() {
+      _pos = Position(
+        latitude: latitude,
+        longitude: longitude,
+        timestamp: DateTime.now(),
+        accuracy: 0.0,
+        altitude: 0.0,
+        altitudeAccuracy: 0.0,
+        heading: 0.0,
+        headingAccuracy: 0.0,
+        speed: 0.0,
+        speedAccuracy: 0.0,
+      );
+      _addressLine1 = 'Locating...';
+      _addressLine2 = '';
+    });
+    _fetchAddress(latitude, longitude);
+    _loadHelpersOnly(latitude, longitude);
+  }
+
+  Future<void> _loadHelpersOnly(double latitude, double longitude) async {
+    try {
+      final near = await _api.nearby(lat: latitude, lng: longitude, limit: 5);
+      if (!mounted) return;
+      setState(() {
+        _nearby = near;
+      });
+    } catch (_) {
+      final cached = await _cache.load(lat: latitude, lng: longitude);
+      if (!mounted) return;
+      setState(() {
+        _nearby = cached.take(5).toList();
+      });
+    }
+  }
+
   Future<void> _fetchAddress(double lat, double lng) async {
     try {
       final url = Uri.parse('https://nominatim.openstreetmap.org/reverse?format=json&lat=$lat&lon=$lng&zoom=18');
@@ -238,6 +286,7 @@ class _DiscoverTabState extends State<_DiscoverTab> {
               _addressLine1 = road.toString().isNotEmpty ? road.toString() : 'Current Location';
               _addressLine2 = '$city, $state'.trim();
             });
+            return;
           }
         } else {
           final displayName = data['display_name'] as String?;
@@ -248,12 +297,24 @@ class _DiscoverTabState extends State<_DiscoverTab> {
                 _addressLine1 = parts.first.trim();
                 _addressLine2 = parts.skip(1).take(2).join(',').trim();
               });
+              return;
             }
           }
         }
       }
+      if (mounted) {
+        setState(() {
+          _addressLine1 = 'Location near (${lat.toStringAsFixed(4)}, ${lng.toStringAsFixed(4)})';
+          _addressLine2 = 'Hyderabad, Telangana';
+        });
+      }
     } catch (_) {
-      // Keep existing default values
+      if (mounted) {
+        setState(() {
+          _addressLine1 = 'Location near (${lat.toStringAsFixed(4)}, ${lng.toStringAsFixed(4)})';
+          _addressLine2 = 'Hyderabad, Telangana';
+        });
+      }
     }
   }
 
@@ -282,6 +343,7 @@ class _DiscoverTabState extends State<_DiscoverTab> {
   @override
   void dispose() {
     _scrollController.dispose();
+    _debounceTimer?.cancel();
     super.dispose();
   }
 
@@ -818,9 +880,9 @@ class _DiscoverTabState extends State<_DiscoverTab> {
         children: [
           Container(
             width: 440,
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              border: Border(right: BorderSide(color: Color(0xFFE7ECEA), width: 1.5)),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              border: const Border(right: BorderSide(color: Color(0xFFE7ECEA), width: 1.5)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -889,6 +951,11 @@ class _DiscoverTabState extends State<_DiscoverTab> {
                     options: MapOptions(
                       initialCenter: LatLng(_lat, _lng),
                       initialZoom: 14.5,
+                      onPositionChanged: (camera, hasGesture) {
+                        if (hasGesture && camera.center != null) {
+                          _onMapMove(camera.center!);
+                        }
+                      },
                     ),
                     children: [
                       TileLayer(
@@ -903,74 +970,92 @@ class _DiscoverTabState extends State<_DiscoverTab> {
                 Positioned(
                   top: 24,
                   left: 24,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: const [
-                        BoxShadow(color: Color(0x1A14281E), blurRadius: 10, offset: Offset(0, 4)),
-                      ],
-                      border: Border.all(color: const Color(0xFFE7ECEA), width: 1),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const _PulsingGreenDot(),
-                        const SizedBox(width: 6),
-                        Text(
-                          '${_nearby.length} ${context.tr('helpers_nearby_suffix')}',
-                          style: const TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w800,
-                            color: Color(0xFF14201B),
+                  child: Builder(
+                    builder: (context) {
+                      final isDark = Theme.of(context).brightness == Brightness.dark;
+                      return Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.surface,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: isDark ? Colors.black26 : const Color(0x1A14281E),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                          border: Border.all(
+                            color: isDark ? Theme.of(context).colorScheme.outline : const Color(0xFFE7ECEA),
+                            width: 1,
                           ),
                         ),
-                      ],
-                    ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const _PulsingGreenDot(),
+                            const SizedBox(width: 6),
+                            Text(
+                              '${_nearby.length} ${context.tr('helpers_nearby_suffix')}',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
                   ),
                 ),
                 Positioned(
                   right: 24,
                   top: 24,
-                  child: Column(
-                    children: [
-                      GestureDetector(
-                        onTap: _useMyLocation,
-                        child: Container(
-                          width: 38,
-                          height: 38,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                            boxShadow: const [
-                              BoxShadow(color: Color(0x1414281E), blurRadius: 8, offset: Offset(0, 3)),
-                            ],
-                            border: Border.all(color: const Color(0xFFE7ECEA), width: 1.5),
+                  child: Builder(
+                    builder: (context) {
+                      final isDark = Theme.of(context).brightness == Brightness.dark;
+                      final boxDecoration = BoxDecoration(
+                        color: Theme.of(context).colorScheme.surface,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: isDark ? Colors.black26 : const Color(0x1414281E),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
                           ),
-                          alignment: Alignment.center,
-                          child: const Text('🎯', style: TextStyle(fontSize: 16)),
+                        ],
+                        border: Border.all(
+                          color: isDark ? Theme.of(context).colorScheme.outline : const Color(0xFFE7ECEA),
+                          width: 1.5,
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      GestureDetector(
-                        onTap: _load,
-                        child: Container(
-                          width: 38,
-                          height: 38,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                            boxShadow: const [
-                              BoxShadow(color: Color(0x1414281E), blurRadius: 8, offset: Offset(0, 3)),
-                            ],
-                            border: Border.all(color: const Color(0xFFE7ECEA), width: 1.5),
+                      );
+                      return Column(
+                        children: [
+                          GestureDetector(
+                            onTap: _useMyLocation,
+                            child: Container(
+                              width: 38,
+                              height: 38,
+                              decoration: boxDecoration,
+                              alignment: Alignment.center,
+                              child: const Text('🎯', style: TextStyle(fontSize: 16)),
+                            ),
                           ),
-                          alignment: Alignment.center,
-                          child: const Text('📡', style: TextStyle(fontSize: 16)),
-                        ),
-                      ),
-                    ],
+                          const SizedBox(height: 8),
+                          GestureDetector(
+                            onTap: _load,
+                            child: Container(
+                              width: 38,
+                              height: 38,
+                              decoration: boxDecoration,
+                              alignment: Alignment.center,
+                              child: const Text('📡', style: TextStyle(fontSize: 16)),
+                            ),
+                          ),
+                        ],
+                      );
+                    }
                   ),
                 ),
               ],
@@ -998,6 +1083,11 @@ class _DiscoverTabState extends State<_DiscoverTab> {
                     options: MapOptions(
                       initialCenter: LatLng(_lat, _lng),
                       initialZoom: 14.5,
+                      onPositionChanged: (camera, hasGesture) {
+                        if (hasGesture && camera.center != null) {
+                          _onMapMove(camera.center!);
+                        }
+                      },
                     ),
                     children: [
                       TileLayer(
@@ -1012,74 +1102,92 @@ class _DiscoverTabState extends State<_DiscoverTab> {
                 Positioned(
                   top: 48,
                   left: 16,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: const [
-                        BoxShadow(color: Color(0x1A14281E), blurRadius: 10, offset: Offset(0, 4)),
-                      ],
-                      border: Border.all(color: const Color(0xFFE7ECEA), width: 1),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const _PulsingGreenDot(),
-                        const SizedBox(width: 6),
-                        Text(
-                          '${_nearby.length} ${context.tr('helpers_nearby_suffix')}',
-                          style: const TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w800,
-                            color: Color(0xFF14201B),
+                  child: Builder(
+                    builder: (context) {
+                      final isDark = Theme.of(context).brightness == Brightness.dark;
+                      return Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.surface,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: isDark ? Colors.black26 : const Color(0x1A14281E),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                          border: Border.all(
+                            color: isDark ? Theme.of(context).colorScheme.outline : const Color(0xFFE7ECEA),
+                            width: 1,
                           ),
                         ),
-                      ],
-                    ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const _PulsingGreenDot(),
+                            const SizedBox(width: 6),
+                            Text(
+                              '${_nearby.length} ${context.tr('helpers_nearby_suffix')}',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
                   ),
                 ),
                 Positioned(
                   right: 16,
                   top: 48,
-                  child: Column(
-                    children: [
-                      GestureDetector(
-                        onTap: _useMyLocation,
-                        child: Container(
-                          width: 38,
-                          height: 38,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                            boxShadow: const [
-                              BoxShadow(color: Color(0x1414281E), blurRadius: 8, offset: Offset(0, 3)),
-                            ],
-                            border: Border.all(color: const Color(0xFFE7ECEA), width: 1.5),
+                  child: Builder(
+                    builder: (context) {
+                      final isDark = Theme.of(context).brightness == Brightness.dark;
+                      final boxDecoration = BoxDecoration(
+                        color: Theme.of(context).colorScheme.surface,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: isDark ? Colors.black26 : const Color(0x1414281E),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
                           ),
-                          alignment: Alignment.center,
-                          child: const Text('🎯', style: TextStyle(fontSize: 16)),
+                        ],
+                        border: Border.all(
+                          color: isDark ? Theme.of(context).colorScheme.outline : const Color(0xFFE7ECEA),
+                          width: 1.5,
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      GestureDetector(
-                        onTap: _load,
-                        child: Container(
-                          width: 38,
-                          height: 38,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                            boxShadow: const [
-                              BoxShadow(color: Color(0x1414281E), blurRadius: 8, offset: Offset(0, 3)),
-                            ],
-                            border: Border.all(color: const Color(0xFFE7ECEA), width: 1.5),
+                      );
+                      return Column(
+                        children: [
+                          GestureDetector(
+                            onTap: _useMyLocation,
+                            child: Container(
+                              width: 38,
+                              height: 38,
+                              decoration: boxDecoration,
+                              alignment: Alignment.center,
+                              child: const Text('🎯', style: TextStyle(fontSize: 16)),
+                            ),
                           ),
-                          alignment: Alignment.center,
-                          child: const Text('📡', style: TextStyle(fontSize: 16)),
-                        ),
-                      ),
-                    ],
+                          const SizedBox(height: 8),
+                          GestureDetector(
+                            onTap: _load,
+                            child: Container(
+                              width: 38,
+                              height: 38,
+                              decoration: boxDecoration,
+                              alignment: Alignment.center,
+                              child: const Text('📡', style: TextStyle(fontSize: 16)),
+                            ),
+                          ),
+                        ],
+                      );
+                    }
                   ),
                 ),
                 Positioned(
@@ -1160,19 +1268,24 @@ class _SafetyAdviceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     return Container(
       width: 180,
       margin: const EdgeInsets.only(right: 10),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE7ECEA), width: 1.5),
-        boxShadow: const [
+        border: Border.all(
+          color: isDark ? theme.colorScheme.outline : const Color(0xFFE7ECEA),
+          width: 1.5,
+        ),
+        boxShadow: [
           BoxShadow(
-            color: Color(0x0614281E),
+            color: isDark ? Colors.black12 : const Color(0x0614281E),
             blurRadius: 8,
-            offset: Offset(0, 3),
+            offset: const Offset(0, 3),
           ),
         ],
       ),
@@ -1186,10 +1299,10 @@ class _SafetyAdviceCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w800,
-                    color: Color(0xFF14201B),
+                    color: theme.colorScheme.onSurface,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -1201,9 +1314,9 @@ class _SafetyAdviceCard extends StatelessWidget {
           Expanded(
             child: Text(
               desc,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 10,
-                color: Color(0xFF7C887F),
+                color: theme.colorScheme.tertiary,
                 fontWeight: FontWeight.w500,
                 height: 1.25,
               ),

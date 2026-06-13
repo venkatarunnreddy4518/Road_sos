@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ThemeState extends ChangeNotifier {
-  ThemeMode _themeMode = ThemeMode.system;
+  // Default to light: the app should open in light mode unless the user has
+  // explicitly chosen another mode in Settings.
+  ThemeMode _themeMode = ThemeMode.light;
 
   ThemeMode get themeMode => _themeMode;
 
@@ -13,7 +15,7 @@ class ThemeState extends ChangeNotifier {
     if (saved != null) {
       _themeMode = ThemeMode.values.firstWhere(
         (e) => e.name == saved,
-        orElse: () => ThemeMode.system,
+        orElse: () => ThemeMode.light,
       );
       notifyListeners();
     }

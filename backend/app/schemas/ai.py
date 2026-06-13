@@ -8,7 +8,9 @@ class ChatMessage(BaseModel):
 
 class ChatRequest(BaseModel):
     messages: List[ChatMessage]
-    provider: str
-    endpoint: str
-    model: str
+    # Server-side defaults: the AI works out-of-the-box via local Ollama even if the
+    # client sends only messages. Clients may override to use a hosted provider + key.
+    provider: str = "ollama"
+    endpoint: str = "http://localhost:11434"
+    model: str = "llama3.2"
     api_key: Optional[str] = None
