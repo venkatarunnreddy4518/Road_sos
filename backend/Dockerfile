@@ -15,6 +15,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy backend source code
 COPY . .
 
-# Expose port and run migrations then launch uvicorn
+# Expose port; run migrations, seed (idempotent, best-effort), then launch uvicorn
 EXPOSE 8000
-CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+CMD ["sh", "-c", "alembic upgrade head && (python -m app.seed.run || echo 'seed skipped') && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
