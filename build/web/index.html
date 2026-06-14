@@ -43,6 +43,33 @@
   <link rel="manifest" href="manifest.json">
 </head>
 <body>
+  <!-- Google Identity Services + OAuth2 popup helper for the custom "Continue with Google" button -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script>
+    // Opens Google's standard account-chooser popup and resolves with an access token.
+    window.googleOAuthSignIn = function () {
+      return new Promise(function (resolve, reject) {
+        try {
+          if (!window.google || !google.accounts || !google.accounts.oauth2) {
+            reject('google-not-loaded'); return;
+          }
+          var meta = document.querySelector('meta[name="google-signin-client_id"]');
+          var clientId = meta ? meta.content : '';
+          var client = google.accounts.oauth2.initTokenClient({
+            client_id: clientId,
+            scope: 'openid email profile',
+            callback: function (resp) {
+              if (resp && resp.access_token) resolve(resp.access_token);
+              else reject((resp && resp.error) || 'no-access-token');
+            },
+            error_callback: function (err) { reject((err && err.type) || 'popup-closed'); },
+          });
+          client.requestAccessToken();
+        } catch (e) { reject('' + e); }
+      });
+    };
+  </script>
+
   <!--
     You can customize the "flutter_bootstrap.js" script.
     This is useful to provide a custom configuration to the Flutter loader
