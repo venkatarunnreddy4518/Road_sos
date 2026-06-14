@@ -13,6 +13,7 @@ import '../utils/helper_actions.dart';
 import 'auth/email_auth_screen.dart';
 import 'history_screen.dart';
 import 'provider/provider_inbox_screen.dart';
+import 'provider/provider_register_screen.dart';
 import 'settings_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -1262,38 +1263,46 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
                   const SizedBox(height: 14),
-                  Card(
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      side: const BorderSide(color: _border, width: 1.5),
-                    ),
-                    child: Column(
-                      children: [
-                        ListTile(
-                          leading: const Text('📞', style: TextStyle(fontSize: 18)),
-                          title: const Text('Call Helpline support', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, fontFamily: 'Outfit')),
-                          subtitle: const Text('24/7 dedicated telephone support lines', style: TextStyle(fontSize: 10.5, color: _sub, fontFamily: 'Outfit')),
-                          trailing: const Icon(Icons.arrow_forward_ios, size: 14),
-                          onTap: () => HelperActions.call('1033'),
-                        ),
-                        const Divider(height: 1, color: _border),
-                        ListTile(
-                          leading: const Text('✉️', style: TextStyle(fontSize: 18)),
-                          title: const Text('Email Support Desk', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, fontFamily: 'Outfit')),
-                          subtitle: const Text('support@roadsidesos.in', style: TextStyle(fontSize: 10.5, color: _sub, fontFamily: 'Outfit')),
-                          trailing: const Icon(Icons.arrow_forward_ios, size: 14),
-                          onTap: () {},
-                        ),
-                      ],
-                    ),
-                  ),
+                  _helpContact(
+                      Icons.phone_rounded,
+                      const Color(0xFFEAFBF1),
+                      const Color(0xFF1A9E5C),
+                      'Call Helpline support',
+                      '24/7 dedicated telephone support lines',
+                      () => HelperActions.call('1033')),
+                  const SizedBox(height: 8),
+                  _helpContact(
+                      Icons.mail_outline_rounded,
+                      const Color(0xFFEAF1FE),
+                      _primary,
+                      'Email Support Desk',
+                      'support@roadsidesos.in',
+                      () {
+                    Clipboard.setData(const ClipboardData(text: 'support@roadsidesos.in'));
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                        content: Text('Support email copied'), behavior: SnackBarBehavior.floating));
+                  }),
                   const SizedBox(height: 18),
-                  const Text('Frequently Asked Questions', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: _text, fontFamily: 'Outfit')),
+                  const Row(
+                    children: [
+                      Icon(Icons.help_outline_rounded, size: 13, color: Color(0xFF9CA3AF)),
+                      SizedBox(width: 6),
+                      Text('FREQUENTLY ASKED QUESTIONS',
+                          style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.6,
+                              color: Color(0xFF9CA3AF),
+                              fontFamily: 'Outfit')),
+                    ],
+                  ),
                   const SizedBox(height: 10),
-                  _buildFaqItem('How fast will a mechanic arrive?', 'Usually within 15 to 30 minutes depending on your distance from the nearest active shop. You can track their moving location in real-time.'),
-                  _buildFaqItem('How is pricing calculated?', 'Emergency service call-outs have flat rates set by mechanics depending on the service category. Any replacement parts or extra repairs will be charged separately.'),
-                  _buildFaqItem('What if there is no internet connection?', 'Roadside SOS works offline. The app automatically lists locally cached shops from your database and allows you to submit direct call or SMS assistance requests.'),
+                  _buildFaqItem('How fast will a mechanic arrive?',
+                      'Most mechanics reach you within 10-20 minutes depending on traffic and your location. You can track their live location once assigned.'),
+                  _buildFaqItem('How is pricing calculated?',
+                      "Pricing depends on the service type, distance traveled, and time of day. You'll see an estimate before confirming any request."),
+                  _buildFaqItem('What if there is no internet connection?',
+                      'You can dial the National Highway Helpline (1033) or the Emergency Number (112) directly — no app or internet required.'),
                   const SizedBox(height: 24),
                 ],
               ),
@@ -1304,20 +1313,73 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildFaqItem(String question, String answer) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: _border, width: 1.5),
+  Widget _helpContact(
+      IconData icon, Color tileBg, Color iconColor, String title, String sub, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+            color: _white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFFEEF0F3), width: 1.5)),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(color: tileBg, borderRadius: BorderRadius.circular(11)),
+              child: Icon(icon, size: 18, color: iconColor),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(title,
+                      style: const TextStyle(
+                          fontFamily: 'Outfit', fontWeight: FontWeight.w700, fontSize: 14, color: _text)),
+                  const SizedBox(height: 2),
+                  Text(sub, style: const TextStyle(fontSize: 12, color: _muted)),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded, size: 18, color: Color(0xFFC0C4CC)),
+          ],
+        ),
       ),
+    );
+  }
+
+  Widget _buildFaqItem(String question, String answer) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+          color: _white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: const Color(0xFFEEF0F3), width: 1.5)),
+      clipBehavior: Clip.antiAlias,
       child: ExpansionTile(
-        title: Text(question, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: _text, fontFamily: 'Outfit')),
-        childrenPadding: const EdgeInsets.all(14),
+        shape: const Border(),
+        collapsedShape: const Border(),
+        tilePadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+        childrenPadding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
         expandedAlignment: Alignment.topLeft,
+        iconColor: const Color(0xFF6B7280),
+        collapsedIconColor: const Color(0xFF6B7280),
+        title: Text(question,
+            style: const TextStyle(
+                fontWeight: FontWeight.w700, fontSize: 13.5, color: _text, fontFamily: 'Outfit')),
         children: [
-          Text(answer, style: const TextStyle(fontSize: 12, color: _sub, height: 1.35, fontFamily: 'Outfit')),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(answer,
+                style: const TextStyle(
+                    fontSize: 12.5, color: Color(0xFF6B7280), height: 1.6, fontFamily: 'Outfit')),
+          ),
         ],
       ),
     );
@@ -1619,7 +1681,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       label: context.tr('provider_mode'),
                       sub: context.tr('provider_sub'),
                       onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const ProviderInboxScreen()),
+                        MaterialPageRoute(
+                          builder: (_) => user.isHelper
+                              ? const ProviderInboxScreen()
+                              : const ProviderRegisterScreen(),
+                        ),
                       ),
                     ),
                     _reactRow(
