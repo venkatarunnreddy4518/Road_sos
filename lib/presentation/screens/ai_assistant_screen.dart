@@ -2,12 +2,154 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
-import '../../core/i18n/l10n_ext.dart';
+
 import '../../core/network/ai_service.dart';
 import '../../data/api/discovery_api.dart';
 import '../../data/models/category.dart';
 import '../state/ai_config_state.dart';
 import 'helper_results_screen.dart';
+
+// ── Design tokens ──
+const _bg = Color(0xFFF7F8FA);
+const _ink = Color(0xFF14181F);
+const _muted = Color(0xFF6B7280);
+const _line = Color(0xFFE6E8EC);
+const _blue = Color(0xFF2563EB);
+const _brand = Color(0xFF7C5CFC); // AI accent (brain)
+const _green = Color(0xFF1A9E5C);
+
+/// One quick-pick roadside issue + the structured diagnosis it shows.
+class _Issue {
+  final String id;
+  final String label;
+  final IconData icon;
+  final Color tile;
+  final _Diagnosis diagnosis;
+  const _Issue(this.id, this.label, this.icon, this.tile, this.diagnosis);
+}
+
+class _Diagnosis {
+  final String severity; // low | medium | high
+  final String title;
+  final List<String> steps;
+  final String action;
+  final Color actionColor;
+  final String categoryKey; // maps to a backend service category
+  const _Diagnosis({
+    required this.severity,
+    required this.title,
+    required this.steps,
+    required this.action,
+    required this.actionColor,
+    required this.categoryKey,
+  });
+}
+
+/// An inline "find help" action attached to a free-text AI reply (from a
+/// [SUGGEST_BOOKING] marker).
+class _Action {
+  final String label;
+  final String categoryKey;
+  final Color color;
+  const _Action(this.label, this.categoryKey, this.color);
+}
+
+class _Msg {
+  final bool isUser;
+  final String? text;
+  final _Diagnosis? diagnosis;
+  final _Action? action;
+  const _Msg.user(this.text)
+      : isUser = true,
+        diagnosis = null,
+        action = null;
+  const _Msg.aiText(this.text, {this.action})
+      : isUser = false,
+        diagnosis = null;
+  const _Msg.aiDiagnosis(this.diagnosis)
+      : isUser = false,
+        text = null,
+        action = null;
+}
+
+const _quickIssues = <_Issue>[
+  _Issue('tyre', 'Flat Tyre', Icons.tire_repair, _blue, _Diagnosis(
+    severity: 'low',
+    title: 'Flat tyre',
+    steps: [
+      'Pull over fully onto the shoulder, away from traffic.',
+      'Turn on hazard lights before stepping out.',
+      'Check if your spare tyre and jack are accessible.',
+    ],
+    action: 'Find Puncture Fix near me',
+    actionColor: _blue,
+    categoryKey: 'puncture',
+  )),
+  _Issue('overheat', 'Engine Overheating', Icons.thermostat, Color(0xFFE5484D), _Diagnosis(
+    severity: 'high',
+    title: 'Engine overheating',
+    steps: [
+      'Pull over and turn off the engine immediately.',
+      'Do not open the radiator cap while hot.',
+      'Wait 20-30 min before checking coolant level.',
+    ],
+    action: 'Find Mechanic near me',
+    actionColor: _brand,
+    categoryKey: 'breakdown',
+  )),
+  _Issue('battery', 'Dead Battery', Icons.battery_alert, _green, _Diagnosis(
+    severity: 'medium',
+    title: 'Dead battery',
+    steps: [
+      'Switch off all electronics and lights.',
+      'Check if cables look corroded or loose.',
+      'A jump start can usually get you moving again.',
+    ],
+    action: 'Find Jump Start near me',
+    actionColor: _green,
+    categoryKey: 'battery',
+  )),
+  _Issue('fuel', 'Out of Fuel', Icons.local_gas_station, Color(0xFFF5A623), _Diagnosis(
+    severity: 'low',
+    title: 'Out of fuel',
+    steps: [
+      'Move to the left shoulder and turn on hazards.',
+      'Note your exact location for the delivery rider.',
+      'Fuel delivery usually arrives within 15-20 min.',
+    ],
+    action: 'Order Fuel Delivery',
+    actionColor: Color(0xFFF5A623),
+    categoryKey: 'fuel',
+  )),
+];
+
+({Color bg, Color fg, String label, IconData icon}) _severityStyle(String s) {
+  switch (s) {
+    case 'high':
+      return (bg: const Color(0xFFFDECEC), fg: const Color(0xFFE5484D), label: 'Pull over now', icon: Icons.warning_amber_rounded);
+    case 'medium':
+      return (bg: const Color(0xFFFFF6E5), fg: const Color(0xFFB07A0E), label: 'Moderate — act soon', icon: Icons.warning_amber_rounded);
+    case 'low':
+    default:
+      return (bg: const Color(0xFFEAFBF1), fg: _green, label: 'Low risk — safe to wait', icon: Icons.check_circle_rounded);
+  }
+}
+
+({String label, Color color}) _actionFor(String key) {
+  switch (key) {
+    case 'puncture':
+      return (label: 'Find Puncture Fix near me', color: _blue);
+    case 'fuel':
+      return (label: 'Order Fuel Delivery', color: const Color(0xFFF5A623));
+    case 'battery':
+      return (label: 'Find Jump Start near me', color: _green);
+    case 'towing':
+      return (label: 'Find Towing near me', color: const Color(0xFFE5484D));
+    case 'breakdown':
+    default:
+      return (label: 'Find Mechanic near me', color: _brand);
+  }
+}
 
 class AiAssistantScreen extends StatefulWidget {
   const AiAssistantScreen({super.key});
@@ -17,166 +159,131 @@ class AiAssistantScreen extends StatefulWidget {
 }
 
 class _AiAssistantScreenState extends State<AiAssistantScreen> {
-  final List<ChatMessage> _messages = [];
-  final TextEditingController _inputController = TextEditingController();
-  final ScrollController _scrollController = ScrollController();
-  final AiService _aiService = AiService();
-  final DiscoveryApi _discoveryApi = DiscoveryApi();
+  final List<_Msg> _messages = [];
+  final TextEditingController _input = TextEditingController();
+  final ScrollController _scroll = ScrollController();
+  final AiService _ai = AiService();
+  final DiscoveryApi _discovery = DiscoveryApi();
 
   List<ServiceCategory> _categories = [];
-  bool _loading = false;
-  String? _suggestedCategory;
-  String? _suggestedDesc;
+  bool _thinking = false;
 
   static const String _systemPrompt = '''
 You are the AI Roadside Mechanic for "Roadside SOS".
-Your job is to:
-1. Be a helpful, general assistant: if the user asks general, unrelated, or non-vehicle questions, answer them directly, fully, and friendly. Do NOT refuse to answer general queries.
+1. Be a helpful, general assistant: answer general/non-vehicle questions directly and fully. Do NOT refuse general queries.
 2. For vehicle, roadside, or mechanical issues:
-   a. Prioritize safety: remind the user to pull over safely, turn on hazard lights, and stand in a safe place.
-   b. Provide clear diagnostic steps or ask troubleshooting questions.
-   c. Suggest one of these five roadside help categories at the end of the diagnostics or if requested:
-      - puncture
-      - fuel
-      - battery
-      - breakdown
-      - towing
-      Format the booking suggestion on a new line at the end of your response like this:
-      [SUGGEST_BOOKING: category_name | brief description of the issue]
-      Example: [SUGGEST_BOOKING: puncture | Left rear tyre has a flat due to a nail]
+   a. Prioritize safety: remind the user to pull over safely, switch on hazard lights, and stand in a safe place.
+   b. Give clear diagnostic steps or ask troubleshooting questions.
+   c. Suggest one of these categories at the end when relevant: puncture, fuel, battery, breakdown, towing.
+      Put it on a new line at the very end like:
+      [SUGGEST_BOOKING: category_name | brief description]
 ''';
 
   @override
   void initState() {
     super.initState();
     _loadCategories();
-    // Add default welcoming message placeholder key
-    _messages.add(
-      ChatMessage(
-        role: 'assistant',
-        content: 'ai_welcome_msg',
-      ),
-    );
-  }
-
-  Future<void> _loadCategories() async {
-    try {
-      final cats = await _discoveryApi.categories();
-      setState(() {
-        _categories = cats;
-      });
-    } catch (_) {}
+    _messages.add(const _Msg.aiText(
+      "Hi, I'm your AI Roadside Mechanic. Tell me what's wrong with your vehicle, "
+      "or pick an issue below — I'll help diagnose it, share safety tips, and find the right help nearby.",
+    ));
   }
 
   @override
   void dispose() {
-    _inputController.dispose();
-    _scrollController.dispose();
+    _input.dispose();
+    _scroll.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadCategories() async {
+    try {
+      final cats = await _discovery.categories();
+      if (mounted) setState(() => _categories = cats);
+    } catch (_) {}
   }
 
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
+      if (_scroll.hasClients) {
+        _scroll.animateTo(_scroll.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
       }
     });
   }
 
-  void _sendPrompt(String text) async {
-    if (text.trim().isEmpty) return;
-    
-    final userMsg = ChatMessage(role: 'user', content: text);
+  Future<void> _sendText(String raw) async {
+    final text = raw.trim();
+    if (text.isEmpty || _thinking) return;
+    _input.clear();
     setState(() {
-      _messages.add(userMsg);
-      _loading = true;
+      _messages.add(_Msg.user(text));
+      _thinking = true;
     });
-    _inputController.clear();
     _scrollToBottom();
 
     final config = context.read<AiConfigState>();
-    final fullHistory = [
+    final history = <ChatMessage>[
       ChatMessage(role: 'system', content: _systemPrompt),
-      ..._messages,
+      ..._messages.where((m) => m.text != null).map(
+            (m) => ChatMessage(role: m.isUser ? 'user' : 'assistant', content: m.text!),
+          ),
     ];
 
     try {
-      final responseText = await _aiService.chat(fullHistory, config);
-      
-      // Parse suggested booking from response
-      final bookingMatch = RegExp(r'\[SUGGEST_BOOKING:\s*(.*?)\s*\|\s*(.*?)\]').firstMatch(responseText);
-      String cleanResponse = responseText;
-      String? matchedCat;
-      String? matchedDesc;
-      
-      if (bookingMatch != null) {
-        matchedCat = bookingMatch.group(1)?.trim();
-        matchedDesc = bookingMatch.group(2)?.trim();
-        cleanResponse = responseText.replaceAll(RegExp(r'\[SUGGEST_BOOKING:.*?\]'), '').trim();
+      final response = await _ai.chat(history, config);
+      final match = RegExp(r'\[SUGGEST_BOOKING:\s*(.*?)\s*\|\s*(.*?)\]').firstMatch(response);
+      var clean = response;
+      _Action? action;
+      if (match != null) {
+        final key = (match.group(1) ?? '').trim().toLowerCase();
+        clean = response.replaceAll(RegExp(r'\[SUGGEST_BOOKING:.*?\]'), '').trim();
+        final a = _actionFor(key);
+        action = _Action(a.label, key, a.color);
       }
-
-      setState(() {
-        _messages.add(ChatMessage(role: 'assistant', content: cleanResponse));
-        if (matchedCat != null) {
-          _suggestedCategory = matchedCat;
-          _suggestedDesc = matchedDesc;
-        }
-      });
+      if (!mounted) return;
+      setState(() => _messages.add(_Msg.aiText(clean.isEmpty ? '…' : clean, action: action)));
     } catch (e) {
-      setState(() {
-        _messages.add(
-          ChatMessage(
-            role: 'assistant',
-            content: 'Sorry, I encountered an error communicating with the AI client: $e.\nPlease verify your settings or endpoint configuration.',
-          ),
-        );
-      });
+      if (!mounted) return;
+      setState(() => _messages.add(const _Msg.aiText(
+          "Sorry, I couldn't reach the AI service. Please check your connection or AI settings and try again.")));
     } finally {
-      setState(() {
-        _loading = false;
-      });
+      if (mounted) setState(() => _thinking = false);
       _scrollToBottom();
     }
   }
 
-  void _onQuickPrompt(String prompt) {
-    _sendPrompt(prompt);
+  Future<void> _sendQuickIssue(_Issue issue) async {
+    if (_thinking) return;
+    setState(() {
+      _messages.add(_Msg.user(issue.label));
+      _thinking = true;
+    });
+    _scrollToBottom();
+    // Brief, faithful "thinking" beat before the structured diagnosis.
+    await Future.delayed(const Duration(milliseconds: 800));
+    if (!mounted) return;
+    setState(() {
+      _messages.add(_Msg.aiDiagnosis(issue.diagnosis));
+      _thinking = false;
+    });
+    _scrollToBottom();
   }
 
-  void _navigateToBooking() async {
-    if (_suggestedCategory == null) return;
-    
-    // Attempt to map string to actual category
-    ServiceCategory? matchedCategory;
-    for (final cat in _categories) {
-      if (cat.key.toLowerCase() == _suggestedCategory!.toLowerCase()) {
-        matchedCategory = cat;
+  Future<void> _findHelp(String categoryKey) async {
+    ServiceCategory? cat;
+    for (final c in _categories) {
+      if (c.key.toLowerCase() == categoryKey.toLowerCase()) {
+        cat = c;
         break;
       }
     }
-    
-    // Fallback if no match
-    if (matchedCategory == null && _categories.isNotEmpty) {
-      matchedCategory = _categories.firstWhere(
-        (c) => c.key == 'breakdown', 
-        orElse: () => _categories.first,
-      );
-    }
+    cat ??= _categories.isEmpty
+        ? null
+        : _categories.firstWhere((c) => c.key == 'breakdown', orElse: () => _categories.first);
+    if (cat == null) return;
 
-    if (matchedCategory == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.tr('needs_connection'))),
-      );
-      return;
-    }
-
-    // Fetch user location
-    double lat = 17.4239;
-    double lng = 78.4738;
+    double lat = 17.4239, lng = 78.4738;
     try {
       final pos = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
@@ -185,236 +292,125 @@ Your job is to:
       lat = pos.latitude;
       lng = pos.longitude;
     } catch (_) {}
-
-    if (mounted) {
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => HelperResultsScreen(
-            category: matchedCategory!,
-            lat: lat,
-            lng: lng,
-          ),
-        ),
-      );
-    }
+    if (!mounted) return;
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => HelperResultsScreen(category: cat!, lat: lat, lng: lng),
+    ));
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
     return Scaffold(
+      backgroundColor: _bg,
       appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        foregroundColor: _ink,
+        titleSpacing: 0,
         title: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(6),
+              width: 36,
+              height: 36,
+              alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: const Color(0xFF0E7C52).withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Icon(Icons.psychology, color: Color(0xFF0E7C52), size: 20),
+                  color: _brand.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(10)),
+              child: const Icon(Icons.psychology_rounded, size: 18, color: _brand),
             ),
-            const SizedBox(width: 8),
-            Text(context.tr('ai_assistant')),
+            const SizedBox(width: 12),
+            const Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('AI Roadside Mechanic',
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: _ink)),
+                Row(children: [
+                  _Dot(),
+                  SizedBox(width: 5),
+                  Text('Online · responds instantly',
+                      style: TextStyle(fontSize: 11.5, color: _green, fontWeight: FontWeight.w500)),
+                ]),
+              ],
+            ),
           ],
         ),
       ),
       body: Column(
         children: [
-          // Suggested Category Notification Panel
-          if (_suggestedCategory != null)
-            Container(
-              margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF18B26B), Color(0xFF0E7C52)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: const [
-                  BoxShadow(color: Color(0x280E7C52), blurRadius: 10, offset: Offset(0, 4)),
-                ],
-              ),
-              child: Row(
-                children: [
-                  const Text('🔧', style: TextStyle(fontSize: 22)),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Diagnostic Match: ${_suggestedCategory!.toUpperCase()}',
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.white,
-                          ),
-                        ),
-                        if (_suggestedDesc != null) ...[
-                          const SizedBox(height: 2),
-                          Text(
-                            _suggestedDesc!,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 10,
-                              color: Colors.white70,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  ElevatedButton(
-                    onPressed: _navigateToBooking,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: const Color(0xFF0E7C52),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    child: Text(
-                      context.tr('ai_suggest_prefill'),
-                      style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-          // Messages View
+          // Messages
           Expanded(
             child: ListView.builder(
-              controller: _scrollController,
-              padding: const EdgeInsets.all(16),
-              itemCount: _messages.length,
-              itemBuilder: (context, index) {
-                final msg = _messages[index];
-                final isUser = msg.role == 'user';
-                final content = msg.content == 'ai_welcome_msg'
-                    ? context.tr('ai_welcome_msg')
-                    : msg.content;
-
-                return Align(
-                  alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-                  child: Container(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    padding: const EdgeInsets.all(14),
-                    constraints: BoxConstraints(
-                      maxWidth: MediaQuery.of(context).size.width * 0.78,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isUser
-                          ? const Color(0xFF0E7C52)
-                          : (isDark ? Colors.grey[900] : const Color(0xFFEBEFEF)),
-                      borderRadius: BorderRadius.only(
-                        topLeft: const Radius.circular(16),
-                        topRight: const Radius.circular(16),
-                        bottomLeft: Radius.circular(isUser ? 16 : 4),
-                        bottomRight: Radius.circular(isUser ? 4 : 16),
-                      ),
-                    ),
-                    child: Text(
-                      content,
-                      style: TextStyle(
-                        color: isUser ? Colors.white : (isDark ? Colors.white : Colors.black87),
-                        fontSize: 14,
-                        height: 1.35,
-                      ),
-                    ),
-                  ),
-                );
+              controller: _scroll,
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              itemCount: _messages.length + (_thinking ? 1 : 0),
+              itemBuilder: (context, i) {
+                if (_thinking && i == _messages.length) return const _TypingRow();
+                return _MessageRow(msg: _messages[i], onFindHelp: _findHelp);
               },
             ),
           ),
 
-          if (_loading)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+          // Quick issue cards (2x2)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+            child: GridView.count(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              crossAxisCount: 2,
+              mainAxisSpacing: 8,
+              crossAxisSpacing: 8,
+              childAspectRatio: 4.2,
+              children:
+                  _quickIssues.map((q) => _QuickIssueCard(issue: q, onTap: () => _sendQuickIssue(q))).toList(),
+            ),
+          ),
+
+          // Input bar
+          SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
               child: Row(
                 children: [
-                  const SizedBox(
-                    width: 14,
-                    height: 14,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF0E7C52)),
+                  _SquareButton(
+                    icon: Icons.mic_none_rounded,
+                    iconColor: _muted,
+                    bg: Colors.white,
+                    onTap: () => ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Voice input coming soon')),
+                    ),
                   ),
                   const SizedBox(width: 8),
-                  Text(
-                    context.tr('ai_typing'),
-                    style: TextStyle(fontSize: 12, color: theme.colorScheme.tertiary),
-                  ),
-                ],
-              ),
-            ),
-
-          // Quick Starter chips when no conversation is active
-          if (_messages.length == 1 && !_loading)
-            Container(
-              height: 40,
-              margin: const EdgeInsets.only(bottom: 8),
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                children: [
-                  _QuickPromptChip(
-                    label: context.tr('ai_chip_puncture'),
-                    onTap: () => _onQuickPrompt(context.tr('ai_prompt_puncture')),
-                  ),
-                  _QuickPromptChip(
-                    label: context.tr('ai_chip_overheat'),
-                    onTap: () => _onQuickPrompt(context.tr('ai_prompt_overheat')),
-                  ),
-                  _QuickPromptChip(
-                    label: context.tr('ai_chip_battery'),
-                    onTap: () => _onQuickPrompt(context.tr('ai_prompt_battery')),
-                  ),
-                  _QuickPromptChip(
-                    label: context.tr('ai_chip_fuel'),
-                    onTap: () => _onQuickPrompt(context.tr('ai_prompt_fuel')),
-                  ),
-                ],
-              ),
-            ),
-
-          // Message Input Field
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              child: Card(
-                elevation: 0,
-                color: isDark ? Colors.grey[900] : Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(24),
-                  side: BorderSide(color: theme.colorScheme.outline, width: 1.5),
-                ),
-                margin: EdgeInsets.zero,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _inputController,
-                          decoration: InputDecoration(
-                            hintText: context.tr('ai_input_hint'),
-                            border: InputBorder.none,
-                          ),
-                          onSubmitted: _sendPrompt,
+                  Expanded(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        border: Border.all(color: _line),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: TextField(
+                        controller: _input,
+                        textInputAction: TextInputAction.send,
+                        onSubmitted: _sendText,
+                        style: const TextStyle(fontSize: 13.5, color: _ink),
+                        decoration: const InputDecoration(
+                          hintText: 'Describe your issue...',
+                          hintStyle: TextStyle(color: Color(0xFF9CA3AF), fontSize: 13.5),
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                         ),
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.send, color: Color(0xFF0E7C52)),
-                        onPressed: () => _sendPrompt(_inputController.text),
-                      ),
-                    ],
+                    ),
                   ),
-                ),
+                  const SizedBox(width: 8),
+                  _SquareButton(
+                    icon: Icons.send_rounded,
+                    iconColor: Colors.white,
+                    bg: _blue,
+                    onTap: () => _sendText(_input.text),
+                  ),
+                ],
               ),
             ),
           ),
@@ -424,22 +420,326 @@ Your job is to:
   }
 }
 
-class _QuickPromptChip extends StatelessWidget {
-  final String label;
-  final VoidCallback onTap;
-  const _QuickPromptChip({required this.label, required this.onTap});
+class _Dot extends StatelessWidget {
+  const _Dot();
+  @override
+  Widget build(BuildContext context) =>
+      Container(width: 6, height: 6, decoration: const BoxDecoration(color: _green, shape: BoxShape.circle));
+}
+
+/// One message row: AI (brain avatar + bubble/diagnosis) or user (blue bubble).
+class _MessageRow extends StatelessWidget {
+  final _Msg msg;
+  final void Function(String categoryKey) onFindHelp;
+  const _MessageRow({required this.msg, required this.onFindHelp});
 
   @override
   Widget build(BuildContext context) {
+    final isUser = msg.isUser;
     return Padding(
-      padding: const EdgeInsets.only(right: 8),
-      child: ActionChip(
-        label: Text(label),
-        onPressed: onTap,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        backgroundColor: Colors.white,
-        side: const BorderSide(color: Color(0xFFE7ECEA), width: 1.5),
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+        children: [
+          if (!isUser) ...[
+            Container(
+              width: 28,
+              height: 28,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(color: _brand.withValues(alpha: 0.10), shape: BoxShape.circle),
+              child: const Icon(Icons.psychology_rounded, size: 14, color: _brand),
+            ),
+            const SizedBox(width: 10),
+          ],
+          Flexible(
+            child: msg.diagnosis != null
+                ? _DiagnosisCard(diag: msg.diagnosis!, onFindHelp: onFindHelp)
+                : _Bubble(text: msg.text ?? '', isUser: isUser, action: msg.action, onFindHelp: onFindHelp),
+          ),
+        ],
       ),
+    );
+  }
+}
+
+class _Bubble extends StatelessWidget {
+  final String text;
+  final bool isUser;
+  final _Action? action;
+  final void Function(String categoryKey) onFindHelp;
+  const _Bubble({required this.text, required this.isUser, this.action, required this.onFindHelp});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.74),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: isUser ? _blue : Colors.white,
+            border: isUser ? null : Border.all(color: _line),
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(isUser ? 14 : 4),
+              topRight: Radius.circular(isUser ? 4 : 14),
+              bottomLeft: const Radius.circular(14),
+              bottomRight: const Radius.circular(14),
+            ),
+          ),
+          child: Text(text,
+              style: TextStyle(
+                  color: isUser ? Colors.white : _ink, fontSize: 13.5, height: 1.5)),
+        ),
+        if (action != null) ...[
+          const SizedBox(height: 8),
+          _ActionButton(label: action!.label, color: action!.color, onTap: () => onFindHelp(action!.categoryKey)),
+        ],
+      ],
+    );
+  }
+}
+
+class _DiagnosisCard extends StatelessWidget {
+  final _Diagnosis diag;
+  final void Function(String categoryKey) onFindHelp;
+  const _DiagnosisCard({required this.diag, required this.onFindHelp});
+
+  @override
+  Widget build(BuildContext context) {
+    final sev = _severityStyle(diag.severity);
+    return Container(
+      constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.82),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: _line),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+            decoration: BoxDecoration(color: sev.bg, borderRadius: BorderRadius.circular(8)),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              Icon(sev.icon, size: 13, color: sev.fg),
+              const SizedBox(width: 6),
+              Text(sev.label, style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: sev.fg)),
+            ]),
+          ),
+          const SizedBox(height: 10),
+          Text(diag.title, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5, color: _ink)),
+          const SizedBox(height: 8),
+          ...List.generate(diag.steps.length, (i) => Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Container(
+                    width: 18,
+                    height: 18,
+                    alignment: Alignment.center,
+                    decoration: const BoxDecoration(color: Color(0xFFF3F4F6), shape: BoxShape.circle),
+                    child: Text('${i + 1}',
+                        style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: _muted)),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(diag.steps[i],
+                        style: const TextStyle(fontSize: 12.5, color: Color(0xFF4B5563), height: 1.4)),
+                  ),
+                ]),
+              )),
+          const SizedBox(height: 6),
+          _ActionButton(label: diag.action, color: diag.actionColor, onTap: () => onFindHelp(diag.categoryKey)),
+        ],
+      ),
+    );
+  }
+}
+
+class _ActionButton extends StatelessWidget {
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+  const _ActionButton({required this.label, required this.color, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(10)),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.build_rounded, size: 14, color: Colors.white),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(label,
+                  textAlign: TextAlign.center,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13)),
+            ),
+            const SizedBox(width: 4),
+            const Icon(Icons.chevron_right_rounded, size: 16, color: Colors.white),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _QuickIssueCard extends StatelessWidget {
+  final _Issue issue;
+  final VoidCallback onTap;
+  const _QuickIssueCard({required this.issue, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border.all(color: _line),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 32,
+              height: 32,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                  color: issue.tile.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(9)),
+              child: Icon(issue.icon, size: 16, color: issue.tile),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(issue.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: _ink)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SquareButton extends StatelessWidget {
+  final IconData icon;
+  final Color iconColor;
+  final Color bg;
+  final VoidCallback onTap;
+  const _SquareButton({required this.icon, required this.iconColor, required this.bg, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 42,
+        height: 42,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: bg,
+          border: bg == Colors.white ? Border.all(color: _line) : null,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Icon(icon, size: 18, color: iconColor),
+      ),
+    );
+  }
+}
+
+class _TypingRow extends StatelessWidget {
+  const _TypingRow();
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 28,
+            height: 28,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(color: _brand.withValues(alpha: 0.10), shape: BoxShape.circle),
+            child: const Icon(Icons.psychology_rounded, size: 14, color: _brand),
+          ),
+          const SizedBox(width: 10),
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border.all(color: _line),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(4),
+                topRight: Radius.circular(14),
+                bottomLeft: Radius.circular(14),
+                bottomRight: Radius.circular(14),
+              ),
+            ),
+            child: const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              child: _TypingDots(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TypingDots extends StatefulWidget {
+  const _TypingDots();
+  @override
+  State<_TypingDots> createState() => _TypingDotsState();
+}
+
+class _TypingDotsState extends State<_TypingDots> with SingleTickerProviderStateMixin {
+  late final AnimationController _c =
+      AnimationController(vsync: this, duration: const Duration(milliseconds: 1200))..repeat();
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _c,
+      builder: (_, __) {
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: List.generate(3, (i) {
+            final t = ((_c.value - i * 0.15) % 1.0);
+            final lift = (t < 0.3) ? (t / 0.3) : (t < 0.6 ? (1 - (t - 0.3) / 0.3) : 0.0);
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 2),
+              child: Transform.translate(
+                offset: Offset(0, -3 * lift),
+                child: Container(
+                  width: 6,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF9CA3AF).withValues(alpha: 0.4 + 0.6 * lift),
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+            );
+          }),
+        );
+      },
     );
   }
 }
