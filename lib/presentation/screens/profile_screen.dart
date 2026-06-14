@@ -583,12 +583,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       fontFamily: 'Outfit',
                     ),
                   ),
-                  const SizedBox(height: 6),
-                  const Text(
-                    'In case of emergency, these contacts can be notified instantly with your location.',
-                    style: TextStyle(fontSize: 11.5, color: _sub, height: 1.3),
-                  ),
                   const SizedBox(height: 14),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFDECEC),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: const Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(Icons.gpp_maybe_rounded, size: 18, color: Color(0xFFE5484D)),
+                        SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'In case of emergency, these contacts can be notified instantly with your live location.',
+                            style: TextStyle(fontSize: 12.5, color: Color(0xFF9B3A3E), height: 1.5),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 10),
                   if (_contacts.isEmpty)
                     const Padding(
                       padding: EdgeInsets.symmetric(vertical: 24),
@@ -600,53 +616,91 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     )
                   else
-                    ..._contacts.map((c) {
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          side: const BorderSide(color: _border, width: 1.5),
+                    ..._contacts.asMap().entries.map((e) {
+                      final c = e.value;
+                      const palette = [
+                        Color(0xFF2563EB),
+                        Color(0xFF7C5CFC),
+                        Color(0xFF1A9E5C),
+                        Color(0xFFF5A623),
+                        Color(0xFFE5484D),
+                      ];
+                      final color = palette[e.key % palette.length];
+                      final name = c['name'] ?? '?';
+                      final initial = name.trim().isNotEmpty ? name.trim()[0].toUpperCase() : '?';
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 10),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: _white,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: const Color(0xFFEEF0F3), width: 1.5),
                         ),
-                        child: ListTile(
-                          leading: const CircleAvatar(
-                            backgroundColor: _primaryLight,
-                            child: Icon(Icons.person, color: _primary, size: 20),
-                          ),
-                          title: Text(
-                            c['name']!,
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              color: _text,
-                              fontFamily: 'Outfit',
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 42,
+                              height: 42,
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                  color: color.withValues(alpha: 0.10), shape: BoxShape.circle),
+                              child: Text(initial,
+                                  style: TextStyle(
+                                      fontFamily: 'Outfit',
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 15,
+                                      color: color)),
                             ),
-                          ),
-                          subtitle: Text(
-                            c['phone']!,
-                            style: const TextStyle(
-                              fontSize: 11,
-                              color: _sub,
-                              fontFamily: 'Outfit',
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(name,
+                                      style: const TextStyle(
+                                          fontFamily: 'Outfit',
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 14,
+                                          color: _text)),
+                                  const SizedBox(height: 2),
+                                  Text(c['phone'] ?? '',
+                                      style: const TextStyle(
+                                          fontSize: 12.5, color: _muted, fontFamily: 'Outfit')),
+                                ],
+                              ),
                             ),
-                          ),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.phone, color: _green),
-                                onPressed: () => HelperActions.call(c['phone']!),
+                            GestureDetector(
+                              onTap: () => HelperActions.call(c['phone'] ?? ''),
+                              child: Container(
+                                width: 38,
+                                height: 38,
+                                alignment: Alignment.center,
+                                decoration: const BoxDecoration(
+                                    color: Color(0xFF1A9E5C), shape: BoxShape.circle),
+                                child: const Icon(Icons.phone, size: 16, color: Colors.white),
                               ),
-                              IconButton(
-                                icon: const Icon(Icons.delete_outline, color: _red),
-                                onPressed: () {
-                                  setSheetState(() => _contacts.remove(c));
-                                  _saveContacts();
-                                  setState(() {}); // refresh profile count
-                                },
+                            ),
+                            const SizedBox(width: 8),
+                            GestureDetector(
+                              onTap: () {
+                                setSheetState(() => _contacts.remove(c));
+                                _saveContacts();
+                                setState(() {});
+                              },
+                              child: Container(
+                                width: 38,
+                                height: 38,
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFDECEC),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: const Color(0xFFFCE4E4)),
+                                ),
+                                child: const Icon(Icons.delete_outline, size: 15, color: Color(0xFFE5484D)),
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       );
                     }),
@@ -782,48 +836,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  _buildSafetyTipCard('🚨 1. Turn on Hazard Lights', 'Immediately turn on your hazard lights (double-indicator) to warn other highway traffic.'),
-                  _buildSafetyTipCard('🚗 2. Pull Over Safely', 'Move your vehicle to the left-most hard shoulder or emergency lane, away from moving traffic streams.'),
-                  _buildSafetyTipCard('🦺 3. Wear High-Visibility Gear', 'If you have a reflective vest, put it on before exiting the vehicle.'),
-                  _buildSafetyTipCard('🚧 4. Place Warning Triangle', 'Place your reflective warning triangle 50 meters behind your vehicle to alert incoming motorists.'),
-                  _buildSafetyTipCard('🌳 5. Wait in a Safe Area', 'Exit the vehicle from the passenger side (away from traffic) and stand behind the safety barrier or guardrail.'),
-                  const SizedBox(height: 20),
+                  _buildSafetyTipCard(1, Icons.warning_amber_rounded, const Color(0xFFE5484D),
+                      'Turn on Hazard Lights',
+                      'Immediately turn on your hazard lights (double-indicator) to warn other highway traffic.'),
+                  _buildSafetyTipCard(2, Icons.directions_car_rounded, _primary,
+                      'Pull Over Safely',
+                      'Move your vehicle to the left-most hard shoulder or emergency lane, away from moving traffic streams.'),
+                  _buildSafetyTipCard(3, Icons.lightbulb_outline_rounded, const Color(0xFFF5A623),
+                      'Wear High-Visibility Gear',
+                      'If you have a reflective vest, put it on before exiting the vehicle.'),
+                  _buildSafetyTipCard(4, Icons.construction_rounded, const Color(0xFFF5A623),
+                      'Place Warning Triangle',
+                      'Place your reflective warning triangle 50 meters behind your vehicle to alert incoming motorists.'),
+                  _buildSafetyTipCard(5, Icons.park_rounded, const Color(0xFF1A9E5C),
+                      'Wait in a Safe Area',
+                      'Exit the vehicle from the passenger side (away from traffic) and stand behind the safety barrier or guardrail.'),
+                  const SizedBox(height: 18),
                   const Text(
-                    'Emergency Helplines',
+                    'EMERGENCY HELPLINES',
                     style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w800,
-                      color: _text,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.6,
+                      color: Color(0xFF9CA3AF),
                       fontFamily: 'Outfit',
                     ),
                   ),
                   const SizedBox(height: 10),
-                  Card(
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      side: const BorderSide(color: _border, width: 1.5),
-                    ),
-                    child: ListTile(
-                      title: const Text('National Highway Helpline', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, fontFamily: 'Outfit')),
-                      subtitle: const Text('1033', style: TextStyle(color: _primary, fontWeight: FontWeight.bold, fontFamily: 'Outfit')),
-                      trailing: const Icon(Icons.phone, color: _green),
-                      onTap: () => HelperActions.call('1033'),
-                    ),
-                  ),
-                  Card(
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      side: const BorderSide(color: _border, width: 1.5),
-                    ),
-                    child: ListTile(
-                      title: const Text('National Emergency Number', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, fontFamily: 'Outfit')),
-                      subtitle: const Text('112', style: TextStyle(color: _primary, fontWeight: FontWeight.bold, fontFamily: 'Outfit')),
-                      trailing: const Icon(Icons.phone, color: _green),
-                      onTap: () => HelperActions.call('112'),
-                    ),
-                  ),
+                  _helpline('National Highway Helpline', '1033'),
+                  _helpline('National Emergency Number', '112'),
                   const SizedBox(height: 24),
                 ],
               ),
@@ -834,24 +875,104 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildSafetyTipCard(String title, String desc) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: _border, width: 1.5),
+  Widget _buildSafetyTipCard(int n, IconData icon, Color tile, String title, String desc) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: _white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFEEF0F3), width: 1.5),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5, color: _text, fontFamily: 'Outfit')),
-            const SizedBox(height: 6),
-            Text(desc, style: const TextStyle(fontSize: 11.5, color: _sub, height: 1.3, fontFamily: 'Outfit')),
-          ],
-        ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                    color: tile.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(11)),
+                child: Icon(icon, size: 18, color: tile),
+              ),
+              Positioned(
+                top: -6,
+                left: -6,
+                child: Container(
+                  width: 18,
+                  height: 18,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                      color: tile,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 2)),
+                  child: Text('$n',
+                      style: const TextStyle(
+                          color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700)),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(title,
+                    style: const TextStyle(
+                        fontFamily: 'Outfit', fontWeight: FontWeight.w700, fontSize: 14.5, color: _text)),
+                const SizedBox(height: 3),
+                Text(desc,
+                    style: const TextStyle(
+                        fontSize: 12.5, color: Color(0xFF6B7280), height: 1.5, fontFamily: 'Outfit')),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _helpline(String label, String number) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: _white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFEEF0F3), width: 1.5),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(label,
+                    style: const TextStyle(
+                        fontFamily: 'Outfit', fontWeight: FontWeight.w700, fontSize: 14, color: _text)),
+                const SizedBox(height: 2),
+                Text(number,
+                    style: const TextStyle(fontSize: 13, color: Color(0xFF6B7280), fontFamily: 'Outfit')),
+              ],
+            ),
+          ),
+          GestureDetector(
+            onTap: () => HelperActions.call(number),
+            child: Container(
+              width: 40,
+              height: 40,
+              alignment: Alignment.center,
+              decoration: const BoxDecoration(color: Color(0xFF1A9E5C), shape: BoxShape.circle),
+              child: const Icon(Icons.phone, size: 17, color: Colors.white),
+            ),
+          ),
+        ],
       ),
     );
   }
