@@ -12,8 +12,9 @@ import '../../data/api/discovery_api.dart';
 import '../../data/models/category.dart';
 import '../../data/models/marketplace_helper.dart';
 import '../../data/repositories/helper_cache.dart';
+import '../utils/helper_actions.dart';
 import '../widgets/category_grid.dart';
-import '../widgets/horizontal_helper_card.dart';
+import '../widgets/helper_carousel.dart';
 import '../widgets/location_permission_sheet.dart';
 import '../widgets/map_markers.dart';
 import 'helper_detail_screen.dart';
@@ -762,47 +763,43 @@ class _DiscoverTabState extends State<_DiscoverTab> {
             )),
           ),
 
-          // Open Near You Rail
+          // Nearby helpers carousel
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
-            child: Text(
-              context.tr('open_near_you'),
-              style: const TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 1.2,
-                color: Color(0xFF7C887F),
-              ),
-            ),
-          ),
-
-          Container(
-            height: 136,
-            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.only(top: 20, bottom: 12),
             child: _nearby.isEmpty
-                ? Center(
-                    child: Builder(
-                      builder: (context) {
-                        return Text(
-                          context.tr('no_helpers_nearby'),
-                          style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.tertiary),
-                        );
-                      }
+                ? Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Text(
+                      context.tr('no_helpers_nearby'),
+                      style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.tertiary),
                     ),
                   )
-                : ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: _nearby.length,
-                    itemBuilder: (context, index) {
-                      final helper = _nearby[index];
-                      return HorizontalHelperCard(
-                        helper: helper,
-                        onTap: () => Navigator.of(context).push(MaterialPageRoute(
-                          builder: (_) => HelperDetailScreen(helperId: helper.id, categoryId: null),
-                        )),
-                      );
+                : HelperCarousel(
+                    helpers: _nearby,
+                    onCall: (h) {
+                      if (h.phone != null && h.phone!.isNotEmpty) {
+                        HelperActions.call(h.phone!);
+                      }
                     },
+                    onRequest: (h) {
+                      String? catId;
+                      for (final c in _categories) {
+                        if (c.helperTypes.contains(h.helperType)) {
+                          catId = c.id;
+                          break;
+                        }
+                      }
+                      catId ??= _categories.isNotEmpty ? _categories.first.id : null;
+                      Navigator.of(context).push(MaterialPageRoute(
+                        builder: (_) => HelperDetailScreen(helperId: h.id, categoryId: catId),
+                      ));
+                    },
+                    onViewAll: _categories.isEmpty
+                        ? null
+                        : () => Navigator.of(context).push(MaterialPageRoute(
+                              builder: (_) => HelperResultsScreen(
+                                  category: _categories.first, lat: _lat, lng: _lng),
+                            )),
                   ),
           ),
 
