@@ -11,6 +11,20 @@ An Uber-style, two-sided marketplace prototype for roadside emergencies. Strande
 
 ---
 
+## 🌐 Live Demo
+
+The prototype is deployed end-to-end and publicly reachable:
+
+| Tier | Service | URL |
+| --- | --- | --- |
+| Frontend | Flutter Web on **Vercel** | <https://help-ashy.vercel.app> |
+| Backend | FastAPI (Docker) on **Render** | <https://roadside-help-api.onrender.com> · [`/docs`](https://roadside-help-api.onrender.com/docs) |
+| Database | **Neon** serverless PostgreSQL (Singapore) | — |
+
+> The Render backend runs on a free tier and sleeps after ~15 min of inactivity, so the first request after idle may take ~30–50 s to cold-start. Auth works out of the box: Google/phone fall back to sandboxed dev mocks when third-party keys are absent.
+
+---
+
 ## 🏗️ System Architecture
 
 The application is built on a decoupled, mobile-and-API split architecture:
@@ -99,7 +113,7 @@ sequenceDiagram
 
     Helper->>ProvApp: Tap "Mark Arrived" & "Complete Service"
     ProvApp->>BE: POST /api/v1/requests/{id}/status (ARRIVED -> COMPLETED)
-    BE->>DB: Finalize request status
+    BE->>DB: Finalize status & stamp fare_amount from category base_fare
     App->>Seeker: Show rating & review dialog
     Seeker->>App: Rate 1-5 Stars + Comment
     App->>BE: POST /api/v1/reviews
@@ -115,13 +129,15 @@ sequenceDiagram
 - **Haversine Distance Mapping**: Real-time server-side geospatial query processing using indexing and mathematical coordinate distance (Haversine) without heavy GIS dependencies.
 - **Live Tracking Panel**: Draggable, glassmorphic bottom sheets displaying status timelines, pickup pointers, and active tracking markers on OpenStreetMap.
 - **Localization Integration**: Dynamic locale selector (supporting **English, हिन्दी, తెలుగు, தமிழ்**) that completes a full-app language update under 2 seconds and persists preferences across launches.
-- **Provider Console**: Live client inbox displaying open local requests, quick directions navigation, and status updating triggers.
+- **Provider Console & Onboarding**: A self-service **Provider registration** flow (service type, contact, GPS-stamped location) that turns any user into a helper, plus a live inbox of open local requests with quick directions and status triggers.
+- **Transactional Fares**: Each service category carries a base fee; when a helper completes a job the request is stamped with a final `fare_amount`, surfaced on the seeker's **My SOS Requests** history (seeker/helper tabs, status chips, and per-job pricing).
+- **Redesigned Profile Suite**: Native-feeling Profile, Payments, Safety Guidelines, Emergency Contacts, Refer & Earn, Settings, and Help & Support screens with one-tap helpline calling.
 
 ---
 
 ## 🗄️ Database Model (PostgreSQL)
 
-The backend schema features six normalized tables representing the marketplace entities:
+The backend schema features six core normalized tables representing the marketplace entities (plus supporting tables for OTP codes, refresh tokens, and helper location history). Schema changes are managed with **Alembic** — migration `0002` introduces the `base_fare` / `fare_amount` pricing columns shown below:
 
 ```
                   ┌──────────────────────┐
@@ -146,7 +162,8 @@ The backend schema features six normalized tables representing the marketplace e
 ├──────────────────────┤                          ├──────────────────────┤
 │ id (PK)              │ 1                        │ id (PK), status      │
 │ name, helper_types   │                          │ seeker_id (FK:user)  │
-└──────────────────────┘                          │ helper_id (FK:profile│
+│ base_fare            │                          │ helper_id (FK:profile│
+└──────────────────────┘                          │ fare_amount          │
                                                   └────────▲─────────────┘
                                                            │ 1
                                                            ▼ *
