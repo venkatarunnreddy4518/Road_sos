@@ -157,37 +157,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       ),
                     )
-                  else
-                    ..._vehicles.map((v) {
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          side: const BorderSide(color: _border, width: 1.5),
-                        ),
-                        child: ListTile(
-                          leading: const Text('🚗', style: TextStyle(fontSize: 20)),
-                          title: Text(
-                            v,
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              color: _text,
-                              fontFamily: 'Outfit',
-                            ),
-                          ),
-                          trailing: IconButton(
-                            icon: const Icon(Icons.delete_outline, color: _red),
-                            onPressed: () {
-                              setSheetState(() => _vehicles.remove(v));
-                              _saveVehicles();
-                              setState(() {}); // refresh profile count
-                            },
-                          ),
-                        ),
+                  else ...[
+                    const Padding(
+                      padding: EdgeInsets.only(bottom: 6),
+                      child: Text('Swipe a vehicle left to delete',
+                          style: TextStyle(fontSize: 12, color: _muted)),
+                    ),
+                    ..._vehicles.asMap().entries.map((e) {
+                      final v = e.value;
+                      return _VehicleCard(
+                        raw: v,
+                        isDefault: e.key == 0,
+                        onDelete: () {
+                          setSheetState(() => _vehicles.remove(v));
+                          _saveVehicles();
+                          setState(() {}); // refresh profile count
+                        },
                       );
                     }),
+                  ],
                   const SizedBox(height: 16),
                   SizedBox(
                     width: double.infinity,
@@ -1012,116 +1000,101 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildSectionHeader(String title) {
+  Widget _sectionLabel(String text) {
     return Padding(
-      padding: const EdgeInsets.only(left: 20, right: 20, top: 18, bottom: 8),
+      padding: const EdgeInsets.only(top: 14, bottom: 8),
       child: Text(
-        title,
+        text,
         style: const TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w700,
-          color: _sub,
-          letterSpacing: 0.4,
+          color: Color(0xFF9CA3AF),
+          letterSpacing: 0.6,
           fontFamily: 'Outfit',
         ),
       ),
     );
   }
 
-  Widget _buildSectionCard(List<Widget> children) {
+  String _initials(String name) {
+    final parts = name.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+    if (parts.isEmpty) return '?';
+    if (parts.length == 1) {
+      final p = parts.first;
+      return (p.length >= 2 ? p.substring(0, 2) : p).toUpperCase();
+    }
+    return (parts.first.substring(0, 1) + parts[1].substring(0, 1)).toUpperCase();
+  }
+
+  Widget _headerPill(Color bg, Color fg, IconData icon, String label) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        color: _white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: _border, width: 1.5),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(14),
-        child: Column(
-          children: children,
-        ),
+      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(999)),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 13, color: fg),
+          const SizedBox(width: 5),
+          Text(label,
+              style: TextStyle(
+                  color: fg, fontSize: 12.5, fontWeight: FontWeight.w700, fontFamily: 'Outfit')),
+        ],
       ),
     );
   }
 
-  Widget _buildItem({
-    required String emoji,
-    required String title,
-    String? subtitle,
-    Widget? trailing,
-    bool isLast = false,
-    Color? titleColor,
+  /// A React-style settings row: colored icon tile + label + sub + chevron.
+  Widget _reactRow({
+    required IconData icon,
+    required Color tile,
+    required String label,
+    String? sub,
     VoidCallback? onTap,
+    Color? labelColor,
   }) {
-    return InkWell(
+    return GestureDetector(
       onTap: onTap,
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            child: Row(
-              children: [
-                SizedBox(
-                  width: 24,
-                  child: Center(
-                    child: Text(
-                      emoji,
-                      style: const TextStyle(fontSize: 18),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        title,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: titleColor ?? _text,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: _white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: _border, width: 1.5),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                  color: tile.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(11)),
+              child: Icon(icon, size: 19, color: tile),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(label,
+                      style: TextStyle(
                           fontFamily: 'Outfit',
-                        ),
-                      ),
-                      if (subtitle != null) ...[
-                        const SizedBox(height: 2),
-                        Text(
-                          subtitle,
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: _muted,
-                            fontFamily: 'Outfit',
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-                if (trailing != null)
-                  trailing
-                else
-                  const Text(
-                    '›',
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: _muted,
-                    ),
-                  ),
-              ],
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                          color: labelColor ?? _text)),
+                  if (sub != null) ...[
+                    const SizedBox(height: 2),
+                    Text(sub, style: const TextStyle(fontSize: 12, color: _muted, fontFamily: 'Outfit')),
+                  ],
+                ],
+              ),
             ),
-          ),
-          if (!isLast)
-            const Divider(
-              height: 1,
-              thickness: 1,
-              color: _border,
-              indent: 0,
-              endIndent: 0,
-            ),
-        ],
+            Icon(Icons.chevron_right_rounded, size: 18, color: labelColor ?? const Color(0xFFC0C4CC)),
+          ],
+        ),
       ),
     );
   }
@@ -1142,213 +1115,195 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: ListView(
           padding: const EdgeInsets.only(bottom: 90),
           children: [
-            // Header (c2-top)
+            // Header card: gradient banner + initials avatar + pills
             Container(
-              color: _white,
-              padding: const EdgeInsets.only(top: 30, bottom: 20, left: 20, right: 20),
+              margin: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: _white,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: _border, width: 1.5),
+              ),
               child: Column(
                 children: [
-                  Container(
-                    width: 84,
-                    height: 84,
-                    decoration: BoxDecoration(
-                      color: _primaryLight,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: _primary,
-                        width: 3,
+                  Stack(
+                    clipBehavior: Clip.none,
+                    alignment: Alignment.topCenter,
+                    children: [
+                      Container(
+                        height: 56,
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [_primary, Color(0xFF5B8DEF)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.vertical(top: Radius.circular(17)),
+                        ),
                       ),
-                    ),
-                    alignment: Alignment.center,
-                    child: const Text(
-                      '👤',
-                      style: TextStyle(fontSize: 36),
-                    ),
+                      Positioned(
+                        top: 22,
+                        child: Container(
+                          width: 72,
+                          height: 72,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: _primaryLight,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: _white, width: 4),
+                          ),
+                          child: Text(
+                            _initials(user.displayName),
+                            style: const TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w800,
+                              color: _primary,
+                              fontFamily: 'Outfit',
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 46),
                   Text(
-                    user.displayName.isNotEmpty ? user.displayName : 'Arunn Reddy',
+                    user.displayName.isNotEmpty ? user.displayName : 'Your name',
                     style: const TextStyle(
-                      fontSize: 19,
+                      fontSize: 17,
                       fontWeight: FontWeight.w800,
                       color: _text,
                       fontFamily: 'Outfit',
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 2),
                   Text(
-                    user.email ?? user.phone ?? 'demo.user@gmail.com',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: _muted,
-                      fontFamily: 'Outfit',
-                    ),
+                    user.email ?? user.phone ?? '',
+                    style: const TextStyle(fontSize: 12.5, color: _muted, fontFamily: 'Outfit'),
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 12),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Container(
-                        decoration: BoxDecoration(
-                          color: _greenLight,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text('⭐', style: TextStyle(fontSize: 11)),
-                            SizedBox(width: 4),
-                            Text(
-                              '4.8 Rating',
-                              style: TextStyle(
-                                color: _green,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                fontFamily: 'Outfit',
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                      _headerPill(_greenLight, _green, Icons.star_rounded, '4.8 Rating'),
                       const SizedBox(width: 8),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: _primaryLight,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Text('🚗', style: TextStyle(fontSize: 11)),
-                            const SizedBox(width: 4),
-                            Text(
-                              '${_vehicles.length} Vehicles',
-                              style: TextStyle(
-                                color: _primary,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                fontFamily: 'Outfit',
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                      _headerPill(_primaryLight, _primary, Icons.directions_car_filled_rounded,
+                          '${_vehicles.length} Vehicles'),
                     ],
                   ),
+                  const SizedBox(height: 20),
                 ],
               ),
             ),
-            const Divider(height: 1, thickness: 1, color: _border),
 
             // Account Section
             _AnimatedCard(
               delay: 0,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildSectionHeader('Account'),
-                  _buildSectionCard([
-                    _buildItem(
-                      emoji: '🚗',
-                      title: context.tr('saved_vehicles'),
-                      subtitle: '${_vehicles.length} ${context.tr('vehicles_suffix')}',
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _sectionLabel('ACCOUNT'),
+                    _reactRow(
+                      icon: Icons.directions_car_filled_rounded,
+                      tile: _primary,
+                      label: context.tr('saved_vehicles'),
+                      sub: '${_vehicles.length} ${context.tr('vehicles_suffix')}',
                       onTap: _showVehiclesSheet,
                     ),
-                    _buildItem(
-                      emoji: '💳',
-                      title: context.tr('payments'),
-                      subtitle: '${_payments.length} linked',
+                    _reactRow(
+                      icon: Icons.credit_card_rounded,
+                      tile: const Color(0xFFF5A623),
+                      label: context.tr('payments'),
+                      sub: '${_payments.length} linked',
                       onTap: _showPaymentsSheet,
                     ),
-                    _buildItem(
-                      emoji: '🕐',
-                      title: context.tr('my_sos'),
-                      isLast: true,
+                    _reactRow(
+                      icon: Icons.history_rounded,
+                      tile: const Color(0xFFE5484D),
+                      label: context.tr('my_sos'),
+                      sub: 'View history',
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(builder: (_) => const HistoryScreen()),
                       ),
                     ),
-                  ]),
-                ],
+                  ],
+                ),
               ),
             ),
 
             // Safety Section
             _AnimatedCard(
               delay: 60,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildSectionHeader('Safety'),
-                  _buildSectionCard([
-                    _buildItem(
-                      emoji: '🛡️',
-                      title: context.tr('safety'),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _sectionLabel('SAFETY'),
+                    _reactRow(
+                      icon: Icons.shield_rounded,
+                      tile: const Color(0xFF1A9E5C),
+                      label: context.tr('safety'),
+                      sub: 'Settings & alerts',
                       onTap: _showSafetySheet,
                     ),
-                    _buildItem(
-                      emoji: '📞',
-                      title: context.tr('emergency_contacts'),
-                      subtitle: '${_contacts.length} ${context.tr('added_suffix')}',
-                      isLast: true,
+                    _reactRow(
+                      icon: Icons.phone_rounded,
+                      tile: const Color(0xFF7C5CFC),
+                      label: context.tr('emergency_contacts'),
+                      sub: '${_contacts.length} ${context.tr('added_suffix')}',
                       onTap: _showContactsSheet,
                     ),
-                  ]),
-                ],
+                  ],
+                ),
               ),
             ),
 
             // More Section
             _AnimatedCard(
               delay: 120,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildSectionHeader('More'),
-                  _buildSectionCard([
-                    _buildItem(
-                      emoji: '🎁',
-                      title: context.tr('refer_earn'),
-                      subtitle: context.tr('get_50'),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _sectionLabel('MORE'),
+                    _reactRow(
+                      icon: Icons.card_giftcard_rounded,
+                      tile: const Color(0xFFF5A623),
+                      label: context.tr('refer_earn'),
+                      sub: context.tr('get_50'),
                       onTap: _showReferEarnSheet,
                     ),
-                    _buildItem(
-                      emoji: '🌐',
-                      title: context.tr('app_language'),
-                      subtitle: AppStrings.languageNames[context.watch<LocaleController>().code],
+                    _reactRow(
+                      icon: Icons.language_rounded,
+                      tile: _primary,
+                      label: context.tr('app_language'),
+                      sub: AppStrings.languageNames[context.watch<LocaleController>().code],
                       onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                            builder: (_) => const SettingsScreen()),
+                        MaterialPageRoute(builder: (_) => const SettingsScreen()),
                       ),
                     ),
-                    _buildItem(
-                      emoji: '❓',
-                      title: context.tr('help_support'),
+                    _reactRow(
+                      icon: Icons.help_outline_rounded,
+                      tile: const Color(0xFF7C5CFC),
+                      label: context.tr('help_support'),
                       onTap: _showHelpSupportSheet,
                     ),
-                    _buildItem(
-                      emoji: '🛠️',
-                      title: context.tr('provider_mode'),
-                      subtitle: context.tr('provider_sub'),
+                    _reactRow(
+                      icon: Icons.build_rounded,
+                      tile: const Color(0xFF1A9E5C),
+                      label: context.tr('provider_mode'),
+                      sub: context.tr('provider_sub'),
                       onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                            builder: (_) => const ProviderInboxScreen()),
+                        MaterialPageRoute(builder: (_) => const ProviderInboxScreen()),
                       ),
                     ),
-                    _buildItem(
-                      emoji: '🚪',
-                      title: context.tr('sign_out'),
-                      titleColor: _red,
-                      trailing: const Text(
-                        '›',
-                        style: TextStyle(
-                          fontSize: 18,
-                          color: _red,
-                        ),
-                      ),
-                      isLast: true,
+                    _reactRow(
+                      icon: Icons.logout_rounded,
+                      tile: _red,
+                      label: context.tr('sign_out'),
+                      labelColor: _red,
                       onTap: () async {
                         await context.read<AuthState>().logout();
                         if (context.mounted) {
@@ -1356,8 +1311,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         }
                       },
                     ),
-                  ]),
-                ],
+                  ],
+                ),
               ),
             ),
 
@@ -1437,6 +1392,166 @@ class _AnimatedCardState extends State<_AnimatedCard>
             child: widget.child,
           );
         },
+      ),
+    );
+  }
+}
+
+// ── Rich vehicle card (swipe-to-delete) ─────────────────────────────────────
+class _VehicleCard extends StatelessWidget {
+  final String raw;
+  final bool isDefault;
+  final VoidCallback onDelete;
+  const _VehicleCard({required this.raw, required this.isDefault, required this.onDelete});
+
+  Color? _swatch(String c) {
+    switch (c) {
+      case 'white':
+        return const Color(0xFFF4F4F5);
+      case 'black':
+        return const Color(0xFF1F2430);
+      case 'red':
+        return const Color(0xFFE5484D);
+      case 'blue':
+        return const Color(0xFF2563EB);
+      case 'silver':
+      case 'grey':
+      case 'gray':
+        return const Color(0xFFCBD5E1);
+      default:
+        return null;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Parse "Name (Color) - PLATE" — colour and plate are optional.
+    String name = raw, plate = '';
+    final dash = raw.lastIndexOf(' - ');
+    if (dash >= 0) {
+      name = raw.substring(0, dash).trim();
+      plate = raw.substring(dash + 3).trim();
+    }
+    Color? swatch;
+    final paren = RegExp(r'\(([^)]+)\)').firstMatch(name);
+    if (paren != null) {
+      swatch = _swatch(paren.group(1)!.trim().toLowerCase());
+      name = name.replaceAll(RegExp(r'\s*\([^)]*\)'), '').trim();
+    }
+    if (name.isEmpty) name = raw;
+    final lower = raw.toLowerCase();
+    final isBike = lower.contains('enfield') ||
+        lower.contains('classic') ||
+        lower.contains('pulsar') ||
+        lower.contains('bullet') ||
+        lower.contains('bike') ||
+        lower.contains('scooter') ||
+        lower.contains('activa');
+
+    return Dismissible(
+      key: ValueKey(raw),
+      direction: DismissDirection.endToStart,
+      onDismissed: (_) => onDelete(),
+      background: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 22),
+        decoration: BoxDecoration(
+            color: const Color(0xFFE5484D), borderRadius: BorderRadius.circular(14)),
+        child: const Icon(Icons.delete_outline, color: Colors.white),
+      ),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: const Color(0xFFEEF0F3), width: 1.5),
+        ),
+        child: Row(
+          children: [
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Container(
+                  width: 42,
+                  height: 42,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                      color: const Color(0xFFF3F4F6), borderRadius: BorderRadius.circular(11)),
+                  child: Icon(isBike ? Icons.two_wheeler_rounded : Icons.directions_car_rounded,
+                      size: 20, color: const Color(0xFF4B5563)),
+                ),
+                if (swatch != null)
+                  Positioned(
+                    bottom: -2,
+                    right: -2,
+                    child: Container(
+                      width: 14,
+                      height: 14,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: swatch,
+                        border: Border.all(color: Colors.white, width: 2),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                                fontFamily: 'Outfit',
+                                fontWeight: FontWeight.w700,
+                                fontSize: 14,
+                                color: Color(0xFF14181F))),
+                      ),
+                      if (isDefault) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                              color: const Color(0xFFEAF1FE), borderRadius: BorderRadius.circular(6)),
+                          child: const Text('DEFAULT',
+                              style: TextStyle(
+                                  fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF2563EB))),
+                        ),
+                      ],
+                    ],
+                  ),
+                  if (plate.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF3F4F6),
+                        borderRadius: BorderRadius.circular(5),
+                        border: Border.all(color: const Color(0xFFE6E8EC)),
+                      ),
+                      child: Text(plate,
+                          style: const TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w700,
+                              fontFamily: 'monospace',
+                              letterSpacing: 0.4,
+                              color: Color(0xFF374151))),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
