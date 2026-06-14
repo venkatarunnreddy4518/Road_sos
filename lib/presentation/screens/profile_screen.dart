@@ -157,37 +157,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       ),
                     )
-                  else
-                    ..._vehicles.map((v) {
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          side: const BorderSide(color: _border, width: 1.5),
-                        ),
-                        child: ListTile(
-                          leading: const Text('🚗', style: TextStyle(fontSize: 20)),
-                          title: Text(
-                            v,
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              color: _text,
-                              fontFamily: 'Outfit',
-                            ),
-                          ),
-                          trailing: IconButton(
-                            icon: const Icon(Icons.delete_outline, color: _red),
-                            onPressed: () {
-                              setSheetState(() => _vehicles.remove(v));
-                              _saveVehicles();
-                              setState(() {}); // refresh profile count
-                            },
-                          ),
-                        ),
+                  else ...[
+                    const Padding(
+                      padding: EdgeInsets.only(bottom: 6),
+                      child: Text('Swipe a vehicle left to delete',
+                          style: TextStyle(fontSize: 12, color: _muted)),
+                    ),
+                    ..._vehicles.asMap().entries.map((e) {
+                      final v = e.value;
+                      return _VehicleCard(
+                        raw: v,
+                        isDefault: e.key == 0,
+                        onDelete: () {
+                          setSheetState(() => _vehicles.remove(v));
+                          _saveVehicles();
+                          setState(() {}); // refresh profile count
+                        },
                       );
                     }),
+                  ],
                   const SizedBox(height: 16),
                   SizedBox(
                     width: double.infinity,
@@ -333,81 +321,114 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     )
                   else
                     ..._payments.map((p) {
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          side: const BorderSide(color: _border, width: 1.5),
+                      final isUpi = p['type'] == 'UPI';
+                      final tile = isUpi ? _primary : const Color(0xFFF5A623);
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 10),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: _white,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: const Color(0xFFEEF0F3), width: 1.5),
                         ),
-                        child: ListTile(
-                          leading: Text(p['type'] == 'UPI' ? '📱' : '💳', style: const TextStyle(fontSize: 20)),
-                          title: Text(
-                            p['name']!,
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              color: _text,
-                              fontFamily: 'Outfit',
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 42,
+                              height: 42,
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                  color: tile.withValues(alpha: 0.10),
+                                  borderRadius: BorderRadius.circular(11)),
+                              child: Icon(isUpi ? Icons.smartphone_rounded : Icons.credit_card_rounded,
+                                  size: 20, color: tile),
                             ),
-                          ),
-                          subtitle: Text(
-                            p['detail']!,
-                            style: const TextStyle(
-                              fontSize: 11,
-                              color: _sub,
-                              fontFamily: 'Outfit',
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(p['name']!,
+                                      style: const TextStyle(
+                                          fontFamily: 'Outfit',
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 14,
+                                          color: _text)),
+                                  const SizedBox(height: 2),
+                                  Text(p['detail']!,
+                                      style: const TextStyle(
+                                          fontSize: 12, color: _muted, fontFamily: 'Outfit')),
+                                ],
+                              ),
                             ),
-                          ),
-                          trailing: IconButton(
-                            icon: const Icon(Icons.link_off, color: _red),
-                            onPressed: () {
-                              setSheetState(() => _payments.remove(p));
-                              _savePayments();
-                              setState(() {}); // refresh subtitle/state
-                            },
-                          ),
+                            GestureDetector(
+                              onTap: () {
+                                setSheetState(() => _payments.remove(p));
+                                _savePayments();
+                                setState(() {});
+                              },
+                              child: Container(
+                                width: 34,
+                                height: 34,
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFDECEC),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(color: const Color(0xFFFCE4E4)),
+                                ),
+                                child: const Icon(Icons.delete_outline,
+                                    size: 15, color: Color(0xFFE5484D)),
+                              ),
+                            ),
+                          ],
                         ),
                       );
                     }),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 44,
-                    child: OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: _primary, width: 1.5),
-                        foregroundColor: _primary,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                  const SizedBox(height: 2),
+                  GestureDetector(
+                    onTap: () => _showAddPaymentDialog(setSheetState),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEAF1FE).withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: const Color(0xFFC7D2FE), width: 1.5),
                       ),
-                      onPressed: () => _showAddPaymentDialog(setSheetState),
-                      icon: const Icon(Icons.add, size: 18),
-                      label: const Text(
-                        'Link New Payment Method',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          fontFamily: 'Outfit',
-                        ),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.add, size: 16, color: _primary),
+                          SizedBox(width: 8),
+                          Text('Link New Payment Method',
+                              style: TextStyle(
+                                  color: _primary,
+                                  fontFamily: 'Outfit',
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 13.5)),
+                        ],
                       ),
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 18),
                   const Text(
-                    'Recent Transactions',
+                    'RECENT TRANSACTIONS',
                     style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w800,
-                      color: _text,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.6,
+                      color: Color(0xFF9CA3AF),
                       fontFamily: 'Outfit',
                     ),
                   ),
                   const SizedBox(height: 10),
-                  _buildTransactionItem('Puncture Service', '₹450.00', '12 Jun 2026', 'Success'),
-                  _buildTransactionItem('Petrol Delivery (5L)', '₹680.00', '08 Jun 2026', 'Success'),
-                  _buildTransactionItem('Towing (12 km)', '₹1,500.00', '28 May 2026', 'Success'),
+                  _buildTransactionItem(Icons.tire_repair_rounded, _primary,
+                      'Puncture Service', '12 Jun 2026', '₹450.00'),
+                  _buildTransactionItem(Icons.local_gas_station_rounded, const Color(0xFFF5A623),
+                      'Petrol Delivery (5L)', '08 Jun 2026', '₹680.00'),
+                  _buildTransactionItem(Icons.local_shipping_rounded, const Color(0xFFE5484D),
+                      'Towing (12 km)', '28 May 2026', '₹1,500.00'),
                 ],
               ),
             );
@@ -417,43 +438,57 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildTransactionItem(String title, String amount, String date, String status) {
+  Widget _buildTransactionItem(IconData icon, Color tile, String title, String date, String amount) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: _bg,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _border, width: 1.5),
+        color: _white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFEEF0F3), width: 1.5),
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: _text, fontFamily: 'Outfit'),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                date,
-                style: const TextStyle(fontSize: 11, color: _muted, fontFamily: 'Outfit'),
-              ),
-            ],
+          Container(
+            width: 38,
+            height: 38,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+                color: tile.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(10)),
+            child: Icon(icon, size: 17, color: tile),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(title,
+                    style: const TextStyle(
+                        fontSize: 13.5, fontWeight: FontWeight.w600, color: _text, fontFamily: 'Outfit')),
+                const SizedBox(height: 2),
+                Text(date,
+                    style: const TextStyle(fontSize: 11.5, color: _muted, fontFamily: 'Outfit')),
+              ],
+            ),
           ),
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                amount,
-                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: _text, fontFamily: 'Outfit'),
-              ),
+              Text(amount,
+                  style: const TextStyle(
+                      fontSize: 14, fontWeight: FontWeight.w700, color: _text, fontFamily: 'Outfit')),
               const SizedBox(height: 2),
-              Text(
-                status,
-                style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: _green, fontFamily: 'Outfit'),
+              const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.check_circle_rounded, size: 11, color: _green),
+                  SizedBox(width: 3),
+                  Text('Success',
+                      style: TextStyle(
+                          fontSize: 11, color: _green, fontWeight: FontWeight.w600, fontFamily: 'Outfit')),
+                ],
               ),
             ],
           ),
@@ -548,12 +583,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       fontFamily: 'Outfit',
                     ),
                   ),
-                  const SizedBox(height: 6),
-                  const Text(
-                    'In case of emergency, these contacts can be notified instantly with your location.',
-                    style: TextStyle(fontSize: 11.5, color: _sub, height: 1.3),
-                  ),
                   const SizedBox(height: 14),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFDECEC),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: const Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(Icons.gpp_maybe_rounded, size: 18, color: Color(0xFFE5484D)),
+                        SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'In case of emergency, these contacts can be notified instantly with your live location.',
+                            style: TextStyle(fontSize: 12.5, color: Color(0xFF9B3A3E), height: 1.5),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 10),
                   if (_contacts.isEmpty)
                     const Padding(
                       padding: EdgeInsets.symmetric(vertical: 24),
@@ -565,53 +616,91 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     )
                   else
-                    ..._contacts.map((c) {
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          side: const BorderSide(color: _border, width: 1.5),
+                    ..._contacts.asMap().entries.map((e) {
+                      final c = e.value;
+                      const palette = [
+                        Color(0xFF2563EB),
+                        Color(0xFF7C5CFC),
+                        Color(0xFF1A9E5C),
+                        Color(0xFFF5A623),
+                        Color(0xFFE5484D),
+                      ];
+                      final color = palette[e.key % palette.length];
+                      final name = c['name'] ?? '?';
+                      final initial = name.trim().isNotEmpty ? name.trim()[0].toUpperCase() : '?';
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 10),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: _white,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: const Color(0xFFEEF0F3), width: 1.5),
                         ),
-                        child: ListTile(
-                          leading: const CircleAvatar(
-                            backgroundColor: _primaryLight,
-                            child: Icon(Icons.person, color: _primary, size: 20),
-                          ),
-                          title: Text(
-                            c['name']!,
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              color: _text,
-                              fontFamily: 'Outfit',
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 42,
+                              height: 42,
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                  color: color.withValues(alpha: 0.10), shape: BoxShape.circle),
+                              child: Text(initial,
+                                  style: TextStyle(
+                                      fontFamily: 'Outfit',
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 15,
+                                      color: color)),
                             ),
-                          ),
-                          subtitle: Text(
-                            c['phone']!,
-                            style: const TextStyle(
-                              fontSize: 11,
-                              color: _sub,
-                              fontFamily: 'Outfit',
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(name,
+                                      style: const TextStyle(
+                                          fontFamily: 'Outfit',
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 14,
+                                          color: _text)),
+                                  const SizedBox(height: 2),
+                                  Text(c['phone'] ?? '',
+                                      style: const TextStyle(
+                                          fontSize: 12.5, color: _muted, fontFamily: 'Outfit')),
+                                ],
+                              ),
                             ),
-                          ),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.phone, color: _green),
-                                onPressed: () => HelperActions.call(c['phone']!),
+                            GestureDetector(
+                              onTap: () => HelperActions.call(c['phone'] ?? ''),
+                              child: Container(
+                                width: 38,
+                                height: 38,
+                                alignment: Alignment.center,
+                                decoration: const BoxDecoration(
+                                    color: Color(0xFF1A9E5C), shape: BoxShape.circle),
+                                child: const Icon(Icons.phone, size: 16, color: Colors.white),
                               ),
-                              IconButton(
-                                icon: const Icon(Icons.delete_outline, color: _red),
-                                onPressed: () {
-                                  setSheetState(() => _contacts.remove(c));
-                                  _saveContacts();
-                                  setState(() {}); // refresh profile count
-                                },
+                            ),
+                            const SizedBox(width: 8),
+                            GestureDetector(
+                              onTap: () {
+                                setSheetState(() => _contacts.remove(c));
+                                _saveContacts();
+                                setState(() {});
+                              },
+                              child: Container(
+                                width: 38,
+                                height: 38,
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFDECEC),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: const Color(0xFFFCE4E4)),
+                                ),
+                                child: const Icon(Icons.delete_outline, size: 15, color: Color(0xFFE5484D)),
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       );
                     }),
@@ -747,48 +836,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  _buildSafetyTipCard('🚨 1. Turn on Hazard Lights', 'Immediately turn on your hazard lights (double-indicator) to warn other highway traffic.'),
-                  _buildSafetyTipCard('🚗 2. Pull Over Safely', 'Move your vehicle to the left-most hard shoulder or emergency lane, away from moving traffic streams.'),
-                  _buildSafetyTipCard('🦺 3. Wear High-Visibility Gear', 'If you have a reflective vest, put it on before exiting the vehicle.'),
-                  _buildSafetyTipCard('🚧 4. Place Warning Triangle', 'Place your reflective warning triangle 50 meters behind your vehicle to alert incoming motorists.'),
-                  _buildSafetyTipCard('🌳 5. Wait in a Safe Area', 'Exit the vehicle from the passenger side (away from traffic) and stand behind the safety barrier or guardrail.'),
-                  const SizedBox(height: 20),
+                  _buildSafetyTipCard(1, Icons.warning_amber_rounded, const Color(0xFFE5484D),
+                      'Turn on Hazard Lights',
+                      'Immediately turn on your hazard lights (double-indicator) to warn other highway traffic.'),
+                  _buildSafetyTipCard(2, Icons.directions_car_rounded, _primary,
+                      'Pull Over Safely',
+                      'Move your vehicle to the left-most hard shoulder or emergency lane, away from moving traffic streams.'),
+                  _buildSafetyTipCard(3, Icons.lightbulb_outline_rounded, const Color(0xFFF5A623),
+                      'Wear High-Visibility Gear',
+                      'If you have a reflective vest, put it on before exiting the vehicle.'),
+                  _buildSafetyTipCard(4, Icons.construction_rounded, const Color(0xFFF5A623),
+                      'Place Warning Triangle',
+                      'Place your reflective warning triangle 50 meters behind your vehicle to alert incoming motorists.'),
+                  _buildSafetyTipCard(5, Icons.park_rounded, const Color(0xFF1A9E5C),
+                      'Wait in a Safe Area',
+                      'Exit the vehicle from the passenger side (away from traffic) and stand behind the safety barrier or guardrail.'),
+                  const SizedBox(height: 18),
                   const Text(
-                    'Emergency Helplines',
+                    'EMERGENCY HELPLINES',
                     style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w800,
-                      color: _text,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.6,
+                      color: Color(0xFF9CA3AF),
                       fontFamily: 'Outfit',
                     ),
                   ),
                   const SizedBox(height: 10),
-                  Card(
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      side: const BorderSide(color: _border, width: 1.5),
-                    ),
-                    child: ListTile(
-                      title: const Text('National Highway Helpline', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, fontFamily: 'Outfit')),
-                      subtitle: const Text('1033', style: TextStyle(color: _primary, fontWeight: FontWeight.bold, fontFamily: 'Outfit')),
-                      trailing: const Icon(Icons.phone, color: _green),
-                      onTap: () => HelperActions.call('1033'),
-                    ),
-                  ),
-                  Card(
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      side: const BorderSide(color: _border, width: 1.5),
-                    ),
-                    child: ListTile(
-                      title: const Text('National Emergency Number', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, fontFamily: 'Outfit')),
-                      subtitle: const Text('112', style: TextStyle(color: _primary, fontWeight: FontWeight.bold, fontFamily: 'Outfit')),
-                      trailing: const Icon(Icons.phone, color: _green),
-                      onTap: () => HelperActions.call('112'),
-                    ),
-                  ),
+                  _helpline('National Highway Helpline', '1033'),
+                  _helpline('National Emergency Number', '112'),
                   const SizedBox(height: 24),
                 ],
               ),
@@ -799,114 +875,349 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildSafetyTipCard(String title, String desc) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: _border, width: 1.5),
+  Widget _buildSafetyTipCard(int n, IconData icon, Color tile, String title, String desc) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: _white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFEEF0F3), width: 1.5),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5, color: _text, fontFamily: 'Outfit')),
-            const SizedBox(height: 6),
-            Text(desc, style: const TextStyle(fontSize: 11.5, color: _sub, height: 1.3, fontFamily: 'Outfit')),
-          ],
-        ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                    color: tile.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(11)),
+                child: Icon(icon, size: 18, color: tile),
+              ),
+              Positioned(
+                top: -6,
+                left: -6,
+                child: Container(
+                  width: 18,
+                  height: 18,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                      color: tile,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 2)),
+                  child: Text('$n',
+                      style: const TextStyle(
+                          color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700)),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(title,
+                    style: const TextStyle(
+                        fontFamily: 'Outfit', fontWeight: FontWeight.w700, fontSize: 14.5, color: _text)),
+                const SizedBox(height: 3),
+                Text(desc,
+                    style: const TextStyle(
+                        fontSize: 12.5, color: Color(0xFF6B7280), height: 1.5, fontFamily: 'Outfit')),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _helpline(String label, String number) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: _white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFEEF0F3), width: 1.5),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(label,
+                    style: const TextStyle(
+                        fontFamily: 'Outfit', fontWeight: FontWeight.w700, fontSize: 14, color: _text)),
+                const SizedBox(height: 2),
+                Text(number,
+                    style: const TextStyle(fontSize: 13, color: Color(0xFF6B7280), fontFamily: 'Outfit')),
+              ],
+            ),
+          ),
+          GestureDetector(
+            onTap: () => HelperActions.call(number),
+            child: Container(
+              width: 40,
+              height: 40,
+              alignment: Alignment.center,
+              decoration: const BoxDecoration(color: Color(0xFF1A9E5C), shape: BoxShape.circle),
+              child: const Icon(Icons.phone, size: 17, color: Colors.white),
+            ),
+          ),
+        ],
       ),
     );
   }
 
   void _showReferEarnSheet() {
+    const code = 'SOS-REF-8849';
+    bool copied = false;
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
+      backgroundColor: _bg,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: _border,
-                    borderRadius: BorderRadius.circular(2.5),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              const Text(
-                'Refer & Earn',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: _text,
-                  fontFamily: 'Outfit',
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Share the safety. Invite your friends to Roadside SOS and both of you will receive ₹50 in wallet credits on their first completed emergency booking.',
-                style: TextStyle(fontSize: 12.5, color: _sub, height: 1.35, fontFamily: 'Outfit'),
-              ),
-              const SizedBox(height: 20),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  color: _bg,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: _border, width: 1.5),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return SingleChildScrollView(
+              child: Padding(
+                padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Your Referral Code', style: TextStyle(fontSize: 10, color: _muted, fontWeight: FontWeight.bold, fontFamily: 'Outfit')),
-                        SizedBox(height: 3),
-                        Text(
-                          'SOS-REF-8849',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: _text, letterSpacing: 0.5, fontFamily: 'Outfit'),
-                        ),
-                      ],
-                    ),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: _primary,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        padding: const EdgeInsets.symmetric(horizontal: 14),
+                    const SizedBox(height: 10),
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 5,
+                        decoration: BoxDecoration(
+                            color: _border, borderRadius: BorderRadius.circular(2.5)),
                       ),
-                      onPressed: () {
-                        Clipboard.setData(const ClipboardData(text: 'SOS-REF-8849'));
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Referral code copied to clipboard!'),
-                            behavior: SnackBarBehavior.floating,
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(18, 14, 18, 18),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Hero
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [_primary, Color(0xFF5B8DEF)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              borderRadius: BorderRadius.circular(18),
+                            ),
+                            child: Column(
+                              children: [
+                                Container(
+                                  width: 52,
+                                  height: 52,
+                                  alignment: Alignment.center,
+                                  decoration: BoxDecoration(
+                                      color: Colors.white.withValues(alpha: 0.18),
+                                      borderRadius: BorderRadius.circular(14)),
+                                  child: const Icon(Icons.card_giftcard_rounded,
+                                      size: 26, color: Colors.white),
+                                ),
+                                const SizedBox(height: 12),
+                                const Text('Share the safety',
+                                    style: TextStyle(
+                                        fontFamily: 'Outfit',
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 19,
+                                        color: Colors.white)),
+                                const SizedBox(height: 4),
+                                const Text(
+                                  'Invite your friends to Roadside SOS. You both get ₹50 in wallet credits on their first completed booking.',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(fontSize: 13, color: Colors.white, height: 1.5),
+                                ),
+                              ],
+                            ),
                           ),
-                        );
-                      },
-                      child: const Text('Copy', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, fontFamily: 'Outfit')),
+                          const SizedBox(height: 14),
+                          // Referral code
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                            decoration: BoxDecoration(
+                              color: _white,
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(color: const Color(0xFFEEF0F3), width: 1.5),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('YOUR REFERRAL CODE',
+                                        style: TextStyle(
+                                            fontSize: 11.5,
+                                            color: Color(0xFF9CA3AF),
+                                            letterSpacing: 0.6,
+                                            fontWeight: FontWeight.w700,
+                                            fontFamily: 'Outfit')),
+                                    SizedBox(height: 4),
+                                    Text(code,
+                                        style: TextStyle(
+                                            fontFamily: 'Outfit',
+                                            fontWeight: FontWeight.w800,
+                                            fontSize: 18,
+                                            color: _text,
+                                            letterSpacing: 0.4)),
+                                  ],
+                                ),
+                                GestureDetector(
+                                  onTap: () {
+                                    Clipboard.setData(const ClipboardData(text: code));
+                                    setSheetState(() => copied = true);
+                                    Future.delayed(const Duration(milliseconds: 1800), () {
+                                      try {
+                                        setSheetState(() => copied = false);
+                                      } catch (_) {}
+                                    });
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+                                    decoration: BoxDecoration(
+                                        color: copied ? const Color(0xFF1A9E5C) : _primary,
+                                        borderRadius: BorderRadius.circular(10)),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(copied ? Icons.check_rounded : Icons.copy_rounded,
+                                            size: 14, color: Colors.white),
+                                        const SizedBox(width: 6),
+                                        Text(copied ? 'Copied' : 'Copy',
+                                            style: const TextStyle(
+                                                fontFamily: 'Outfit',
+                                                fontWeight: FontWeight.w700,
+                                                fontSize: 13,
+                                                color: Colors.white)),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                          // Share
+                          GestureDetector(
+                            onTap: () {
+                              Clipboard.setData(const ClipboardData(
+                                  text:
+                                      'Join me on Roadside SOS — use my referral code $code for ₹50 off your first booking!'));
+                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                                content: Text('Invite message copied — paste it anywhere!'),
+                                behavior: SnackBarBehavior.floating,
+                              ));
+                            },
+                            child: Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                  color: _white,
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(color: const Color(0xFFE6E8EC))),
+                              child: const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.ios_share_rounded, size: 16, color: _primary),
+                                  SizedBox(width: 8),
+                                  Text('Share invite link',
+                                      style: TextStyle(
+                                          fontFamily: 'Outfit',
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 13.5,
+                                          color: _text)),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          const Text('HOW IT WORKS',
+                              style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.6,
+                                  color: Color(0xFF9CA3AF),
+                                  fontFamily: 'Outfit')),
+                          const SizedBox(height: 8),
+                          _referStep(Icons.share_rounded, const Color(0xFFEAF1FE), _primary,
+                              'Share your code', 'Send your referral code to friends and family'),
+                          _referStep(Icons.group_rounded, const Color(0xFFEAFBF1),
+                              const Color(0xFF1A9E5C), 'They book a service',
+                              'Friend completes their first roadside request'),
+                          _referStep(Icons.account_balance_wallet_rounded, const Color(0xFFFFF6E5),
+                              const Color(0xFFB07A0E), 'You both earn ₹50',
+                              'Credited to your wallet instantly'),
+                          const SizedBox(height: 8),
+                        ],
+                      ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
-            ],
-          ),
+            );
+          },
         );
       },
+    );
+  }
+
+  Widget _referStep(IconData icon, Color tileBg, Color iconColor, String title, String desc) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: _white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFEEF0F3), width: 1.5),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(color: tileBg, borderRadius: BorderRadius.circular(10)),
+            child: Icon(icon, size: 16, color: iconColor),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(title,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w700, fontSize: 13.5, color: _text, fontFamily: 'Outfit')),
+                const SizedBox(height: 2),
+                Text(desc,
+                    style: const TextStyle(
+                        fontSize: 12, color: Color(0xFF9CA3AF), fontFamily: 'Outfit')),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1012,116 +1323,101 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildSectionHeader(String title) {
+  Widget _sectionLabel(String text) {
     return Padding(
-      padding: const EdgeInsets.only(left: 20, right: 20, top: 18, bottom: 8),
+      padding: const EdgeInsets.only(top: 14, bottom: 8),
       child: Text(
-        title,
+        text,
         style: const TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w700,
-          color: _sub,
-          letterSpacing: 0.4,
+          color: Color(0xFF9CA3AF),
+          letterSpacing: 0.6,
           fontFamily: 'Outfit',
         ),
       ),
     );
   }
 
-  Widget _buildSectionCard(List<Widget> children) {
+  String _initials(String name) {
+    final parts = name.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+    if (parts.isEmpty) return '?';
+    if (parts.length == 1) {
+      final p = parts.first;
+      return (p.length >= 2 ? p.substring(0, 2) : p).toUpperCase();
+    }
+    return (parts.first.substring(0, 1) + parts[1].substring(0, 1)).toUpperCase();
+  }
+
+  Widget _headerPill(Color bg, Color fg, IconData icon, String label) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        color: _white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: _border, width: 1.5),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(14),
-        child: Column(
-          children: children,
-        ),
+      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(999)),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 13, color: fg),
+          const SizedBox(width: 5),
+          Text(label,
+              style: TextStyle(
+                  color: fg, fontSize: 12.5, fontWeight: FontWeight.w700, fontFamily: 'Outfit')),
+        ],
       ),
     );
   }
 
-  Widget _buildItem({
-    required String emoji,
-    required String title,
-    String? subtitle,
-    Widget? trailing,
-    bool isLast = false,
-    Color? titleColor,
+  /// A React-style settings row: colored icon tile + label + sub + chevron.
+  Widget _reactRow({
+    required IconData icon,
+    required Color tile,
+    required String label,
+    String? sub,
     VoidCallback? onTap,
+    Color? labelColor,
   }) {
-    return InkWell(
+    return GestureDetector(
       onTap: onTap,
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            child: Row(
-              children: [
-                SizedBox(
-                  width: 24,
-                  child: Center(
-                    child: Text(
-                      emoji,
-                      style: const TextStyle(fontSize: 18),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        title,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: titleColor ?? _text,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: _white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: _border, width: 1.5),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                  color: tile.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(11)),
+              child: Icon(icon, size: 19, color: tile),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(label,
+                      style: TextStyle(
                           fontFamily: 'Outfit',
-                        ),
-                      ),
-                      if (subtitle != null) ...[
-                        const SizedBox(height: 2),
-                        Text(
-                          subtitle,
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: _muted,
-                            fontFamily: 'Outfit',
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-                if (trailing != null)
-                  trailing
-                else
-                  const Text(
-                    '›',
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: _muted,
-                    ),
-                  ),
-              ],
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                          color: labelColor ?? _text)),
+                  if (sub != null) ...[
+                    const SizedBox(height: 2),
+                    Text(sub, style: const TextStyle(fontSize: 12, color: _muted, fontFamily: 'Outfit')),
+                  ],
+                ],
+              ),
             ),
-          ),
-          if (!isLast)
-            const Divider(
-              height: 1,
-              thickness: 1,
-              color: _border,
-              indent: 0,
-              endIndent: 0,
-            ),
-        ],
+            Icon(Icons.chevron_right_rounded, size: 18, color: labelColor ?? const Color(0xFFC0C4CC)),
+          ],
+        ),
       ),
     );
   }
@@ -1142,213 +1438,195 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: ListView(
           padding: const EdgeInsets.only(bottom: 90),
           children: [
-            // Header (c2-top)
+            // Header card: gradient banner + initials avatar + pills
             Container(
-              color: _white,
-              padding: const EdgeInsets.only(top: 30, bottom: 20, left: 20, right: 20),
+              margin: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: _white,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: _border, width: 1.5),
+              ),
               child: Column(
                 children: [
-                  Container(
-                    width: 84,
-                    height: 84,
-                    decoration: BoxDecoration(
-                      color: _primaryLight,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: _primary,
-                        width: 3,
+                  Stack(
+                    clipBehavior: Clip.none,
+                    alignment: Alignment.topCenter,
+                    children: [
+                      Container(
+                        height: 56,
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [_primary, Color(0xFF5B8DEF)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.vertical(top: Radius.circular(17)),
+                        ),
                       ),
-                    ),
-                    alignment: Alignment.center,
-                    child: const Text(
-                      '👤',
-                      style: TextStyle(fontSize: 36),
-                    ),
+                      Positioned(
+                        top: 22,
+                        child: Container(
+                          width: 72,
+                          height: 72,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: _primaryLight,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: _white, width: 4),
+                          ),
+                          child: Text(
+                            _initials(user.displayName),
+                            style: const TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w800,
+                              color: _primary,
+                              fontFamily: 'Outfit',
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 46),
                   Text(
-                    user.displayName.isNotEmpty ? user.displayName : 'Arunn Reddy',
+                    user.displayName.isNotEmpty ? user.displayName : 'Your name',
                     style: const TextStyle(
-                      fontSize: 19,
+                      fontSize: 17,
                       fontWeight: FontWeight.w800,
                       color: _text,
                       fontFamily: 'Outfit',
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 2),
                   Text(
-                    user.email ?? user.phone ?? 'demo.user@gmail.com',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: _muted,
-                      fontFamily: 'Outfit',
-                    ),
+                    user.email ?? user.phone ?? '',
+                    style: const TextStyle(fontSize: 12.5, color: _muted, fontFamily: 'Outfit'),
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 12),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Container(
-                        decoration: BoxDecoration(
-                          color: _greenLight,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text('⭐', style: TextStyle(fontSize: 11)),
-                            SizedBox(width: 4),
-                            Text(
-                              '4.8 Rating',
-                              style: TextStyle(
-                                color: _green,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                fontFamily: 'Outfit',
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                      _headerPill(_greenLight, _green, Icons.star_rounded, '4.8 Rating'),
                       const SizedBox(width: 8),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: _primaryLight,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Text('🚗', style: TextStyle(fontSize: 11)),
-                            const SizedBox(width: 4),
-                            Text(
-                              '${_vehicles.length} Vehicles',
-                              style: TextStyle(
-                                color: _primary,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                fontFamily: 'Outfit',
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                      _headerPill(_primaryLight, _primary, Icons.directions_car_filled_rounded,
+                          '${_vehicles.length} Vehicles'),
                     ],
                   ),
+                  const SizedBox(height: 20),
                 ],
               ),
             ),
-            const Divider(height: 1, thickness: 1, color: _border),
 
             // Account Section
             _AnimatedCard(
               delay: 0,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildSectionHeader('Account'),
-                  _buildSectionCard([
-                    _buildItem(
-                      emoji: '🚗',
-                      title: context.tr('saved_vehicles'),
-                      subtitle: '${_vehicles.length} ${context.tr('vehicles_suffix')}',
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _sectionLabel('ACCOUNT'),
+                    _reactRow(
+                      icon: Icons.directions_car_filled_rounded,
+                      tile: _primary,
+                      label: context.tr('saved_vehicles'),
+                      sub: '${_vehicles.length} ${context.tr('vehicles_suffix')}',
                       onTap: _showVehiclesSheet,
                     ),
-                    _buildItem(
-                      emoji: '💳',
-                      title: context.tr('payments'),
-                      subtitle: '${_payments.length} linked',
+                    _reactRow(
+                      icon: Icons.credit_card_rounded,
+                      tile: const Color(0xFFF5A623),
+                      label: context.tr('payments'),
+                      sub: '${_payments.length} linked',
                       onTap: _showPaymentsSheet,
                     ),
-                    _buildItem(
-                      emoji: '🕐',
-                      title: context.tr('my_sos'),
-                      isLast: true,
+                    _reactRow(
+                      icon: Icons.history_rounded,
+                      tile: const Color(0xFFE5484D),
+                      label: context.tr('my_sos'),
+                      sub: 'View history',
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(builder: (_) => const HistoryScreen()),
                       ),
                     ),
-                  ]),
-                ],
+                  ],
+                ),
               ),
             ),
 
             // Safety Section
             _AnimatedCard(
               delay: 60,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildSectionHeader('Safety'),
-                  _buildSectionCard([
-                    _buildItem(
-                      emoji: '🛡️',
-                      title: context.tr('safety'),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _sectionLabel('SAFETY'),
+                    _reactRow(
+                      icon: Icons.shield_rounded,
+                      tile: const Color(0xFF1A9E5C),
+                      label: context.tr('safety'),
+                      sub: 'Settings & alerts',
                       onTap: _showSafetySheet,
                     ),
-                    _buildItem(
-                      emoji: '📞',
-                      title: context.tr('emergency_contacts'),
-                      subtitle: '${_contacts.length} ${context.tr('added_suffix')}',
-                      isLast: true,
+                    _reactRow(
+                      icon: Icons.phone_rounded,
+                      tile: const Color(0xFF7C5CFC),
+                      label: context.tr('emergency_contacts'),
+                      sub: '${_contacts.length} ${context.tr('added_suffix')}',
                       onTap: _showContactsSheet,
                     ),
-                  ]),
-                ],
+                  ],
+                ),
               ),
             ),
 
             // More Section
             _AnimatedCard(
               delay: 120,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildSectionHeader('More'),
-                  _buildSectionCard([
-                    _buildItem(
-                      emoji: '🎁',
-                      title: context.tr('refer_earn'),
-                      subtitle: context.tr('get_50'),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _sectionLabel('MORE'),
+                    _reactRow(
+                      icon: Icons.card_giftcard_rounded,
+                      tile: const Color(0xFFF5A623),
+                      label: context.tr('refer_earn'),
+                      sub: context.tr('get_50'),
                       onTap: _showReferEarnSheet,
                     ),
-                    _buildItem(
-                      emoji: '🌐',
-                      title: context.tr('app_language'),
-                      subtitle: AppStrings.languageNames[context.watch<LocaleController>().code],
+                    _reactRow(
+                      icon: Icons.language_rounded,
+                      tile: _primary,
+                      label: context.tr('app_language'),
+                      sub: AppStrings.languageNames[context.watch<LocaleController>().code],
                       onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                            builder: (_) => const SettingsScreen()),
+                        MaterialPageRoute(builder: (_) => const SettingsScreen()),
                       ),
                     ),
-                    _buildItem(
-                      emoji: '❓',
-                      title: context.tr('help_support'),
+                    _reactRow(
+                      icon: Icons.help_outline_rounded,
+                      tile: const Color(0xFF7C5CFC),
+                      label: context.tr('help_support'),
                       onTap: _showHelpSupportSheet,
                     ),
-                    _buildItem(
-                      emoji: '🛠️',
-                      title: context.tr('provider_mode'),
-                      subtitle: context.tr('provider_sub'),
+                    _reactRow(
+                      icon: Icons.build_rounded,
+                      tile: const Color(0xFF1A9E5C),
+                      label: context.tr('provider_mode'),
+                      sub: context.tr('provider_sub'),
                       onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                            builder: (_) => const ProviderInboxScreen()),
+                        MaterialPageRoute(builder: (_) => const ProviderInboxScreen()),
                       ),
                     ),
-                    _buildItem(
-                      emoji: '🚪',
-                      title: context.tr('sign_out'),
-                      titleColor: _red,
-                      trailing: const Text(
-                        '›',
-                        style: TextStyle(
-                          fontSize: 18,
-                          color: _red,
-                        ),
-                      ),
-                      isLast: true,
+                    _reactRow(
+                      icon: Icons.logout_rounded,
+                      tile: _red,
+                      label: context.tr('sign_out'),
+                      labelColor: _red,
                       onTap: () async {
                         await context.read<AuthState>().logout();
                         if (context.mounted) {
@@ -1356,8 +1634,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         }
                       },
                     ),
-                  ]),
-                ],
+                  ],
+                ),
               ),
             ),
 
@@ -1437,6 +1715,166 @@ class _AnimatedCardState extends State<_AnimatedCard>
             child: widget.child,
           );
         },
+      ),
+    );
+  }
+}
+
+// ── Rich vehicle card (swipe-to-delete) ─────────────────────────────────────
+class _VehicleCard extends StatelessWidget {
+  final String raw;
+  final bool isDefault;
+  final VoidCallback onDelete;
+  const _VehicleCard({required this.raw, required this.isDefault, required this.onDelete});
+
+  Color? _swatch(String c) {
+    switch (c) {
+      case 'white':
+        return const Color(0xFFF4F4F5);
+      case 'black':
+        return const Color(0xFF1F2430);
+      case 'red':
+        return const Color(0xFFE5484D);
+      case 'blue':
+        return const Color(0xFF2563EB);
+      case 'silver':
+      case 'grey':
+      case 'gray':
+        return const Color(0xFFCBD5E1);
+      default:
+        return null;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Parse "Name (Color) - PLATE" — colour and plate are optional.
+    String name = raw, plate = '';
+    final dash = raw.lastIndexOf(' - ');
+    if (dash >= 0) {
+      name = raw.substring(0, dash).trim();
+      plate = raw.substring(dash + 3).trim();
+    }
+    Color? swatch;
+    final paren = RegExp(r'\(([^)]+)\)').firstMatch(name);
+    if (paren != null) {
+      swatch = _swatch(paren.group(1)!.trim().toLowerCase());
+      name = name.replaceAll(RegExp(r'\s*\([^)]*\)'), '').trim();
+    }
+    if (name.isEmpty) name = raw;
+    final lower = raw.toLowerCase();
+    final isBike = lower.contains('enfield') ||
+        lower.contains('classic') ||
+        lower.contains('pulsar') ||
+        lower.contains('bullet') ||
+        lower.contains('bike') ||
+        lower.contains('scooter') ||
+        lower.contains('activa');
+
+    return Dismissible(
+      key: ValueKey(raw),
+      direction: DismissDirection.endToStart,
+      onDismissed: (_) => onDelete(),
+      background: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 22),
+        decoration: BoxDecoration(
+            color: const Color(0xFFE5484D), borderRadius: BorderRadius.circular(14)),
+        child: const Icon(Icons.delete_outline, color: Colors.white),
+      ),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: const Color(0xFFEEF0F3), width: 1.5),
+        ),
+        child: Row(
+          children: [
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Container(
+                  width: 42,
+                  height: 42,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                      color: const Color(0xFFF3F4F6), borderRadius: BorderRadius.circular(11)),
+                  child: Icon(isBike ? Icons.two_wheeler_rounded : Icons.directions_car_rounded,
+                      size: 20, color: const Color(0xFF4B5563)),
+                ),
+                if (swatch != null)
+                  Positioned(
+                    bottom: -2,
+                    right: -2,
+                    child: Container(
+                      width: 14,
+                      height: 14,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: swatch,
+                        border: Border.all(color: Colors.white, width: 2),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                                fontFamily: 'Outfit',
+                                fontWeight: FontWeight.w700,
+                                fontSize: 14,
+                                color: Color(0xFF14181F))),
+                      ),
+                      if (isDefault) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                              color: const Color(0xFFEAF1FE), borderRadius: BorderRadius.circular(6)),
+                          child: const Text('DEFAULT',
+                              style: TextStyle(
+                                  fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF2563EB))),
+                        ),
+                      ],
+                    ],
+                  ),
+                  if (plate.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF3F4F6),
+                        borderRadius: BorderRadius.circular(5),
+                        border: Border.all(color: const Color(0xFFE6E8EC)),
+                      ),
+                      child: Text(plate,
+                          style: const TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w700,
+                              fontFamily: 'monospace',
+                              letterSpacing: 0.4,
+                              color: Color(0xFF374151))),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
