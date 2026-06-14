@@ -978,91 +978,246 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _showReferEarnSheet() {
+    const code = 'SOS-REF-8849';
+    bool copied = false;
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
+      backgroundColor: _bg,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: _border,
-                    borderRadius: BorderRadius.circular(2.5),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              const Text(
-                'Refer & Earn',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: _text,
-                  fontFamily: 'Outfit',
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Share the safety. Invite your friends to Roadside SOS and both of you will receive ₹50 in wallet credits on their first completed emergency booking.',
-                style: TextStyle(fontSize: 12.5, color: _sub, height: 1.35, fontFamily: 'Outfit'),
-              ),
-              const SizedBox(height: 20),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  color: _bg,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: _border, width: 1.5),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return SingleChildScrollView(
+              child: Padding(
+                padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Your Referral Code', style: TextStyle(fontSize: 10, color: _muted, fontWeight: FontWeight.bold, fontFamily: 'Outfit')),
-                        SizedBox(height: 3),
-                        Text(
-                          'SOS-REF-8849',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: _text, letterSpacing: 0.5, fontFamily: 'Outfit'),
-                        ),
-                      ],
-                    ),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: _primary,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        padding: const EdgeInsets.symmetric(horizontal: 14),
+                    const SizedBox(height: 10),
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 5,
+                        decoration: BoxDecoration(
+                            color: _border, borderRadius: BorderRadius.circular(2.5)),
                       ),
-                      onPressed: () {
-                        Clipboard.setData(const ClipboardData(text: 'SOS-REF-8849'));
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Referral code copied to clipboard!'),
-                            behavior: SnackBarBehavior.floating,
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(18, 14, 18, 18),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Hero
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [_primary, Color(0xFF5B8DEF)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              borderRadius: BorderRadius.circular(18),
+                            ),
+                            child: Column(
+                              children: [
+                                Container(
+                                  width: 52,
+                                  height: 52,
+                                  alignment: Alignment.center,
+                                  decoration: BoxDecoration(
+                                      color: Colors.white.withValues(alpha: 0.18),
+                                      borderRadius: BorderRadius.circular(14)),
+                                  child: const Icon(Icons.card_giftcard_rounded,
+                                      size: 26, color: Colors.white),
+                                ),
+                                const SizedBox(height: 12),
+                                const Text('Share the safety',
+                                    style: TextStyle(
+                                        fontFamily: 'Outfit',
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 19,
+                                        color: Colors.white)),
+                                const SizedBox(height: 4),
+                                const Text(
+                                  'Invite your friends to Roadside SOS. You both get ₹50 in wallet credits on their first completed booking.',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(fontSize: 13, color: Colors.white, height: 1.5),
+                                ),
+                              ],
+                            ),
                           ),
-                        );
-                      },
-                      child: const Text('Copy', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, fontFamily: 'Outfit')),
+                          const SizedBox(height: 14),
+                          // Referral code
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                            decoration: BoxDecoration(
+                              color: _white,
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(color: const Color(0xFFEEF0F3), width: 1.5),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('YOUR REFERRAL CODE',
+                                        style: TextStyle(
+                                            fontSize: 11.5,
+                                            color: Color(0xFF9CA3AF),
+                                            letterSpacing: 0.6,
+                                            fontWeight: FontWeight.w700,
+                                            fontFamily: 'Outfit')),
+                                    SizedBox(height: 4),
+                                    Text(code,
+                                        style: TextStyle(
+                                            fontFamily: 'Outfit',
+                                            fontWeight: FontWeight.w800,
+                                            fontSize: 18,
+                                            color: _text,
+                                            letterSpacing: 0.4)),
+                                  ],
+                                ),
+                                GestureDetector(
+                                  onTap: () {
+                                    Clipboard.setData(const ClipboardData(text: code));
+                                    setSheetState(() => copied = true);
+                                    Future.delayed(const Duration(milliseconds: 1800), () {
+                                      try {
+                                        setSheetState(() => copied = false);
+                                      } catch (_) {}
+                                    });
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+                                    decoration: BoxDecoration(
+                                        color: copied ? const Color(0xFF1A9E5C) : _primary,
+                                        borderRadius: BorderRadius.circular(10)),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(copied ? Icons.check_rounded : Icons.copy_rounded,
+                                            size: 14, color: Colors.white),
+                                        const SizedBox(width: 6),
+                                        Text(copied ? 'Copied' : 'Copy',
+                                            style: const TextStyle(
+                                                fontFamily: 'Outfit',
+                                                fontWeight: FontWeight.w700,
+                                                fontSize: 13,
+                                                color: Colors.white)),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                          // Share
+                          GestureDetector(
+                            onTap: () {
+                              Clipboard.setData(const ClipboardData(
+                                  text:
+                                      'Join me on Roadside SOS — use my referral code $code for ₹50 off your first booking!'));
+                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                                content: Text('Invite message copied — paste it anywhere!'),
+                                behavior: SnackBarBehavior.floating,
+                              ));
+                            },
+                            child: Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                  color: _white,
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(color: const Color(0xFFE6E8EC))),
+                              child: const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.ios_share_rounded, size: 16, color: _primary),
+                                  SizedBox(width: 8),
+                                  Text('Share invite link',
+                                      style: TextStyle(
+                                          fontFamily: 'Outfit',
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 13.5,
+                                          color: _text)),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          const Text('HOW IT WORKS',
+                              style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.6,
+                                  color: Color(0xFF9CA3AF),
+                                  fontFamily: 'Outfit')),
+                          const SizedBox(height: 8),
+                          _referStep(Icons.share_rounded, const Color(0xFFEAF1FE), _primary,
+                              'Share your code', 'Send your referral code to friends and family'),
+                          _referStep(Icons.group_rounded, const Color(0xFFEAFBF1),
+                              const Color(0xFF1A9E5C), 'They book a service',
+                              'Friend completes their first roadside request'),
+                          _referStep(Icons.account_balance_wallet_rounded, const Color(0xFFFFF6E5),
+                              const Color(0xFFB07A0E), 'You both earn ₹50',
+                              'Credited to your wallet instantly'),
+                          const SizedBox(height: 8),
+                        ],
+                      ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
-            ],
-          ),
+            );
+          },
         );
       },
+    );
+  }
+
+  Widget _referStep(IconData icon, Color tileBg, Color iconColor, String title, String desc) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: _white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFEEF0F3), width: 1.5),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(color: tileBg, borderRadius: BorderRadius.circular(10)),
+            child: Icon(icon, size: 16, color: iconColor),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(title,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w700, fontSize: 13.5, color: _text, fontFamily: 'Outfit')),
+                const SizedBox(height: 2),
+                Text(desc,
+                    style: const TextStyle(
+                        fontSize: 12, color: Color(0xFF9CA3AF), fontFamily: 'Outfit')),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
