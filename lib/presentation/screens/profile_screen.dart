@@ -321,81 +321,114 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     )
                   else
                     ..._payments.map((p) {
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          side: const BorderSide(color: _border, width: 1.5),
+                      final isUpi = p['type'] == 'UPI';
+                      final tile = isUpi ? _primary : const Color(0xFFF5A623);
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 10),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: _white,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: const Color(0xFFEEF0F3), width: 1.5),
                         ),
-                        child: ListTile(
-                          leading: Text(p['type'] == 'UPI' ? '📱' : '💳', style: const TextStyle(fontSize: 20)),
-                          title: Text(
-                            p['name']!,
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              color: _text,
-                              fontFamily: 'Outfit',
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 42,
+                              height: 42,
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                  color: tile.withValues(alpha: 0.10),
+                                  borderRadius: BorderRadius.circular(11)),
+                              child: Icon(isUpi ? Icons.smartphone_rounded : Icons.credit_card_rounded,
+                                  size: 20, color: tile),
                             ),
-                          ),
-                          subtitle: Text(
-                            p['detail']!,
-                            style: const TextStyle(
-                              fontSize: 11,
-                              color: _sub,
-                              fontFamily: 'Outfit',
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(p['name']!,
+                                      style: const TextStyle(
+                                          fontFamily: 'Outfit',
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 14,
+                                          color: _text)),
+                                  const SizedBox(height: 2),
+                                  Text(p['detail']!,
+                                      style: const TextStyle(
+                                          fontSize: 12, color: _muted, fontFamily: 'Outfit')),
+                                ],
+                              ),
                             ),
-                          ),
-                          trailing: IconButton(
-                            icon: const Icon(Icons.link_off, color: _red),
-                            onPressed: () {
-                              setSheetState(() => _payments.remove(p));
-                              _savePayments();
-                              setState(() {}); // refresh subtitle/state
-                            },
-                          ),
+                            GestureDetector(
+                              onTap: () {
+                                setSheetState(() => _payments.remove(p));
+                                _savePayments();
+                                setState(() {});
+                              },
+                              child: Container(
+                                width: 34,
+                                height: 34,
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFDECEC),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(color: const Color(0xFFFCE4E4)),
+                                ),
+                                child: const Icon(Icons.delete_outline,
+                                    size: 15, color: Color(0xFFE5484D)),
+                              ),
+                            ),
+                          ],
                         ),
                       );
                     }),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 44,
-                    child: OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: _primary, width: 1.5),
-                        foregroundColor: _primary,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                  const SizedBox(height: 2),
+                  GestureDetector(
+                    onTap: () => _showAddPaymentDialog(setSheetState),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEAF1FE).withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: const Color(0xFFC7D2FE), width: 1.5),
                       ),
-                      onPressed: () => _showAddPaymentDialog(setSheetState),
-                      icon: const Icon(Icons.add, size: 18),
-                      label: const Text(
-                        'Link New Payment Method',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          fontFamily: 'Outfit',
-                        ),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.add, size: 16, color: _primary),
+                          SizedBox(width: 8),
+                          Text('Link New Payment Method',
+                              style: TextStyle(
+                                  color: _primary,
+                                  fontFamily: 'Outfit',
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 13.5)),
+                        ],
                       ),
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 18),
                   const Text(
-                    'Recent Transactions',
+                    'RECENT TRANSACTIONS',
                     style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w800,
-                      color: _text,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.6,
+                      color: Color(0xFF9CA3AF),
                       fontFamily: 'Outfit',
                     ),
                   ),
                   const SizedBox(height: 10),
-                  _buildTransactionItem('Puncture Service', '₹450.00', '12 Jun 2026', 'Success'),
-                  _buildTransactionItem('Petrol Delivery (5L)', '₹680.00', '08 Jun 2026', 'Success'),
-                  _buildTransactionItem('Towing (12 km)', '₹1,500.00', '28 May 2026', 'Success'),
+                  _buildTransactionItem(Icons.tire_repair_rounded, _primary,
+                      'Puncture Service', '12 Jun 2026', '₹450.00'),
+                  _buildTransactionItem(Icons.local_gas_station_rounded, const Color(0xFFF5A623),
+                      'Petrol Delivery (5L)', '08 Jun 2026', '₹680.00'),
+                  _buildTransactionItem(Icons.local_shipping_rounded, const Color(0xFFE5484D),
+                      'Towing (12 km)', '28 May 2026', '₹1,500.00'),
                 ],
               ),
             );
@@ -405,43 +438,57 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildTransactionItem(String title, String amount, String date, String status) {
+  Widget _buildTransactionItem(IconData icon, Color tile, String title, String date, String amount) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: _bg,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _border, width: 1.5),
+        color: _white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFEEF0F3), width: 1.5),
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: _text, fontFamily: 'Outfit'),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                date,
-                style: const TextStyle(fontSize: 11, color: _muted, fontFamily: 'Outfit'),
-              ),
-            ],
+          Container(
+            width: 38,
+            height: 38,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+                color: tile.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(10)),
+            child: Icon(icon, size: 17, color: tile),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(title,
+                    style: const TextStyle(
+                        fontSize: 13.5, fontWeight: FontWeight.w600, color: _text, fontFamily: 'Outfit')),
+                const SizedBox(height: 2),
+                Text(date,
+                    style: const TextStyle(fontSize: 11.5, color: _muted, fontFamily: 'Outfit')),
+              ],
+            ),
           ),
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                amount,
-                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: _text, fontFamily: 'Outfit'),
-              ),
+              Text(amount,
+                  style: const TextStyle(
+                      fontSize: 14, fontWeight: FontWeight.w700, color: _text, fontFamily: 'Outfit')),
               const SizedBox(height: 2),
-              Text(
-                status,
-                style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: _green, fontFamily: 'Outfit'),
+              const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.check_circle_rounded, size: 11, color: _green),
+                  SizedBox(width: 3),
+                  Text('Success',
+                      style: TextStyle(
+                          fontSize: 11, color: _green, fontWeight: FontWeight.w600, fontFamily: 'Outfit')),
+                ],
               ),
             ],
           ),
