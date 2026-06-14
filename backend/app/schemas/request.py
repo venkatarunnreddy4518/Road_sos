@@ -41,6 +41,8 @@ class ServiceRequestOut(BaseModel):
     pickup_lat: float
     pickup_lng: float
     note: str | None = None
+    fare_amount: float | None = None
+    helper_name: str | None = None
     requested_at: datetime
     accepted_at: datetime | None = None
     on_the_way_at: datetime | None = None

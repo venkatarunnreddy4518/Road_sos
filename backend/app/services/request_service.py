@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.core.errors import AppError
 from app.models.enums import RequestStatus
-from app.models.helper import CategoryHelperType, HelperProfile
+from app.models.helper import CategoryHelperType, HelperProfile, ServiceCategory
 from app.models.request import HelperLocationUpdate, ServiceRequest
 from app.models.user import User
 from app.services.geo import haversine_km
@@ -32,6 +32,13 @@ def _now() -> datetime:
     return datetime.now(timezone.utc)
 
 
+def _as_uuid(value) -> uuid.UUID | None:
+    """Coerce an id attribute (str or UUID) to UUID for safe SQL binding."""
+    if value is None or isinstance(value, uuid.UUID):
+        return value
+    return uuid.UUID(str(value))
+
+
 def _helper_for_user(db: Session, user: User) -> HelperProfile:
     helper = db.scalar(select(HelperProfile).where(HelperProfile.owner_user_id == user.id))
     if not helper:
@@ -53,6 +60,11 @@ def serialize(db: Session, req: ServiceRequest) -> dict:
     data["helper_location"] = (
         {"latitude": loc.latitude, "longitude": loc.longitude, "recorded_at": loc.recorded_at}
         if loc
+        else None
+    )
+    data["helper_name"] = (
+        db.scalar(select(HelperProfile.name).where(HelperProfile.id == _as_uuid(req.helper_id)))
+        if req.helper_id
         else None
     )
     seeker = db.get(User, req.seeker_user_id)
@@ -189,6 +201,13 @@ def update_status(db: Session, request_id: uuid.UUID, user: User, new_status: Re
         )
     req.status = new_status
     setattr(req, _STATUS_TIMESTAMP[new_status], _now())
+    # Finalize the fare from the category's base fee when the job completes.
+    if new_status == RequestStatus.completed and req.fare_amount is None:
+        base = db.scalar(
+            select(ServiceCategory.base_fare).where(ServiceCategory.id == _as_uuid(req.category_id))
+        )
+        if base:
+            req.fare_amount = base
     db.commit()
     db.refresh(req)
     return req

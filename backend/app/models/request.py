@@ -1,6 +1,7 @@
 """Service request lifecycle, live location updates, and reviews."""
 import uuid
 from datetime import datetime
+from decimal import Decimal
 
 from sqlalchemy import (
     CheckConstraint,
@@ -10,6 +11,7 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
+    Numeric,
     Text,
 )
 from sqlalchemy.orm import Mapped, mapped_column
@@ -40,6 +42,8 @@ class ServiceRequest(Base, TimestampMixin):
     pickup_lat: Mapped[float] = mapped_column(Float, nullable=False)
     pickup_lng: Mapped[float] = mapped_column(Float, nullable=False)
     note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Final fare (INR), set from the category base fare when the job completes.
+    fare_amount: Mapped[Decimal | None] = mapped_column(Numeric(8, 2), nullable=True)
 
     requested_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     accepted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

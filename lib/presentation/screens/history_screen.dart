@@ -203,7 +203,19 @@ class _HistoryScreenState extends State<HistoryScreen> {
               ),
             ),
             const SizedBox(width: 8),
-            const Icon(Icons.chevron_right_rounded, size: 18, color: Color(0xFFC0C4CC)),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (r.fareAmount != null) ...[
+                  Text(_formatMoney(r.fareAmount!),
+                      style: const TextStyle(
+                          fontFamily: 'Outfit', fontWeight: FontWeight.w700, fontSize: 14, color: _ink)),
+                  const SizedBox(height: 4),
+                ],
+                const Icon(Icons.chevron_right_rounded, size: 18, color: Color(0xFFC0C4CC)),
+              ],
+            ),
           ],
         ),
       ),
@@ -279,6 +291,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
     if (dt == null) return '';
     return DateFormat('dd MMM yyyy, h:mm a').format(dt.toLocal());
   }
+
+  String _formatMoney(double amount) =>
+      '₹${NumberFormat('#,##0.00', 'en_IN').format(amount)}';
 
   Color _tileColor(ServiceCategory? cat) {
     final key = (cat?.key ?? cat?.icon ?? '').toLowerCase();

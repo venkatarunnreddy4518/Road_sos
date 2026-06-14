@@ -67,6 +67,8 @@ class ServiceRequest {
   final double pickupLng;
   final String? note;
   final String? seekerName;
+  final String? helperName;
+  final double? fareAmount;
   final DateTime? requestedAt;
   final HelperLocation? helperLocation;
 
@@ -81,6 +83,8 @@ class ServiceRequest {
     required this.pickupLng,
     this.note,
     this.seekerName,
+    this.helperName,
+    this.fareAmount,
     this.requestedAt,
     this.helperLocation,
   });
@@ -96,6 +100,8 @@ class ServiceRequest {
         pickupLng: (j['pickup_lng'] as num).toDouble(),
         note: j['note'],
         seekerName: j['seeker_name'],
+        helperName: j['helper_name'],
+        fareAmount: (j['fare_amount'] as num?)?.toDouble(),
         requestedAt: j['requested_at'] == null ? null : DateTime.parse(j['requested_at']),
         helperLocation: j['helper_location'] == null
             ? null

@@ -15,12 +15,13 @@ from app.models.helper import CategoryHelperType, HelperProfile, ServiceCategory
 
 log = get_logger("seed")
 
+# key, name, icon, sort_order, base_fare (INR), helper types
 CATEGORIES = [
-    ("puncture", "Puncture Fix", "tire_repair", 0, [HelperType.puncture_shop, HelperType.mechanic]),
-    ("fuel", "Out of Fuel", "local_gas_station", 1, [HelperType.petrol_pump]),
-    ("breakdown", "Mechanic / Breakdown", "build", 2, [HelperType.mechanic]),
-    ("towing", "Towing Service", "fire_truck", 3, [HelperType.towing]),
-    ("battery", "Jump Start", "battery_charging_full", 4, [HelperType.battery, HelperType.mechanic]),
+    ("puncture", "Puncture Fix", "tire_repair", 0, 250, [HelperType.puncture_shop, HelperType.mechanic]),
+    ("fuel", "Out of Fuel", "local_gas_station", 1, 500, [HelperType.petrol_pump]),
+    ("breakdown", "Mechanic / Breakdown", "build", 2, 400, [HelperType.mechanic]),
+    ("towing", "Towing Service", "fire_truck", 3, 1200, [HelperType.towing]),
+    ("battery", "Jump Start", "battery_charging_full", 4, 350, [HelperType.battery, HelperType.mechanic]),
 ]
 
 DEMO_NAMES = {
@@ -41,14 +42,14 @@ def seed() -> None:
     try:
         # Categories (upsert by key)
         existing = {c.key: c for c in db.scalars(select(ServiceCategory))}
-        for key, name, icon, order, types in CATEGORIES:
+        for key, name, icon, order, base_fare, types in CATEGORIES:
             cat = existing.get(key)
             if not cat:
-                cat = ServiceCategory(key=key, name=name, icon=icon, sort_order=order)
+                cat = ServiceCategory(key=key, name=name, icon=icon, sort_order=order, base_fare=base_fare)
                 db.add(cat)
                 db.flush()
             else:
-                cat.name, cat.icon, cat.sort_order = name, icon, order
+                cat.name, cat.icon, cat.sort_order, cat.base_fare = name, icon, order, base_fare
                 for m in list(cat.helper_types):
                     db.delete(m)
                 db.flush()

@@ -1,5 +1,6 @@
 """Service category and helper-profile (supply-side) models."""
 import uuid
+from decimal import Decimal
 
 from sqlalchemy import (
     Boolean,
@@ -27,6 +28,8 @@ class ServiceCategory(Base):
     name: Mapped[str] = mapped_column(String(80), nullable=False)
     icon: Mapped[str] = mapped_column(String(40), nullable=False, default="build")
     sort_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    # Base service fee (INR) used as the request fare when a job completes.
+    base_fare: Mapped[Decimal] = mapped_column(Numeric(8, 2), default=0, nullable=False)
 
     helper_types: Mapped[list["CategoryHelperType"]] = relationship(
         back_populates="category", cascade="all, delete-orphan"
