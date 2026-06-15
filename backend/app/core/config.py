@@ -17,6 +17,17 @@ class Settings(BaseSettings):
             return v.replace("postgresql://", "postgresql+psycopg://", 1)
         return v
 
+    # Connection pool — sized so the backend can serve ~50 concurrent members without
+    # queuing on connections. Max simultaneous DB connections = pool_size + max_overflow.
+    db_pool_size: int = 10
+    db_max_overflow: int = 40
+    db_pool_timeout: int = 30
+    db_pool_recycle: int = 1800
+
+    # Sync route handlers run in Starlette's anyio threadpool (default 40 tokens).
+    # Raise it above the 50-member target so concurrency isn't capped below the DB pool.
+    api_thread_pool_size: int = 60
+
     jwt_secret: str = "dev-insecure-secret-change-me"
     jwt_algorithm: str = "HS256"
     access_ttl_minutes: int = 60

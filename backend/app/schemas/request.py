@@ -51,6 +51,12 @@ class ServiceRequestOut(BaseModel):
     cancelled_at: datetime | None = None
     helper_location: HelperLocation | None = None
     seeker_name: str | None = None
+    # Populated once a helper is assigned (seeker timeline: who + ETA).
+    helper_phone: str | None = None
+    helper_type: str | None = None
+    helper_rating: float | None = None
+    distance_km: float | None = None
+    eta_minutes: int | None = None
 
 
 class OpenRequestForHelper(BaseModel):

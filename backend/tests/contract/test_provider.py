@@ -1,5 +1,6 @@
 """Contract tests for the provider side (US3): helper upsert, open list, accept/decline."""
 from app.core.config import settings
+from app.services import request_service
 
 
 def _register(client, email, name="User"):
@@ -77,3 +78,39 @@ def test_accept_then_status_and_location(client, seed_categories):
     loc = client.post(f"/api/v1/requests/{rid}/location", headers=helper,
                       json={"latitude": 17.45, "longitude": 78.45})
     assert loc.status_code == 202
+
+
+def test_unanswered_request_escalates_to_other_helpers(client, seed_categories, monkeypatch):
+    # Nearest helper (at the pickup) is targeted first; a second eligible helper
+    # ~22 km away must not see it until the targeting window elapses.
+    near = _make_helper(client, "near@example.com")  # at seed center → nearest
+    far_hdr = _register(client, "far@example.com", "FarHelper")
+    far_lat, far_lng = settings.seed_center_lat + 0.2, settings.seed_center_lng
+    client.post("/api/v1/helpers", headers=far_hdr,
+                json={"name": "Far Service", "helper_type": "mechanic", "phone": "+919800000011",
+                      "latitude": far_lat, "longitude": far_lng})
+
+    seeker = _register(client, "escseek@example.com")
+    cat = _category(client)
+    rid = client.post("/api/v1/requests", headers=seeker,
+                      json={"category_id": cat["id"], "pickup_lat": settings.seed_center_lat,
+                            "pickup_lng": settings.seed_center_lng}).json()["id"]
+
+    def far_open():
+        return [o["id"] for o in client.get(
+            "/api/v1/requests/open", headers=far_hdr,
+            params={"lat": far_lat, "lng": far_lng}).json()]
+
+    def near_open():
+        return [o["id"] for o in client.get(
+            "/api/v1/requests/open", headers=near,
+            params={"lat": settings.seed_center_lat, "lng": settings.seed_center_lng}).json()]
+
+    # Within the window: only the targeted (nearest) helper sees it.
+    assert rid in near_open()
+    assert rid not in far_open()
+
+    # Past the window: it escalates to the other eligible helper.
+    monkeypatch.setattr(request_service, "_TARGET_TIMEOUT_SECONDS", -1)
+    assert rid in far_open()
+    assert rid in near_open()

@@ -18,12 +18,14 @@ class StatusTimeline extends StatelessWidget {
   final RequestStatus current;
   final String? helperName;
   final String? categoryName;
+  final int? etaMinutes;
 
   const StatusTimeline({
     super.key,
     required this.current,
     this.helperName,
     this.categoryName,
+    this.etaMinutes,
   });
 
   static const _order = [
@@ -49,10 +51,11 @@ class StatusTimeline extends StatelessWidget {
     final cat = (categoryName != null && categoryName!.trim().isNotEmpty)
         ? categoryName!.trim()
         : 'Your request';
+    final eta = (etaMinutes != null && etaMinutes! > 0) ? ' · ETA ~$etaMinutes min' : '';
     return [
-      const _StepMeta(Icons.campaign_rounded, 'Request sent', 'Broadcast to nearby helpers'),
-      _StepMeta(Icons.how_to_reg_rounded, 'Helper assigned', '$helper accepted your request'),
-      _StepMeta(Icons.navigation_rounded, 'On the way', '$helper is heading to your location'),
+      const _StepMeta(Icons.campaign_rounded, 'Request sent', 'Sent to the nearest helper'),
+      _StepMeta(Icons.how_to_reg_rounded, 'Helper assigned', '$helper accepted your request$eta'),
+      _StepMeta(Icons.navigation_rounded, 'On the way', '$helper is heading to your location$eta'),
       const _StepMeta(Icons.place_rounded, 'Arrived', 'Your helper is at your location'),
       _StepMeta(Icons.celebration_rounded, 'Help completed', '$cat resolved'),
     ];

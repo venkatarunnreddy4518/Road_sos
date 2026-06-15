@@ -9,11 +9,26 @@ from app.core.config import settings
 _is_sqlite = settings.database_url.startswith("sqlite")
 
 connect_args = {"check_same_thread": False} if _is_sqlite else {}
+
+# SQLite (local dev) uses the default pool; Postgres uses a QueuePool sized to serve
+# ~50 concurrent members (pool_size + max_overflow) without stalling on connections.
+pool_kwargs = (
+    {}
+    if _is_sqlite
+    else {
+        "pool_size": settings.db_pool_size,
+        "max_overflow": settings.db_max_overflow,
+        "pool_timeout": settings.db_pool_timeout,
+        "pool_recycle": settings.db_pool_recycle,
+    }
+)
+
 engine = create_engine(
     settings.database_url,
     pool_pre_ping=not _is_sqlite,
     future=True,
     connect_args=connect_args,
+    **pool_kwargs,
 )
 
 # Enable WAL mode and foreign keys for SQLite

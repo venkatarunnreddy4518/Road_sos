@@ -25,6 +25,14 @@ _STATUS_TIMESTAMP = {
 }
 _TERMINAL = {RequestStatus.completed, RequestStatus.cancelled}
 
+# Assumed average road speed used to turn straight-line distance into an ETA the
+# seeker sees on their timeline once a helper is assigned.
+_AVG_SPEED_KMH = 30.0
+
+# A request is routed to the nearest helper first. If they don't accept within this
+# window, it auto-escalates: other eligible nearby helpers start seeing it too.
+_TARGET_TIMEOUT_SECONDS = 30
+
 
 def _now() -> datetime:
     """Aware UTC. Columns are TIMESTAMPTZ, so storing naive datetimes would be
@@ -32,11 +40,50 @@ def _now() -> datetime:
     return datetime.now(timezone.utc)
 
 
+def _age_seconds(dt: datetime) -> float:
+    # Tolerate naive datetimes (SQLite test DB) by assuming UTC.
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return (_now() - dt).total_seconds()
+
+
+def _eta_minutes(distance_km: float) -> int:
+    return max(1, round(distance_km / _AVG_SPEED_KMH * 60))
+
+
 def _as_uuid(value) -> uuid.UUID | None:
     """Coerce an id attribute (str or UUID) to UUID for safe SQL binding."""
     if value is None or isinstance(value, uuid.UUID):
         return value
     return uuid.UUID(str(value))
+
+
+def _eligible_helper_types(db: Session, category_id) -> list:
+    return list(
+        db.scalars(
+            select(CategoryHelperType.helper_type).where(
+                CategoryHelperType.category_id == _as_uuid(category_id)
+            )
+        )
+    )
+
+
+def _nearest_eligible_helper(db: Session, category_id, lat: float, lng: float) -> HelperProfile | None:
+    """Closest active helper whose type serves this category (notify nearest first)."""
+    types = _eligible_helper_types(db, category_id)
+    if not types:
+        return None
+    candidates = list(
+        db.scalars(
+            select(HelperProfile).where(
+                HelperProfile.helper_type.in_(types),
+                HelperProfile.is_active.is_(True),
+            )
+        )
+    )
+    if not candidates:
+        return None
+    return min(candidates, key=lambda h: haversine_km(lat, lng, h.latitude, h.longitude))
 
 
 def _helper_for_user(db: Session, user: User) -> HelperProfile:
@@ -62,23 +109,44 @@ def serialize(db: Session, req: ServiceRequest) -> dict:
         if loc
         else None
     )
-    data["helper_name"] = (
-        db.scalar(select(HelperProfile.name).where(HelperProfile.id == _as_uuid(req.helper_id)))
-        if req.helper_id
-        else None
-    )
+    # Once a helper is assigned, surface their details + a live ETA so the seeker's
+    # tracking timeline can show "who is coming and when".
+    helper = db.get(HelperProfile, _as_uuid(req.helper_id)) if req.helper_id else None
+    if helper:
+        data["helper_name"] = helper.name
+        data["helper_phone"] = helper.phone
+        data["helper_type"] = helper.helper_type.value
+        data["helper_rating"] = float(helper.rating_avg)
+        # Use the helper's latest live position when available, else their base location.
+        h_lat = loc.latitude if loc else helper.latitude
+        h_lng = loc.longitude if loc else helper.longitude
+        dist = haversine_km(h_lat, h_lng, req.pickup_lat, req.pickup_lng)
+        data["distance_km"] = round(dist, 2)
+        if req.status not in _TERMINAL:
+            data["eta_minutes"] = _eta_minutes(dist)
+    else:
+        data["helper_name"] = None
     seeker = db.get(User, req.seeker_user_id)
     data["seeker_name"] = seeker.display_name if seeker else None
     return data
 
 
 def create(db: Session, seeker: User, payload) -> ServiceRequest:
-    if payload.target_helper_id and not db.get(HelperProfile, payload.target_helper_id):
+    target_helper_id = payload.target_helper_id
+    if target_helper_id and not db.get(HelperProfile, target_helper_id):
         raise AppError("not_found", "Target helper not found.", status_code=404)
+    # No explicit target → route the alert to the nearest eligible helper first.
+    # If they decline (see `decline`), the request reopens to all nearby helpers.
+    if not target_helper_id:
+        nearest = _nearest_eligible_helper(
+            db, payload.category_id, payload.pickup_lat, payload.pickup_lng
+        )
+        if nearest:
+            target_helper_id = nearest.id
     req = ServiceRequest(
         seeker_user_id=seeker.id,
         category_id=payload.category_id,
-        target_helper_id=payload.target_helper_id,
+        target_helper_id=target_helper_id,
         pickup_lat=payload.pickup_lat,
         pickup_lng=payload.pickup_lng,
         note=payload.note,
@@ -140,10 +208,14 @@ def list_open_for_helper(db: Session, user: User, lat: float, lng: float, radius
     reqs = list(db.scalars(stmt.order_by(ServiceRequest.requested_at.desc())))
     out = []
     for r in reqs:
-        targeted_other = r.target_helper_id and r.target_helper_id != helper.id
+        # After the timeout an unanswered targeted request escalates: drop the
+        # exclusive target so any eligible nearby helper can see (and grab) it.
+        expired = _age_seconds(r.requested_at) > _TARGET_TIMEOUT_SECONDS
+        effective_target = None if expired else r.target_helper_id
+        targeted_other = effective_target and effective_target != helper.id
         if targeted_other:
             continue
-        if r.target_helper_id != helper.id and r.category_id not in cat_ids:
+        if effective_target != helper.id and r.category_id not in cat_ids:
             continue
         dist = haversine_km(lat, lng, r.pickup_lat, r.pickup_lng)
         if dist > radius_km:

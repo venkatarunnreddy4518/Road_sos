@@ -1,4 +1,7 @@
 """FastAPI application entrypoint for the Roadside Help marketplace backend."""
+from contextlib import asynccontextmanager
+
+import anyio.to_thread
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -9,10 +12,20 @@ from app.core.logging import configure_logging
 
 configure_logging()
 
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    # Sync endpoints run in the anyio threadpool; widen it so the backend can serve
+    # the ~50-concurrent-member target instead of the default 40-token cap.
+    anyio.to_thread.current_default_thread_limiter().total_tokens = settings.api_thread_pool_size
+    yield
+
+
 app = FastAPI(
     title="Roadside Help API",
     version="1.0.0",
     description="Two-sided roadside assistance marketplace backend (prototype).",
+    lifespan=lifespan,
 )
 
 app.add_middleware(

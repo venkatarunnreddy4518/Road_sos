@@ -25,6 +25,35 @@ class LocationResult {
 
 /// Wraps GPS access with a graceful, real-world permission flow.
 class LocationService {
+  /// First good fix of the session. On web there is no GPS, so the browser
+  /// estimates position from Wi-Fi/IP and returns a slightly different value on
+  /// every read — making a static user appear to drift. We cache the first fix
+  /// and only replace it when a later reading moves beyond [_jitterMeters], so
+  /// the pin holds still for network noise but still follows real movement.
+  static Position? _sessionFix;
+
+  /// Network-geolocation noise below this (meters) is treated as "didn't move".
+  static const double _jitterMeters = 150;
+
+  /// Apply the cached fix unless [fresh] genuinely moved past the jitter floor.
+  static Position _stabilize(Position fresh, bool forceRefresh) {
+    final cached = _sessionFix;
+    if (!forceRefresh && cached != null) {
+      final moved = Geolocator.distanceBetween(
+        cached.latitude,
+        cached.longitude,
+        fresh.latitude,
+        fresh.longitude,
+      );
+      if (moved < _jitterMeters) return cached;
+    }
+    _sessionFix = fresh;
+    return fresh;
+  }
+
+  /// Drop the cached fix (e.g. a deliberate "locate me" that must re-read GPS).
+  static void clearSessionFix() => _sessionFix = null;
+
   /// True when permission is already granted (no prompt shown).
   static Future<bool> hasPermission() async {
     final p = await Geolocator.checkPermission();
@@ -34,7 +63,8 @@ class LocationService {
   /// Full flow: checks the service, (optionally) requests permission, then
   /// returns the most accurate fix it can — warm-starting from the last known
   /// position so the map snaps to roughly the right place immediately.
-  static Future<LocationResult> determinePosition({bool request = true}) async {
+  static Future<LocationResult> determinePosition(
+      {bool request = true, bool forceRefresh = false}) async {
     try {
       // Native platforms can report the OS location toggle; web cannot.
       if (!kIsWeb && !await Geolocator.isLocationServiceEnabled()) {
@@ -67,15 +97,17 @@ class LocationService {
           desiredAccuracy: LocationAccuracy.high,
           timeLimit: const Duration(seconds: 12),
         );
-        return LocationResult(LocationStatus.granted, fresh);
+        return LocationResult(LocationStatus.granted, _stabilize(fresh, forceRefresh));
       } on TimeoutException {
-        // Fall back to the warm fix if we have one, else report the timeout.
-        return warm != null
-            ? LocationResult(LocationStatus.granted, warm)
+        // Prefer the cached session fix, then a native warm fix, else timeout.
+        final fallback = _sessionFix ?? warm;
+        return fallback != null
+            ? LocationResult(LocationStatus.granted, fallback)
             : const LocationResult(LocationStatus.timeout);
       } catch (_) {
-        return warm != null
-            ? LocationResult(LocationStatus.granted, warm)
+        final fallback = _sessionFix ?? warm;
+        return fallback != null
+            ? LocationResult(LocationStatus.granted, fallback)
             : const LocationResult(LocationStatus.error);
       }
     } catch (_) {

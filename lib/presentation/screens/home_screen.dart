@@ -3,16 +3,21 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
 import 'dart:convert';
 import 'dart:async';
 
 import '../../core/i18n/l10n_ext.dart';
 import '../../core/utils/location_service.dart';
+import '../../core/utils/location_store.dart';
 import '../../data/api/discovery_api.dart';
+import '../../data/api/request_api.dart';
 import '../../data/models/category.dart';
 import '../../data/models/marketplace_helper.dart';
 import '../../data/repositories/helper_cache.dart';
+import '../state/auth_state.dart';
 import '../utils/helper_actions.dart';
+import '../utils/incoming_request_alert.dart';
 import '../widgets/category_grid.dart';
 import '../widgets/helper_carousel.dart';
 import '../widgets/location_permission_sheet.dart';
@@ -21,6 +26,7 @@ import 'helper_detail_screen.dart';
 import 'helper_results_screen.dart';
 import 'history_screen.dart';
 import 'profile_screen.dart';
+import 'provider/provider_job_screen.dart';
 import 'search_screen.dart';
 import 'ai_assistant_screen.dart';
 
@@ -37,6 +43,85 @@ class _HomeScreenState extends State<HomeScreen> {
   // ── Design tokens from HTML ──
   static const Color _border = Color(0xFFECEEF4);
   static const Color _primary = Color(0xFF2563EB);
+
+  // ── Helper incoming-request watcher ──
+  // While the helper is anywhere in the app, poll for SOS requests routed to them
+  // and flash an Accept/Reject alert (the request is targeted to the nearest helper).
+  final RequestApi _requests = RequestApi();
+  Timer? _helperPoll;
+  List<ServiceCategory> _helperCats = [];
+  final Set<String> _seenRequestIds = {};
+  bool _alertOpen = false;
+  bool _watchReady = false;
+  double _helperLat = 17.4239;
+  double _helperLng = 78.4738;
+
+  @override
+  void initState() {
+    super.initState();
+    _helperPoll = Timer.periodic(const Duration(seconds: 5), (_) => _pollIncoming());
+  }
+
+  @override
+  void dispose() {
+    _helperPoll?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _pollIncoming() async {
+    if (!mounted || _alertOpen) return;
+    if (!(context.read<AuthState>().user?.isHelper ?? false)) return;
+    if (!_watchReady) {
+      _watchReady = true;
+      final pos = await LocationService.current();
+      if (pos != null) {
+        _helperLat = pos.latitude;
+        _helperLng = pos.longitude;
+      }
+      try {
+        _helperCats = await DiscoveryApi().categories();
+      } catch (_) {}
+      // First pass primes the seen-set so we don't flash a backlog on launch.
+      try {
+        final initial = await _requests.open(lat: _helperLat, lng: _helperLng);
+        for (final r in initial) {
+          _seenRequestIds.add(r['id'] as String);
+        }
+      } catch (_) {}
+      return;
+    }
+    try {
+      final open = await _requests.open(lat: _helperLat, lng: _helperLng);
+      final fresh = open.where((r) => !_seenRequestIds.contains(r['id'] as String)).toList();
+      for (final r in open) {
+        _seenRequestIds.add(r['id'] as String);
+      }
+      if (fresh.isNotEmpty && mounted && !_alertOpen) {
+        _alertOpen = true;
+        await showIncomingRequestAlert(
+          context: context,
+          req: fresh.first,
+          categories: _helperCats,
+          onAccept: () => _acceptIncoming(fresh.first['id'] as String),
+          onReject: () => _requests.decline(fresh.first['id'] as String),
+        );
+        _alertOpen = false;
+      }
+    } catch (_) {/* offline-tolerant; retry next tick */}
+  }
+
+  Future<void> _acceptIncoming(String id) async {
+    try {
+      await _requests.accept(id);
+      if (!mounted) return;
+      Navigator.of(context)
+          .push(MaterialPageRoute(builder: (_) => ProviderJobScreen(requestId: id)));
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+      }
+    }
+  }
 
   Widget _buildNavItem(int index, String icon, String label) {
     final isActive = _tab == index;
@@ -236,11 +321,21 @@ class _DiscoverTabState extends State<_DiscoverTab> {
 
   void _updateLocationFromMapCenter(double latitude, double longitude) {
     setState(() {
-      _pos = Position(
-        latitude: latitude,
-        longitude: longitude,
+      _pos = _posFrom(latitude, longitude);
+      _addressLine1 = 'Locating...';
+      _addressLine2 = '';
+    });
+    // Dragging the map is a deliberate choice → persist it so it sticks.
+    _fetchAddress(latitude, longitude, persist: true);
+    _loadHelpersOnly(latitude, longitude);
+  }
+
+  /// A synthetic high-confidence fix for a manually chosen point.
+  Position _posFrom(double lat, double lng) => Position(
+        latitude: lat,
+        longitude: lng,
         timestamp: DateTime.now(),
-        accuracy: 0.0,
+        accuracy: 1.0,
         altitude: 0.0,
         altitudeAccuracy: 0.0,
         heading: 0.0,
@@ -248,11 +343,15 @@ class _DiscoverTabState extends State<_DiscoverTab> {
         speed: 0.0,
         speedAccuracy: 0.0,
       );
-      _addressLine1 = 'Locating...';
-      _addressLine2 = '';
+
+  /// Sets the visible address and, when the location was user-chosen, saves it.
+  void _applyAddress(double lat, double lng, String l1, String l2, bool persist) {
+    if (!mounted) return;
+    setState(() {
+      _addressLine1 = l1;
+      _addressLine2 = l2;
     });
-    _fetchAddress(latitude, longitude);
-    _loadHelpersOnly(latitude, longitude);
+    if (persist) LocationStore.save(lat, lng, label1: l1, label2: l2);
   }
 
   Future<void> _loadHelpersOnly(double latitude, double longitude) async {
@@ -271,7 +370,8 @@ class _DiscoverTabState extends State<_DiscoverTab> {
     }
   }
 
-  Future<void> _fetchAddress(double lat, double lng) async {
+  Future<void> _fetchAddress(double lat, double lng, {bool persist = false}) async {
+    final fallback1 = 'Location near (${lat.toStringAsFixed(4)}, ${lng.toStringAsFixed(4)})';
     try {
       final url = Uri.parse('https://nominatim.openstreetmap.org/reverse?format=json&lat=$lat&lon=$lng&zoom=18');
       final res = await http.get(url, headers: {'User-Agent': 'roadside_help_app/1.0'});
@@ -279,43 +379,40 @@ class _DiscoverTabState extends State<_DiscoverTab> {
         final data = json.decode(res.body);
         final addr = data['address'] as Map<String, dynamic>?;
         if (addr != null) {
-          final road = addr['road'] ?? addr['suburb'] ?? addr['neighbourhood'] ?? addr['amenity'] ?? '';
-          final city = addr['city'] ?? addr['town'] ?? addr['county'] ?? 'Hyderabad';
-          final state = addr['state'] ?? '';
-          if (mounted) {
-            setState(() {
-              _addressLine1 = road.toString().isNotEmpty ? road.toString() : 'Current Location';
-              _addressLine2 = '$city, $state'.trim();
-            });
-            return;
-          }
-        } else {
-          final displayName = data['display_name'] as String?;
-          if (displayName != null) {
-            final parts = displayName.split(',');
-            if (mounted) {
-              setState(() {
-                _addressLine1 = parts.first.trim();
-                _addressLine2 = parts.skip(1).take(2).join(',').trim();
-              });
-              return;
+          // Prefer a recognizable street/locality over GHMC-style "Ward N" names.
+          String pick(List<String> keys) {
+            for (final k in keys) {
+              final v = addr[k];
+              if (v != null && v.toString().trim().isNotEmpty) {
+                return v.toString().replaceFirst(RegExp(r'^Ward\s*\d+\s*'), '').trim();
+              }
             }
+            return '';
           }
+
+          final line1 = pick(['road', 'neighbourhood', 'quarter', 'residential',
+              'suburb', 'village', 'hamlet', 'city_district']);
+          final city = pick(['city', 'town', 'municipality', 'county']);
+          final state = pick(['state']);
+          final parts = <String>[
+            city.isNotEmpty ? city : 'Hyderabad',
+            if (state.isNotEmpty) state,
+          ];
+          _applyAddress(lat, lng, line1.isNotEmpty ? line1 : 'Current location',
+              parts.join(', '), persist);
+          return;
+        }
+        final displayName = data['display_name'] as String?;
+        if (displayName != null) {
+          final parts = displayName.split(',');
+          _applyAddress(lat, lng, parts.first.trim(),
+              parts.skip(1).take(2).join(',').trim(), persist);
+          return;
         }
       }
-      if (mounted) {
-        setState(() {
-          _addressLine1 = 'Location near (${lat.toStringAsFixed(4)}, ${lng.toStringAsFixed(4)})';
-          _addressLine2 = 'Hyderabad, Telangana';
-        });
-      }
+      _applyAddress(lat, lng, fallback1, 'Hyderabad, Telangana', persist);
     } catch (_) {
-      if (mounted) {
-        setState(() {
-          _addressLine1 = 'Location near (${lat.toStringAsFixed(4)}, ${lng.toStringAsFixed(4)})';
-          _addressLine2 = 'Hyderabad, Telangana';
-        });
-      }
+      _applyAddress(lat, lng, fallback1, 'Hyderabad, Telangana', persist);
     }
   }
 
@@ -330,8 +427,9 @@ class _DiscoverTabState extends State<_DiscoverTab> {
   @override
   void initState() {
     super.initState();
-    // Resolve location (prompting via the popup on first entry) before loading.
-    WidgetsBinding.instance.addPostFrameCallback((_) => _useMyLocation());
+    // Restore a previously chosen location (accurate on web); otherwise resolve
+    // device/network location, prompting via the popup on first entry.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _bootstrapLocation());
     _scrollController.addListener(() {
       if (mounted) {
         setState(() {
@@ -354,11 +452,67 @@ class _DiscoverTabState extends State<_DiscoverTab> {
     } catch (_) {}
   }
 
-  /// Resolves the user's position, showing the beautiful permission popup the
-  /// first time (or whenever permission isn't granted), then loads helpers.
+  /// First entry: prefer the user's saved/chosen location (the accurate source
+  /// of truth on web, where there is no GPS). Only fall back to device/network
+  /// location when nothing has been saved yet.
+  Future<void> _bootstrapLocation() async {
+    final saved = await LocationStore.load();
+    if (saved != null && mounted) {
+      setState(() {
+        _pos = _posFrom(saved.lat, saved.lng);
+        _locationDenied = false;
+        _addressLine1 = saved.label1.isNotEmpty ? saved.label1 : 'Saved location';
+        _addressLine2 = saved.label2;
+      });
+      _moveMap();
+      await _load();
+      return;
+    }
+    await _useMyLocation();
+  }
+
+  /// Deliberate "use my current location": forget any saved pin and re-read the
+  /// device/network position, showing the permission popup if needed.
   Future<void> _useMyLocation() async {
+    await LocationStore.clear();
+    LocationService.clearSessionFix();
     await _resolveLocation(prompt: true);
     await _load();
+  }
+
+  /// Opens a location picker so the user can set an exact place by address
+  /// (essential on web/desktop, where there is no GPS and the browser only
+  /// returns a coarse Wi-Fi/IP estimate). Also offers a "use my GPS" shortcut.
+  Future<void> _openLocationPicker() async {
+    final result = await showModalBottomSheet<Map<String, dynamic>>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => const _LocationSearchSheet(),
+    );
+    if (result == null || !mounted) return;
+
+    if (result['useGps'] == true) {
+      LocationService.clearSessionFix(); // deliberate re-read
+      await _useMyLocation();
+      return;
+    }
+
+    final lat = result['lat'] as double;
+    final lng = result['lng'] as double;
+    setState(() {
+      _pos = _posFrom(lat, lng);
+      _locationDenied = false;
+      _addressLine1 = 'Locating...';
+      _addressLine2 = '';
+    });
+    _moveMap();
+    // Searched + picked → persist so it survives reloads.
+    _fetchAddress(lat, lng, persist: true);
+    _loadHelpersOnly(lat, lng);
   }
 
   Future<void> _resolveLocation({required bool prompt}) async {
@@ -437,7 +591,7 @@ class _DiscoverTabState extends State<_DiscoverTab> {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: GestureDetector(
-            onTap: _useMyLocation,
+            onTap: _openLocationPicker,
             child: Builder(
               builder: (context) {
                 final theme = Theme.of(context);
@@ -964,6 +1118,9 @@ class _DiscoverTabState extends State<_DiscoverTab> {
                     ],
                   ),
                 ),
+                // Fixed crosshair pin: whatever sits under it is the chosen
+                // location. Lets the user drag the map to fine-tune the pickup.
+                const _MapCenterPin(),
                 Positioned(
                   top: 24,
                   left: 24,
@@ -1485,6 +1642,192 @@ class _TravelPlaceholderTab extends StatelessWidget {
             const Text('🚗', style: TextStyle(fontSize: 40)),
             const SizedBox(height: 10),
             Text(context.tr('travel_placeholder'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Address search for setting an exact location on web/desktop (no GPS). Geocodes
+/// the typed query via OpenStreetMap (Nominatim) and returns the chosen point as
+/// `{lat, lng, label}`, or `{useGps: true}` to fall back to device location.
+class _LocationSearchSheet extends StatefulWidget {
+  const _LocationSearchSheet();
+
+  @override
+  State<_LocationSearchSheet> createState() => _LocationSearchSheetState();
+}
+
+class _LocationSearchSheetState extends State<_LocationSearchSheet> {
+  final _controller = TextEditingController();
+  Timer? _debounce;
+  List<dynamic> _results = [];
+  bool _loading = false;
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _onChanged(String q) {
+    _debounce?.cancel();
+    final query = q.trim();
+    if (query.length < 3) {
+      setState(() {
+        _results = [];
+        _loading = false;
+      });
+      return;
+    }
+    setState(() => _loading = true);
+    _debounce = Timer(const Duration(milliseconds: 500), () => _search(query));
+  }
+
+  Future<void> _search(String q) async {
+    try {
+      final url = Uri.parse(
+        'https://nominatim.openstreetmap.org/search'
+        '?format=json&limit=6&addressdetails=1&q=${Uri.encodeQueryComponent(q)}',
+      );
+      final res = await http.get(url, headers: {'User-Agent': 'roadside_help_app/1.0'});
+      if (!mounted) return;
+      setState(() {
+        _results = res.statusCode == 200 ? (json.decode(res.body) as List) : [];
+        _loading = false;
+      });
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _results = [];
+          _loading = false;
+        });
+      }
+    }
+  }
+
+  void _pick(dynamic r) {
+    Navigator.of(context).pop({
+      'lat': double.parse(r['lat'].toString()),
+      'lng': double.parse(r['lon'].toString()),
+      'label': r['display_name']?.toString() ?? '',
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: 16,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: 14),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.outline,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          Text('Set your location',
+              style: TextStyle(
+                  fontSize: 16, fontWeight: FontWeight.w800, color: theme.colorScheme.onSurface)),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _controller,
+            autofocus: true,
+            onChanged: _onChanged,
+            textInputAction: TextInputAction.search,
+            decoration: InputDecoration(
+              hintText: 'Search area, street or landmark',
+              prefixIcon: const Icon(Icons.search),
+              suffixIcon: _loading
+                  ? const Padding(
+                      padding: EdgeInsets.all(12),
+                      child: SizedBox(
+                          width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
+                    )
+                  : null,
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              isDense: true,
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextButton.icon(
+            onPressed: () => Navigator.of(context).pop({'useGps': true}),
+            icon: const Icon(Icons.my_location, size: 18),
+            label: const Text('Use my current location'),
+          ),
+          if (_results.isNotEmpty)
+            ConstrainedBox(
+              constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.4),
+              child: ListView.separated(
+                shrinkWrap: true,
+                itemCount: _results.length,
+                separatorBuilder: (_, __) => Divider(height: 1, color: theme.colorScheme.outline),
+                itemBuilder: (_, i) {
+                  final r = _results[i];
+                  final name = r['display_name']?.toString() ?? '';
+                  final first = name.split(',').first;
+                  final rest = name.split(',').skip(1).join(',').trim();
+                  return ListTile(
+                    dense: true,
+                    leading: const Icon(Icons.place_outlined, size: 20),
+                    title: Text(first,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5)),
+                    subtitle: rest.isEmpty
+                        ? null
+                        : Text(rest, maxLines: 1, overflow: TextOverflow.ellipsis),
+                    onTap: () => _pick(r),
+                  );
+                },
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A fixed crosshair pin centered over the map. Its tip marks the exact point
+/// that becomes the user's location when the map is dragged. Non-interactive so
+/// it never swallows the map's pan gestures.
+class _MapCenterPin extends StatelessWidget {
+  const _MapCenterPin();
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Offset up by half the icon so the pin's tip rests on dead-center.
+            Transform.translate(
+              offset: const Offset(0, -14),
+              child: Icon(
+                Icons.location_pin,
+                size: 40,
+                color: const Color(0xFF2563EB),
+                shadows: [
+                  Shadow(color: Colors.black.withValues(alpha: 0.35), blurRadius: 6, offset: const Offset(0, 2)),
+                ],
+              ),
+            ),
           ],
         ),
       ),

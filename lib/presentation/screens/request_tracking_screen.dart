@@ -170,8 +170,9 @@ class _RequestTrackingScreenState extends State<RequestTrackingScreen> {
                       ],
                       StatusTimeline(
                         current: r.status,
-                        helperName: _helper?.name,
+                        helperName: _helper?.name ?? r.helperName,
                         categoryName: _categoryName,
+                        etaMinutes: r.etaMinutes,
                       ),
                       if (r.helperLocation != null)
                         Padding(
@@ -276,6 +277,24 @@ class _RequestTrackingScreenState extends State<RequestTrackingScreen> {
                 const SizedBox(height: 2),
                 Text(r.status.label,
                     style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 22, color: _ink)),
+                if (r.etaMinutes != null &&
+                    r.etaMinutes! > 0 &&
+                    (r.status == RequestStatus.accepted ||
+                        r.status == RequestStatus.onTheWay)) ...[
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Icon(Icons.schedule_rounded, size: 15, color: _blue),
+                      const SizedBox(width: 5),
+                      Text(
+                        'Arriving in ~${r.etaMinutes} min'
+                        '${r.distanceKm != null ? ' · ${r.distanceKm!.toStringAsFixed(1)} km' : ''}',
+                        style: const TextStyle(
+                            fontSize: 13, fontWeight: FontWeight.w600, color: _blue),
+                      ),
+                    ],
+                  ),
+                ],
               ],
             ),
           ),

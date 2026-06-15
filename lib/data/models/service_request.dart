@@ -68,6 +68,11 @@ class ServiceRequest {
   final String? note;
   final String? seekerName;
   final String? helperName;
+  final String? helperPhone;
+  final String? helperType;
+  final double? helperRating;
+  final double? distanceKm;
+  final int? etaMinutes;
   final double? fareAmount;
   final DateTime? requestedAt;
   final HelperLocation? helperLocation;
@@ -84,6 +89,11 @@ class ServiceRequest {
     this.note,
     this.seekerName,
     this.helperName,
+    this.helperPhone,
+    this.helperType,
+    this.helperRating,
+    this.distanceKm,
+    this.etaMinutes,
     this.fareAmount,
     this.requestedAt,
     this.helperLocation,
@@ -101,6 +111,11 @@ class ServiceRequest {
         note: j['note'],
         seekerName: j['seeker_name'],
         helperName: j['helper_name'],
+        helperPhone: j['helper_phone'],
+        helperType: j['helper_type'],
+        helperRating: (j['helper_rating'] as num?)?.toDouble(),
+        distanceKm: (j['distance_km'] as num?)?.toDouble(),
+        etaMinutes: (j['eta_minutes'] as num?)?.toInt(),
         fareAmount: (j['fare_amount'] as num?)?.toDouble(),
         requestedAt: j['requested_at'] == null ? null : DateTime.parse(j['requested_at']),
         helperLocation: j['helper_location'] == null

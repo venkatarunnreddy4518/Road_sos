@@ -11,6 +11,7 @@ import '../../../data/api/request_api.dart';
 import '../../../data/models/category.dart';
 import '../../state/auth_state.dart';
 import '../../utils/helper_actions.dart';
+import '../../utils/incoming_request_alert.dart';
 import 'provider_job_screen.dart';
 
 /// Provider mode: register as a helper (if needed), then see + accept open requests.
@@ -89,176 +90,13 @@ class _ProviderInboxScreenState extends State<ProviderInboxScreen> {
   }
 
   void _showIncomingRequestAlert(Map<String, dynamic> req) {
-    final seeker = (req['seeker_name'] as String?)?.trim();
-    final note = (req['note'] as String?)?.trim();
-    final dist = (req['distance_km'] as num?)?.toDouble();
     final id = req['id'] as String;
-
-    final catId = req['category_id'] as String?;
-    final cat = _categories.firstWhere(
-      (c) => c.id == catId,
-      orElse: () => ServiceCategory(
-        id: '',
-        key: '',
-        name: 'Emergency Request',
-        icon: 'build',
-        sortOrder: 0,
-        helperTypes: [],
-      ),
-    );
-
-    showDialog(
+    showIncomingRequestAlert(
       context: context,
-      barrierDismissible: true,
-      builder: (BuildContext dialogContext) {
-        final isDark = Theme.of(dialogContext).brightness == Brightness.dark;
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-          backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
-          title: Row(
-            children: [
-              const Text('🚨 ', style: TextStyle(fontSize: 22)),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'SOS Incoming Alert!',
-                  style: TextStyle(
-                    fontFamily: 'Outfit',
-                    fontWeight: FontWeight.w900,
-                    color: Theme.of(dialogContext).colorScheme.error,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'A motorist nearby requested immediate assistance:',
-                style: TextStyle(
-                  fontFamily: 'Outfit',
-                  fontSize: 13,
-                  color: Colors.grey,
-                ),
-              ),
-              const SizedBox(height: 14),
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: isDark ? const Color(0xFF475569) : const Color(0xFFE2E8F0),
-                    width: 1.5,
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Text(
-                          cat.icon == 'tire_repair'
-                              ? '🛞'
-                              : cat.icon == 'local_gas_station'
-                                  ? '⛽'
-                                  : cat.icon == 'battery_charging_full'
-                                      ? '🔋'
-                                      : cat.icon == 'fire_truck'
-                                          ? '🚒'
-                                          : '🔧',
-                          style: const TextStyle(fontSize: 20),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            cat.name,
-                            style: TextStyle(
-                              fontFamily: 'Outfit',
-                              fontWeight: FontWeight.w800,
-                              fontSize: 14,
-                              color: isDark ? Colors.white : const Color(0xFF0F172A),
-                            ),
-                          ),
-                            ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      'Seeker: ${seeker?.isNotEmpty == true ? seeker! : 'Someone Nearby'}',
-                      style: TextStyle(
-                        fontFamily: 'Outfit',
-                        fontWeight: FontWeight.w700,
-                        fontSize: 13,
-                        color: isDark ? Colors.white70 : const Color(0xFF334155),
-                      ),
-                    ),
-                    if (dist != null) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        'Distance: ${dist.toStringAsFixed(1)} km away',
-                        style: const TextStyle(
-                          fontFamily: 'Outfit',
-                          fontSize: 12,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ],
-                    if (note?.isNotEmpty == true) ...[
-                      const SizedBox(height: 10),
-                      const Divider(height: 1),
-                      const SizedBox(height: 10),
-                      Text(
-                        'Note: "$note"',
-                        style: TextStyle(
-                          fontFamily: 'Outfit',
-                          fontStyle: FontStyle.italic,
-                          fontSize: 12,
-                          color: isDark ? Colors.white60 : const Color(0xFF475569),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text(
-                'Ignore',
-                style: TextStyle(
-                  fontFamily: 'Outfit',
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey,
-                ),
-              ),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              ),
-              onPressed: () {
-                Navigator.of(dialogContext).pop();
-                _accept(id);
-              },
-              child: const Text(
-                'Accept SOS',
-                style: TextStyle(
-                  fontFamily: 'Outfit',
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ),
-          ],
-        );
-      },
+      req: req,
+      categories: _categories,
+      onAccept: () => _accept(id),
+      onReject: () => _decline(id),
     );
   }
 
@@ -270,6 +108,17 @@ class _ProviderInboxScreenState extends State<ProviderInboxScreen> {
       _refresh();
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+    }
+  }
+
+  /// Reject: decline so the request reopens to the next nearest helper, and drop
+  /// it from this inbox immediately.
+  Future<void> _decline(String id) async {
+    setState(() => _open.removeWhere((r) => r['id'] == id));
+    try {
+      await _requests.decline(id);
+    } catch (_) {
+      // Non-fatal: the next poll will reconcile the list.
     }
   }
 
@@ -404,6 +253,18 @@ class _ProviderInboxScreenState extends State<ProviderInboxScreen> {
                                           ),
                                         ),
                                       if (lat != null && lng != null) const SizedBox(width: 10),
+                                      Expanded(
+                                        child: OutlinedButton(
+                                          onPressed: () => _decline(r['id']),
+                                          style: OutlinedButton.styleFrom(
+                                            foregroundColor: Theme.of(context).colorScheme.error,
+                                            side: BorderSide(
+                                                color: Theme.of(context).colorScheme.error),
+                                          ),
+                                          child: Text(context.tr('reject')),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 10),
                                       Expanded(
                                         child: FilledButton(
                                           onPressed: () => _accept(r['id']),
