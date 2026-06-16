@@ -177,7 +177,7 @@ class _ProviderInboxScreenState extends State<ProviderInboxScreen> {
                                     children: [
                                       CircleAvatar(
                                         radius: 18,
-                                        backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                                        backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
                                         child: Text(
                                           cat.icon == 'tire_repair'
                                               ? '🛞'
@@ -208,7 +208,7 @@ class _ProviderInboxScreenState extends State<ProviderInboxScreen> {
                                                 Container(
                                                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                                   decoration: BoxDecoration(
-                                                    color: Theme.of(context).colorScheme.primary.withOpacity(0.08),
+                                                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08),
                                                     borderRadius: BorderRadius.circular(8),
                                                   ),
                                                   child: Text(
