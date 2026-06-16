@@ -1,9 +1,6 @@
 import uuid
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, Query
-from sqlalchemy.orm import Session
-
 from app.core.deps import get_current_user
 from app.db.session import get_db
 from app.models.enums import HelperType
@@ -11,6 +8,8 @@ from app.models.user import User
 from app.schemas.helper import HelperOut, HelperSyncFeed, HelperUpsert, HelperWithDistance
 from app.schemas.review import HelperReviews
 from app.services import helper_service, review_service
+from fastapi import APIRouter, Depends, Query
+from sqlalchemy.orm import Session
 
 router = APIRouter(prefix="/helpers", tags=["helpers"])
 

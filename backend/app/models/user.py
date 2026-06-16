@@ -1,12 +1,12 @@
 """User account + authentication-related models."""
+
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, String, Text, UniqueConstraint
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-
 from app.db.base import Base, TimestampMixin, uuid_pk
 from app.models.enums import AuthProvider
+from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, String, Text, UniqueConstraint
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 
 class User(Base, TimestampMixin):
@@ -33,7 +33,9 @@ class AuthIdentity(Base, TimestampMixin):
     user_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
-    provider: Mapped[AuthProvider] = mapped_column(Enum(AuthProvider, name="auth_provider", native_enum=False))
+    provider: Mapped[AuthProvider] = mapped_column(
+        Enum(AuthProvider, name="auth_provider", native_enum=False)
+    )
     provider_uid: Mapped[str] = mapped_column(String(255), nullable=False)
     password_hash: Mapped[str | None] = mapped_column(Text, nullable=True)
 

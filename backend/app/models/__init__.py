@@ -1,4 +1,5 @@
 """Import all models so SQLAlchemy metadata + Alembic see them."""
+
 from app.db.base import Base
 from app.models.enums import AuthProvider, DataSource, HelperType, RequestStatus
 from app.models.helper import CategoryHelperType, HelperProfile, ServiceCategory

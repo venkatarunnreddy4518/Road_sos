@@ -1,8 +1,7 @@
 # backend/app/services/ai_service.py
 import httpx
-from fastapi import HTTPException
-
 from app.schemas.ai import ChatRequest
+from fastapi import HTTPException
 
 
 class AiService:
@@ -279,7 +278,7 @@ class AiService:
                 role = "model" if m.role == "assistant" else "user"
                 contents.append({"role": role, "parts": [{"text": m.content}]})
 
-        payload = {"contents": contents}
+        payload: dict[str, object] = {"contents": contents}
         if system_instruction:
             payload["systemInstruction"] = {"parts": [{"text": system_instruction}]}
 

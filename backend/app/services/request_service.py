@@ -1,9 +1,7 @@
 """Service request lifecycle, assignment (first-accept-wins), and live location."""
+
 import uuid
 from datetime import datetime, timezone
-
-from sqlalchemy import select, update
-from sqlalchemy.orm import Session
 
 from app.core.errors import AppError
 from app.models.enums import RequestStatus
@@ -11,6 +9,8 @@ from app.models.helper import CategoryHelperType, HelperProfile, ServiceCategory
 from app.models.request import HelperLocationUpdate, ServiceRequest
 from app.models.user import User
 from app.services.geo import haversine_km
+from sqlalchemy import select, update
+from sqlalchemy.orm import Session
 
 # Allowed forward transitions performed by the assigned helper.
 _TRANSITIONS = {
@@ -68,7 +68,9 @@ def _eligible_helper_types(db: Session, category_id) -> list:
     )
 
 
-def _nearest_eligible_helper(db: Session, category_id, lat: float, lng: float) -> HelperProfile | None:
+def _nearest_eligible_helper(
+    db: Session, category_id, lat: float, lng: float
+) -> HelperProfile | None:
     """Closest active helper whose type serves this category (notify nearest first)."""
     types = _eligible_helper_types(db, category_id)
     if not types:
@@ -176,7 +178,9 @@ def get(db: Session, request_id: uuid.UUID, user: User) -> ServiceRequest:
     return _get_participant(db, request_id, user)
 
 
-def list_mine(db: Session, user: User, role: str, status: RequestStatus | None, active_only: bool) -> list[ServiceRequest]:
+def list_mine(
+    db: Session, user: User, role: str, status: RequestStatus | None, active_only: bool
+) -> list[ServiceRequest]:
     if role == "helper":
         helper = db.scalar(select(HelperProfile).where(HelperProfile.owner_user_id == user.id))
         if not helper:
@@ -191,7 +195,9 @@ def list_mine(db: Session, user: User, role: str, status: RequestStatus | None, 
     return list(db.scalars(stmt.order_by(ServiceRequest.requested_at.desc())))
 
 
-def list_open_for_helper(db: Session, user: User, lat: float, lng: float, radius_km: float) -> list[dict]:
+def list_open_for_helper(
+    db: Session, user: User, lat: float, lng: float, radius_km: float
+) -> list[dict]:
     helper = _helper_for_user(db, user)
     # categories that map to this helper's type
     cat_ids = list(
@@ -242,9 +248,14 @@ def accept(db: Session, request_id: uuid.UUID, user: User) -> ServiceRequest:
         .values(helper_id=helper.id, status=RequestStatus.accepted, accepted_at=_now())
     )
     db.commit()
-    if result.rowcount == 0:
+    # rowcount is exposed on the cursor result for DML; SQLAlchemy's Result stub
+    # doesn't surface it, so the type: ignore is a known typing gap, not a bug.
+    if result.rowcount == 0:  # type: ignore[attr-defined]
         raise AppError("conflict", "Request is no longer available.", status_code=409)
-    return db.get(ServiceRequest, request_id)
+    req = db.get(ServiceRequest, request_id)
+    if req is None:
+        raise AppError("not_found", "Request not found.", status_code=404)
+    return req
 
 
 def decline(db: Session, request_id: uuid.UUID, user: User) -> ServiceRequest:
@@ -260,7 +271,9 @@ def decline(db: Session, request_id: uuid.UUID, user: User) -> ServiceRequest:
     return req
 
 
-def update_status(db: Session, request_id: uuid.UUID, user: User, new_status: RequestStatus) -> ServiceRequest:
+def update_status(
+    db: Session, request_id: uuid.UUID, user: User, new_status: RequestStatus
+) -> ServiceRequest:
     helper = _helper_for_user(db, user)
     req = db.get(ServiceRequest, request_id)
     if not req or req.helper_id != helper.id:
@@ -297,7 +310,9 @@ def cancel(db: Session, request_id: uuid.UUID, user: User) -> ServiceRequest:
     return req
 
 
-def record_location(db: Session, request_id: uuid.UUID, user: User, lat: float, lng: float) -> datetime:
+def record_location(
+    db: Session, request_id: uuid.UUID, user: User, lat: float, lng: float
+) -> datetime:
     helper = _helper_for_user(db, user)
     req = db.get(ServiceRequest, request_id)
     if not req or req.helper_id != helper.id:

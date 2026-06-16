@@ -1,6 +1,5 @@
-from pydantic import BaseModel, EmailStr, Field
-
 from app.schemas.user import UserOut
+from pydantic import BaseModel, EmailStr, Field
 
 
 class TokenPair(BaseModel):

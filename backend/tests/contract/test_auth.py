@@ -39,7 +39,9 @@ def test_phone_otp_dev_flow(client):
 
 
 def test_google_dev_flow_and_me(client):
-    r = client.post("/api/v1/auth/google", json={"dev_email": "g@example.com", "dev_name": "G User"})
+    r = client.post(
+        "/api/v1/auth/google", json={"dev_email": "g@example.com", "dev_name": "G User"}
+    )
     assert r.status_code == 200, r.text
     token = r.json()["access_token"]
 
@@ -63,7 +65,11 @@ def test_email_case_insensitive(client):
     # Duplicate email with different case should fail
     r2 = client.post(
         "/api/v1/auth/email/register",
-        json={"display_name": "Test User 2", "email": "testuser@example.com", "password": "secret1"},
+        json={
+            "display_name": "Test User 2",
+            "email": "testuser@example.com",
+            "password": "secret1",
+        },
     )
     assert r2.status_code == 409
 

@@ -1,8 +1,11 @@
 """Service request lifecycle, live location updates, and reviews."""
+
 import uuid
 from datetime import datetime
 from decimal import Decimal
 
+from app.db.base import Base, TimestampMixin, uuid_pk
+from app.models.enums import RequestStatus
 from sqlalchemy import (
     CheckConstraint,
     DateTime,
@@ -15,9 +18,6 @@ from sqlalchemy import (
     Text,
 )
 from sqlalchemy.orm import Mapped, mapped_column
-
-from app.db.base import Base, TimestampMixin, uuid_pk
-from app.models.enums import RequestStatus
 
 
 class ServiceRequest(Base, TimestampMixin):
@@ -37,7 +37,9 @@ class ServiceRequest(Base, TimestampMixin):
         ForeignKey("helper_profiles.id"), nullable=True, index=True
     )
     status: Mapped[RequestStatus] = mapped_column(
-        Enum(RequestStatus, name="request_status", native_enum=False), default=RequestStatus.requested, nullable=False
+        Enum(RequestStatus, name="request_status", native_enum=False),
+        default=RequestStatus.requested,
+        nullable=False,
     )
     pickup_lat: Mapped[float] = mapped_column(Float, nullable=False)
     pickup_lng: Mapped[float] = mapped_column(Float, nullable=False)
@@ -58,9 +60,7 @@ class ServiceRequest(Base, TimestampMixin):
 
 class HelperLocationUpdate(Base):
     __tablename__ = "helper_location_updates"
-    __table_args__ = (
-        Index("ix_loc_request_recorded", "request_id", "recorded_at"),
-    )
+    __table_args__ = (Index("ix_loc_request_recorded", "request_id", "recorded_at"),)
 
     id: Mapped[uuid.UUID] = uuid_pk()
     request_id: Mapped[uuid.UUID] = mapped_column(

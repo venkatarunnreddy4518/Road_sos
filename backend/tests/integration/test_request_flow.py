@@ -1,9 +1,10 @@
 """End-to-end seeker+helper request lifecycle, including live location and review."""
+
 import uuid
-from sqlalchemy import select
 
 from app.core.config import settings
 from app.models.helper import HelperProfile
+from sqlalchemy import select
 
 
 def _auth_header(client, email, name):
@@ -72,17 +73,23 @@ def test_full_lifecycle(client, seed_categories, db):
 
     # advance statuses
     for status in ("on_the_way", "arrived", "completed"):
-        s = client.post(f"/api/v1/requests/{req_id}/status", headers=helper_hdr, json={"status": status})
+        s = client.post(
+            f"/api/v1/requests/{req_id}/status", headers=helper_hdr, json={"status": status}
+        )
         assert s.status_code == 200, s.text
         assert s.json()["status"] == status
 
     # illegal transition after completion
-    bad = client.post(f"/api/v1/requests/{req_id}/status", headers=helper_hdr, json={"status": "arrived"})
+    bad = client.post(
+        f"/api/v1/requests/{req_id}/status", headers=helper_hdr, json={"status": "arrived"}
+    )
     assert bad.status_code == 422
 
     # seeker reviews
     rev = client.post(
-        "/api/v1/reviews", headers=seeker, json={"request_id": req_id, "rating": 5, "comment": "Great"}
+        "/api/v1/reviews",
+        headers=seeker,
+        json={"request_id": req_id, "rating": 5, "comment": "Great"},
     )
     assert rev.status_code == 201, rev.text
 
@@ -106,10 +113,14 @@ def test_live_location_during_active_request(client, seed_categories, db):
         json={"category_id": breakdown["id"], "pickup_lat": 17.42, "pickup_lng": 78.47},
     ).json()["id"]
     client.post(f"/api/v1/requests/{req_id}/accept", headers=helper_hdr)
-    client.post(f"/api/v1/requests/{req_id}/status", headers=helper_hdr, json={"status": "on_the_way"})
+    client.post(
+        f"/api/v1/requests/{req_id}/status", headers=helper_hdr, json={"status": "on_the_way"}
+    )
 
     loc = client.post(
-        f"/api/v1/requests/{req_id}/location", headers=helper_hdr, json={"latitude": 17.43, "longitude": 78.48}
+        f"/api/v1/requests/{req_id}/location",
+        headers=helper_hdr,
+        json={"latitude": 17.43, "longitude": 78.48},
     )
     assert loc.status_code == 202
 

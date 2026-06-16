@@ -1,13 +1,13 @@
 """Auth dependencies: resolve current user and enforce roles (Constitution II)."""
-import uuid
 
-from fastapi import Depends, Header
-from sqlalchemy.orm import Session
+import uuid
 
 from app.core.errors import AppError
 from app.core.security import decode_access_token
 from app.db.session import get_db
 from app.models.user import User
+from fastapi import Depends, Header
+from sqlalchemy.orm import Session
 
 
 def get_current_user(

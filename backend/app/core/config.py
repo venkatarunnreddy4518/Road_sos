@@ -1,4 +1,5 @@
 """Application configuration loaded from environment (Constitution II: no committed secrets)."""
+
 from functools import lru_cache
 
 from pydantic import field_validator

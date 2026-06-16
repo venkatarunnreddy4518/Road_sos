@@ -1,5 +1,4 @@
 """Contract tests for /requests/* endpoints (US2)."""
-from app.core.config import settings
 
 
 def _register(client, email, name="User"):
@@ -29,7 +28,12 @@ def test_create_and_get_as_seeker(client, seed_categories):
     r = client.post(
         "/api/v1/requests",
         headers=seeker,
-        json={"category_id": cat["id"], "pickup_lat": 17.4, "pickup_lng": 78.4, "note": "flat tyre"},
+        json={
+            "category_id": cat["id"],
+            "pickup_lat": 17.4,
+            "pickup_lng": 78.4,
+            "note": "flat tyre",
+        },
     )
     assert r.status_code == 201
     body = r.json()
@@ -56,8 +60,11 @@ def test_non_participant_cannot_read(client, seed_categories):
 def test_mine_lists_seeker_requests(client, seed_categories):
     seeker = _register(client, "mine@example.com")
     cat = _category(client)
-    client.post("/api/v1/requests", headers=seeker,
-                json={"category_id": cat["id"], "pickup_lat": 17.4, "pickup_lng": 78.4})
+    client.post(
+        "/api/v1/requests",
+        headers=seeker,
+        json={"category_id": cat["id"], "pickup_lat": 17.4, "pickup_lng": 78.4},
+    )
     r = client.get("/api/v1/requests/mine", headers=seeker, params={"role": "seeker"})
     assert r.status_code == 200
     assert len(r.json()) == 1
@@ -66,8 +73,11 @@ def test_mine_lists_seeker_requests(client, seed_categories):
 def test_seeker_can_cancel(client, seed_categories):
     seeker = _register(client, "cancel@example.com")
     cat = _category(client)
-    rid = client.post("/api/v1/requests", headers=seeker,
-                      json={"category_id": cat["id"], "pickup_lat": 17.4, "pickup_lng": 78.4}).json()["id"]
+    rid = client.post(
+        "/api/v1/requests",
+        headers=seeker,
+        json={"category_id": cat["id"], "pickup_lat": 17.4, "pickup_lng": 78.4},
+    ).json()["id"]
     r = client.post(f"/api/v1/requests/{rid}/cancel", headers=seeker)
     assert r.status_code == 200
     assert r.json()["status"] == "cancelled"

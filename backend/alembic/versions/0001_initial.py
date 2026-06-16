@@ -4,10 +4,10 @@ Revision ID: 0001_initial
 Revises:
 Create Date: 2026-06-10
 """
+
 from typing import Sequence, Union
 
 from alembic import op
-
 from app.models import Base
 
 revision: str = "0001_initial"

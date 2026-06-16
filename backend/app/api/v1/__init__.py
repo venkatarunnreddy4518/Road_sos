@@ -1,7 +1,7 @@
 """v1 API router aggregation."""
-from fastapi import APIRouter
 
-from app.api.v1 import auth, categories, helpers, profile, requests, reviews, ai
+from app.api.v1 import ai, auth, categories, helpers, profile, requests, reviews
+from fastapi import APIRouter
 
 api_router = APIRouter(prefix="/api/v1")
 api_router.include_router(auth.router)

@@ -1,4 +1,5 @@
 """Contract tests for the provider side (US3): helper upsert, open list, accept/decline."""
+
 from app.core.config import settings
 from app.services import request_service
 
@@ -34,8 +35,11 @@ def _category(client, key="breakdown"):
 
 def test_open_requires_helper_role(client, seed_categories):
     seeker = _register(client, "plain@example.com")
-    r = client.get("/api/v1/requests/open", headers=seeker,
-                   params={"lat": settings.seed_center_lat, "lng": settings.seed_center_lng})
+    r = client.get(
+        "/api/v1/requests/open",
+        headers=seeker,
+        params={"lat": settings.seed_center_lat, "lng": settings.seed_center_lng},
+    )
     assert r.status_code == 403  # not a helper
 
 
@@ -46,12 +50,21 @@ def test_helper_upsert_sets_role_and_lists_open(client, seed_categories):
 
     seeker = _register(client, "seekprov@example.com")
     cat = _category(client)
-    rid = client.post("/api/v1/requests", headers=seeker,
-                      json={"category_id": cat["id"], "pickup_lat": settings.seed_center_lat,
-                            "pickup_lng": settings.seed_center_lng}).json()["id"]
+    rid = client.post(
+        "/api/v1/requests",
+        headers=seeker,
+        json={
+            "category_id": cat["id"],
+            "pickup_lat": settings.seed_center_lat,
+            "pickup_lng": settings.seed_center_lng,
+        },
+    ).json()["id"]
 
-    open_list = client.get("/api/v1/requests/open", headers=helper,
-                           params={"lat": settings.seed_center_lat, "lng": settings.seed_center_lng})
+    open_list = client.get(
+        "/api/v1/requests/open",
+        headers=helper,
+        params={"lat": settings.seed_center_lat, "lng": settings.seed_center_lng},
+    )
     assert open_list.status_code == 200
     ids = [o["id"] for o in open_list.json()]
     assert rid in ids
@@ -62,9 +75,15 @@ def test_accept_then_status_and_location(client, seed_categories):
     helper = _make_helper(client, "acc@example.com")
     seeker = _register(client, "accseek@example.com")
     cat = _category(client)
-    rid = client.post("/api/v1/requests", headers=seeker,
-                      json={"category_id": cat["id"], "pickup_lat": settings.seed_center_lat,
-                            "pickup_lng": settings.seed_center_lng}).json()["id"]
+    rid = client.post(
+        "/api/v1/requests",
+        headers=seeker,
+        json={
+            "category_id": cat["id"],
+            "pickup_lat": settings.seed_center_lat,
+            "pickup_lng": settings.seed_center_lng,
+        },
+    ).json()["id"]
 
     acc = client.post(f"/api/v1/requests/{rid}/accept", headers=helper)
     assert acc.status_code == 200 and acc.json()["status"] == "accepted"
@@ -72,11 +91,16 @@ def test_accept_then_status_and_location(client, seed_categories):
     bad = client.post(f"/api/v1/requests/{rid}/status", headers=helper, json={"status": "arrived"})
     assert bad.status_code == 422  # must go on_the_way first
 
-    ok = client.post(f"/api/v1/requests/{rid}/status", headers=helper, json={"status": "on_the_way"})
+    ok = client.post(
+        f"/api/v1/requests/{rid}/status", headers=helper, json={"status": "on_the_way"}
+    )
     assert ok.status_code == 200
 
-    loc = client.post(f"/api/v1/requests/{rid}/location", headers=helper,
-                      json={"latitude": 17.45, "longitude": 78.45})
+    loc = client.post(
+        f"/api/v1/requests/{rid}/location",
+        headers=helper,
+        json={"latitude": 17.45, "longitude": 78.45},
+    )
     assert loc.status_code == 202
 
 
@@ -86,25 +110,47 @@ def test_unanswered_request_escalates_to_other_helpers(client, seed_categories, 
     near = _make_helper(client, "near@example.com")  # at seed center → nearest
     far_hdr = _register(client, "far@example.com", "FarHelper")
     far_lat, far_lng = settings.seed_center_lat + 0.2, settings.seed_center_lng
-    client.post("/api/v1/helpers", headers=far_hdr,
-                json={"name": "Far Service", "helper_type": "mechanic", "phone": "+919800000011",
-                      "latitude": far_lat, "longitude": far_lng})
+    client.post(
+        "/api/v1/helpers",
+        headers=far_hdr,
+        json={
+            "name": "Far Service",
+            "helper_type": "mechanic",
+            "phone": "+919800000011",
+            "latitude": far_lat,
+            "longitude": far_lng,
+        },
+    )
 
     seeker = _register(client, "escseek@example.com")
     cat = _category(client)
-    rid = client.post("/api/v1/requests", headers=seeker,
-                      json={"category_id": cat["id"], "pickup_lat": settings.seed_center_lat,
-                            "pickup_lng": settings.seed_center_lng}).json()["id"]
+    rid = client.post(
+        "/api/v1/requests",
+        headers=seeker,
+        json={
+            "category_id": cat["id"],
+            "pickup_lat": settings.seed_center_lat,
+            "pickup_lng": settings.seed_center_lng,
+        },
+    ).json()["id"]
 
     def far_open():
-        return [o["id"] for o in client.get(
-            "/api/v1/requests/open", headers=far_hdr,
-            params={"lat": far_lat, "lng": far_lng}).json()]
+        return [
+            o["id"]
+            for o in client.get(
+                "/api/v1/requests/open", headers=far_hdr, params={"lat": far_lat, "lng": far_lng}
+            ).json()
+        ]
 
     def near_open():
-        return [o["id"] for o in client.get(
-            "/api/v1/requests/open", headers=near,
-            params={"lat": settings.seed_center_lat, "lng": settings.seed_center_lng}).json()]
+        return [
+            o["id"]
+            for o in client.get(
+                "/api/v1/requests/open",
+                headers=near,
+                params={"lat": settings.seed_center_lat, "lng": settings.seed_center_lng},
+            ).json()
+        ]
 
     # Within the window: only the targeted (nearest) helper sees it.
     assert rid in near_open()

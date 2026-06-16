@@ -1,4 +1,5 @@
 """Structured logging (Constitution V). Never log secrets, passwords, tokens, or OTP codes."""
+
 import logging
 import sys
 
@@ -10,9 +11,7 @@ def configure_logging(level: int = logging.INFO) -> None:
     if _configured:
         return
     handler = logging.StreamHandler(sys.stdout)
-    handler.setFormatter(
-        logging.Formatter("%(asctime)s %(levelname)s %(name)s :: %(message)s")
-    )
+    handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s :: %(message)s"))
     root = logging.getLogger()
     root.handlers = [handler]
     root.setLevel(level)

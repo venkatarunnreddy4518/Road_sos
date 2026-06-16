@@ -1,4 +1,5 @@
 """Pure-unit checks of the request state machine (no DB)."""
+
 from app.models.enums import RequestStatus
 from app.services.request_service import _STATUS_TIMESTAMP, _TERMINAL, _TRANSITIONS
 

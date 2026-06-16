@@ -1,14 +1,10 @@
 """Authentication: email/password, phone OTP (mock fallback), Google (mock fallback)."""
+
 import random
 import re
-import uuid
 from datetime import datetime, timedelta, timezone
 
 import httpx
-from jose import JWTError, jwt
-from sqlalchemy import select
-from sqlalchemy.orm import Session
-
 from app.core.config import settings
 from app.core.errors import AppError
 from app.core.logging import get_logger
@@ -22,14 +18,17 @@ from app.core.security import (
 from app.models.enums import AuthProvider
 from app.models.user import AuthIdentity, OtpCode, RefreshToken, User
 from app.services import sms
+from jose import JWTError, jwt
+from sqlalchemy import select
+from sqlalchemy.orm import Session
 
 log = get_logger(__name__)
 DEV_OTP = "000000"
 
 
 def normalize_phone(phone: str) -> str:
-    cleaned = re.sub(r'[\s\-()]+', '', phone)
-    if cleaned.startswith('+'):
+    cleaned = re.sub(r"[\s\-()]+", "", phone)
+    if cleaned.startswith("+"):
         return cleaned
     if len(cleaned) == 10 and cleaned.isdigit():
         return f"+91{cleaned}"
@@ -68,6 +67,7 @@ def _result(db: Session, user: User) -> dict:
 
 # ---- Email + password ----
 
+
 def register_email(db: Session, display_name: str, email: str, password: str) -> dict:
     email_lower = email.lower().strip()
     if db.scalar(select(User).where(User.email == email_lower)):
@@ -96,13 +96,20 @@ def login_email(db: Session, email: str, password: str) -> dict:
             AuthIdentity.provider == AuthProvider.email, AuthIdentity.provider_uid == email_lower
         )
     )
-    if not identity or not identity.password_hash or not verify_password(password, identity.password_hash):
+    if (
+        not identity
+        or not identity.password_hash
+        or not verify_password(password, identity.password_hash)
+    ):
         raise AppError("unauthenticated", "Invalid email or password.", status_code=401)
     user = db.get(User, identity.user_id)
+    if user is None:
+        raise AppError("unauthenticated", "Invalid email or password.", status_code=401)
     return _result(db, user)
 
 
 # ---- Phone OTP (mock fallback when no SMS provider) ----
+
 
 def request_otp(db: Session, phone: str) -> dict:
     normalized_phone = normalize_phone(phone)
@@ -117,11 +124,16 @@ def request_otp(db: Session, phone: str) -> dict:
     )
     db.commit()
     if settings.sms_mock_mode:
-        log.info("OTP requested (dev mode) phone=%s", normalized_phone)  # never log the code in prod paths
+        log.info(
+            "OTP requested (dev mode) phone=%s", normalized_phone
+        )  # never log the code in prod paths
         return {"sent": True, "dev_code": code}
 
     # Real delivery via the configured SMS provider (Twilio).
-    sms.send_sms(normalized_phone, f"Your Roadside Help verification code is {code}. It expires in 5 minutes.")
+    sms.send_sms(
+        normalized_phone,
+        f"Your Roadside Help verification code is {code}. It expires in 5 minutes.",
+    )
     log.info("OTP requested phone=%s", normalized_phone)
     return {"sent": True, "dev_code": None}
 
@@ -142,10 +154,16 @@ def verify_otp(db: Session, phone: str, code: str, display_name: str | None) -> 
 
     user = db.scalar(select(User).where(User.phone == normalized_phone))
     if not user:
-        user = User(display_name=display_name or f"User {normalized_phone[-4:]}", phone=normalized_phone)
+        user = User(
+            display_name=display_name or f"User {normalized_phone[-4:]}", phone=normalized_phone
+        )
         db.add(user)
         db.flush()
-        db.add(AuthIdentity(user_id=user.id, provider=AuthProvider.phone, provider_uid=normalized_phone))
+        db.add(
+            AuthIdentity(
+                user_id=user.id, provider=AuthProvider.phone, provider_uid=normalized_phone
+            )
+        )
     db.commit()
     db.refresh(user)
     return _result(db, user)
@@ -172,7 +190,8 @@ def _verify_google_token(id_token: str) -> dict:
     if data.get("aud") not in settings.google_client_ids:
         log.warning(
             "Google ID-token audience mismatch token_aud=%s configured=%s",
-            data.get("aud"), settings.google_client_ids,
+            data.get("aud"),
+            settings.google_client_ids,
         )
         raise AppError(
             "unauthenticated",
@@ -193,7 +212,9 @@ def _verify_google_access_token(access_token: str) -> dict:
     tokeninfo (security), then fetch the profile via userinfo."""
     try:
         ti = httpx.get(
-            "https://oauth2.googleapis.com/tokeninfo", params={"access_token": access_token}, timeout=10
+            "https://oauth2.googleapis.com/tokeninfo",
+            params={"access_token": access_token},
+            timeout=10,
         )
     except httpx.HTTPError as e:
         raise AppError("unauthenticated", "Could not verify Google token.", status_code=401) from e
@@ -203,7 +224,8 @@ def _verify_google_access_token(access_token: str) -> dict:
     if info.get("aud") not in settings.google_client_ids:
         log.warning(
             "Google access-token audience mismatch token_aud=%s configured=%s",
-            info.get("aud"), settings.google_client_ids,
+            info.get("aud"),
+            settings.google_client_ids,
         )
         raise AppError(
             "unauthenticated",
@@ -216,7 +238,8 @@ def _verify_google_access_token(access_token: str) -> dict:
     try:
         ui = httpx.get(
             "https://www.googleapis.com/oauth2/v3/userinfo",
-            headers={"Authorization": f"Bearer {access_token}"}, timeout=10,
+            headers={"Authorization": f"Bearer {access_token}"},
+            timeout=10,
         )
         if ui.status_code == 200:
             u = ui.json()
@@ -241,13 +264,19 @@ def _oauth_upsert(db: Session, provider: AuthProvider, profile: dict) -> dict:
     if identity:
         user = db.get(User, identity.user_id)
     else:
-        user = db.scalar(select(User).where(User.email == profile["email"])) if profile["email"] else None
+        user = (
+            db.scalar(select(User).where(User.email == profile["email"]))
+            if profile["email"]
+            else None
+        )
         if not user:
             user = User(display_name=profile["name"], email=profile["email"])
             db.add(user)
             db.flush()
         db.add(AuthIdentity(user_id=user.id, provider=provider, provider_uid=profile["sub"]))
     db.commit()
+    if user is None:
+        raise AppError("unauthenticated", "Could not resolve account.", status_code=401)
     db.refresh(user)
     log.info("oauth sign-in provider=%s user_id=%s", provider.value, user.id)
     return _result(db, user)
@@ -262,8 +291,14 @@ def google_sign_in(
 ) -> dict:
     if settings.google_mock_mode:
         if not dev_email:
-            raise AppError("validation_error", "dev_email required in Google mock mode.", status_code=422)
-        profile = {"sub": f"google-dev:{dev_email}", "email": dev_email, "name": dev_name or "Google User"}
+            raise AppError(
+                "validation_error", "dev_email required in Google mock mode.", status_code=422
+            )
+        profile = {
+            "sub": f"google-dev:{dev_email}",
+            "email": dev_email,
+            "name": dev_name or "Google User",
+        }
     elif access_token:
         profile = _verify_google_access_token(access_token)
     elif id_token:
@@ -297,7 +332,10 @@ def _verify_apple_token(id_token: str) -> dict:
         raise AppError("unauthenticated", "Apple signing key not found.", status_code=401)
     try:
         claims = jwt.decode(
-            id_token, key, algorithms=["RS256"], issuer=_APPLE_ISSUER,
+            id_token,
+            key,
+            algorithms=["RS256"],
+            issuer=_APPLE_ISSUER,
             options={"verify_aud": False},
         )
     except JWTError as e:
@@ -307,11 +345,19 @@ def _verify_apple_token(id_token: str) -> dict:
     return {"sub": claims["sub"], "email": claims.get("email"), "name": "Apple User"}
 
 
-def apple_sign_in(db: Session, id_token: str | None, dev_email: str | None, dev_name: str | None) -> dict:
+def apple_sign_in(
+    db: Session, id_token: str | None, dev_email: str | None, dev_name: str | None
+) -> dict:
     if settings.apple_mock_mode:
         if not dev_email:
-            raise AppError("validation_error", "dev_email required in Apple mock mode.", status_code=422)
-        profile = {"sub": f"apple-dev:{dev_email}", "email": dev_email, "name": dev_name or "Apple User"}
+            raise AppError(
+                "validation_error", "dev_email required in Apple mock mode.", status_code=422
+            )
+        profile = {
+            "sub": f"apple-dev:{dev_email}",
+            "email": dev_email,
+            "name": dev_name or "Apple User",
+        }
     else:
         if not id_token:
             raise AppError("validation_error", "id_token required.", status_code=422)
@@ -324,17 +370,24 @@ def apple_sign_in(db: Session, id_token: str | None, dev_email: str | None, dev_
 
 # ---- Refresh / logout ----
 
+
 def refresh(db: Session, raw_refresh: str) -> dict:
-    token = db.scalar(select(RefreshToken).where(RefreshToken.token_hash == hash_token(raw_refresh)))
+    token = db.scalar(
+        select(RefreshToken).where(RefreshToken.token_hash == hash_token(raw_refresh))
+    )
     if not token or token.revoked_at or _aware(token.expires_at) < _now():
         raise AppError("unauthenticated", "Invalid or expired refresh token.", status_code=401)
     token.revoked_at = _now()  # rotate
     user = db.get(User, token.user_id)
+    if user is None:
+        raise AppError("unauthenticated", "Invalid or expired refresh token.", status_code=401)
     return _issue_tokens(db, user)
 
 
 def logout(db: Session, raw_refresh: str) -> None:
-    token = db.scalar(select(RefreshToken).where(RefreshToken.token_hash == hash_token(raw_refresh)))
+    token = db.scalar(
+        select(RefreshToken).where(RefreshToken.token_hash == hash_token(raw_refresh))
+    )
     if token and not token.revoked_at:
         token.revoked_at = _now()
         db.commit()

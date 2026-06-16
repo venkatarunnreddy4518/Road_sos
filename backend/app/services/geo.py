@@ -1,4 +1,5 @@
 """Straight-line (Haversine) distance + bounding box for nearest-helper queries (FR-010/011)."""
+
 import math
 
 EARTH_RADIUS_KM = 6371.0088

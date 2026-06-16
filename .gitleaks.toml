@@ -1,0 +1,44 @@
+# gitleaks configuration for the Roadside Help prototype.
+#
+# Extends the default ruleset (real secret detection stays on) and allowlists
+# values that are confirmed NOT secrets. No production credentials are committed:
+# backend/.env is gitignored, and runner/CI tokens are read from environment
+# variables ($GITLAB_PAT etc.), never hardcoded. The findings gitleaks reports
+# are the public Google OAuth client id, placeholder dev defaults, fixed dev OTP,
+# low-entropy mock test keys, and compiled-bundle / lockfile artifacts.
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Confirmed false positives for the Roadside Help prototype"
+# Match against the whole line so these are suppressed wherever they appear,
+# including in historical commits scanned by `gitleaks detect`.
+regexTarget = "line"
+regexes = [
+  # Google OAuth *client id* — public by design (shipped to browsers), not a secret.
+  '''[0-9]{10,}-[a-z0-9]+\.apps\.googleusercontent\.com''',
+  # Placeholder JWT secret default (overridden by JWT_SECRET in real deploys).
+  '''dev-insecure-secret-change-me''',
+  # Fixed development OTP used only in mock mode.
+  '''DEV_OTP\s*=\s*["']0{6}["']''',
+  # Low-entropy mock API keys in tests.
+  '''test-(gemini-)?key''',
+]
+paths = [
+  # Documentation and example env files (placeholders only).
+  '''(.*/)?\.env\.example$''',
+  '''AUTHENTICATION_SETUP\.md$''',
+  '''README\.md$''',
+  '''SECURITY\.md$''',
+  '''docs/.*''',
+  '''specs/.*''',
+  # Web entrypoint carries the public Google client id meta tag.
+  '''web/index\.html$''',
+  # Compiled Flutter web bundle (generated artifact, not source).
+  '''build/web/.*''',
+  # Test fixtures use mock credentials.
+  '''backend/tests/.*''',
+  # Dependency lockfiles contain package hashes, not secrets.
+  '''pubspec\.lock$''',
+]

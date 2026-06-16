@@ -1,4 +1,5 @@
 """Error envelope { error: { code, message, details } } and handlers (Constitution IV/V)."""
+
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
@@ -6,7 +7,9 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 
 class AppError(Exception):
-    def __init__(self, code: str, message: str, status_code: int = 400, details: dict | None = None):
+    def __init__(
+        self, code: str, message: str, status_code: int = 400, details: dict | None = None
+    ):
         self.code = code
         self.message = message
         self.status_code = status_code
@@ -21,7 +24,9 @@ def _envelope(code: str, message: str, details: dict | None = None) -> dict:
 def register_error_handlers(app: FastAPI) -> None:
     @app.exception_handler(AppError)
     async def _app_error(_: Request, exc: AppError):
-        return JSONResponse(status_code=exc.status_code, content=_envelope(exc.code, exc.message, exc.details))
+        return JSONResponse(
+            status_code=exc.status_code, content=_envelope(exc.code, exc.message, exc.details)
+        )
 
     @app.exception_handler(StarletteHTTPException)
     async def _http_error(_: Request, exc: StarletteHTTPException):

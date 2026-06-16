@@ -11,10 +11,12 @@ void main() {
       SharedPreferences.setMockInitialValues({});
     });
 
-    test('defaults to system theme', () async {
+    test('defaults to light theme', () async {
+      // The app opens in light mode unless the user has explicitly chosen
+      // another mode in Settings (see ThemeState._themeMode default).
       final state = ThemeState();
       await state.restore();
-      expect(state.themeMode, ThemeMode.system);
+      expect(state.themeMode, ThemeMode.light);
     });
 
     test('sets theme mode and persists it', () async {

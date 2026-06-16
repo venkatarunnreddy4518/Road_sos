@@ -1,9 +1,8 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
-
 from app.models.enums import RequestStatus
+from pydantic import BaseModel, ConfigDict
 
 
 class RequestCreate(BaseModel):

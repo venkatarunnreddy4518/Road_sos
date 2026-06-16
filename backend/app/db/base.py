@@ -1,4 +1,5 @@
 """SQLAlchemy declarative base and shared column mixins."""
+
 import uuid
 from datetime import datetime, timezone
 
@@ -24,5 +25,9 @@ class TimestampMixin:
         DateTime(timezone=True), server_default=func.now(), default=_utcnow, nullable=False
     )
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), default=_utcnow, onupdate=_utcnow, nullable=False
+        DateTime(timezone=True),
+        server_default=func.now(),
+        default=_utcnow,
+        onupdate=_utcnow,
+        nullable=False,
     )

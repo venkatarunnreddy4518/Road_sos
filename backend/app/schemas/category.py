@@ -1,8 +1,7 @@
 import uuid
 
-from pydantic import BaseModel
-
 from app.models.enums import HelperType
+from pydantic import BaseModel
 
 
 class CategoryOut(BaseModel):

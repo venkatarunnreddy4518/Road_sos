@@ -1,8 +1,5 @@
 import uuid
 
-from fastapi import APIRouter, Depends, Query, Response
-from sqlalchemy.orm import Session
-
 from app.core.deps import get_current_user, require_helper
 from app.db.session import get_db
 from app.models.enums import RequestStatus
@@ -15,12 +12,16 @@ from app.schemas.request import (
     StatusUpdate,
 )
 from app.services import request_service
+from fastapi import APIRouter, Depends, Query
+from sqlalchemy.orm import Session
 
 router = APIRouter(prefix="/requests", tags=["requests"])
 
 
 @router.post("", response_model=ServiceRequestOut, status_code=201)
-def create(body: RequestCreate, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+def create(
+    body: RequestCreate, db: Session = Depends(get_db), user: User = Depends(get_current_user)
+):
     req = request_service.create(db, user, body)
     return request_service.serialize(db, req)
 
@@ -49,19 +50,25 @@ def open_requests(
 
 
 @router.get("/{request_id}", response_model=ServiceRequestOut)
-def get(request_id: uuid.UUID, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+def get(
+    request_id: uuid.UUID, db: Session = Depends(get_db), user: User = Depends(get_current_user)
+):
     req = request_service.get(db, request_id, user)
     return request_service.serialize(db, req)
 
 
 @router.post("/{request_id}/accept", response_model=ServiceRequestOut)
-def accept(request_id: uuid.UUID, db: Session = Depends(get_db), user: User = Depends(require_helper)):
+def accept(
+    request_id: uuid.UUID, db: Session = Depends(get_db), user: User = Depends(require_helper)
+):
     req = request_service.accept(db, request_id, user)
     return request_service.serialize(db, req)
 
 
 @router.post("/{request_id}/decline", response_model=ServiceRequestOut)
-def decline(request_id: uuid.UUID, db: Session = Depends(get_db), user: User = Depends(require_helper)):
+def decline(
+    request_id: uuid.UUID, db: Session = Depends(get_db), user: User = Depends(require_helper)
+):
     req = request_service.decline(db, request_id, user)
     return request_service.serialize(db, req)
 
@@ -78,7 +85,9 @@ def update_status(
 
 
 @router.post("/{request_id}/cancel", response_model=ServiceRequestOut)
-def cancel(request_id: uuid.UUID, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+def cancel(
+    request_id: uuid.UUID, db: Session = Depends(get_db), user: User = Depends(get_current_user)
+):
     req = request_service.cancel(db, request_id, user)
     return request_service.serialize(db, req)
 
@@ -90,5 +99,7 @@ def post_location(
     db: Session = Depends(get_db),
     user: User = Depends(require_helper),
 ):
-    recorded_at = request_service.record_location(db, request_id, user, body.latitude, body.longitude)
+    recorded_at = request_service.record_location(
+        db, request_id, user, body.latitude, body.longitude
+    )
     return {"recorded_at": recorded_at.isoformat()}

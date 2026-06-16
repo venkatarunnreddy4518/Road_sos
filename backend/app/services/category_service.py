@@ -1,8 +1,8 @@
 """Service category listing."""
-from sqlalchemy import select
-from sqlalchemy.orm import Session
 
 from app.models.helper import ServiceCategory
+from sqlalchemy import select
+from sqlalchemy.orm import Session
 
 
 def list_categories(db: Session) -> list[dict]:

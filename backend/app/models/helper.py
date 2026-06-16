@@ -1,23 +1,23 @@
 """Service category and helper-profile (supply-side) models."""
+
 import uuid
 from decimal import Decimal
 
+from app.db.base import Base, TimestampMixin, uuid_pk
+from app.models.enums import DataSource, HelperType
 from sqlalchemy import (
+    JSON,
     Boolean,
     Enum,
     Float,
     ForeignKey,
     Integer,
-    JSON,
     Numeric,
     String,
     Text,
     UniqueConstraint,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-
-from app.db.base import Base, TimestampMixin, uuid_pk
-from app.models.enums import DataSource, HelperType
 
 
 class ServiceCategory(Base):
@@ -38,7 +38,9 @@ class ServiceCategory(Base):
 
 class CategoryHelperType(Base):
     __tablename__ = "category_helper_types"
-    __table_args__ = (UniqueConstraint("category_id", "helper_type", name="uq_category_helper_type"),)
+    __table_args__ = (
+        UniqueConstraint("category_id", "helper_type", name="uq_category_helper_type"),
+    )
 
     category_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("service_categories.id", ondelete="CASCADE"), primary_key=True
@@ -68,7 +70,9 @@ class HelperProfile(Base, TimestampMixin):
     address: Mapped[str | None] = mapped_column(Text, nullable=True)
     opening_hours: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     data_source: Mapped[DataSource] = mapped_column(
-        Enum(DataSource, name="data_source", native_enum=False), default=DataSource.curated, nullable=False
+        Enum(DataSource, name="data_source", native_enum=False),
+        default=DataSource.curated,
+        nullable=False,
     )
     is_verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     rating_avg: Mapped[float] = mapped_column(Numeric(2, 1), default=0, nullable=False)

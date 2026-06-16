@@ -1,4 +1,5 @@
 """SMS provider behavior in mock mode (no network)."""
+
 from app.core.config import settings
 from app.services import sms
 

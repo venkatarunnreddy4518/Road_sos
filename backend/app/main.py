@@ -1,14 +1,14 @@
 """FastAPI application entrypoint for the Roadside Help marketplace backend."""
+
 from contextlib import asynccontextmanager
 
 import anyio.to_thread
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-
 from app.api.v1 import api_router
 from app.core.config import settings
 from app.core.errors import register_error_handlers
 from app.core.logging import configure_logging
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 configure_logging()
 
@@ -42,6 +42,7 @@ app.include_router(api_router)
 # Auto-create tables for SQLite local dev (no Alembic needed).
 if settings.database_url.startswith("sqlite"):
     from app.db.session import create_all_tables
+
     create_all_tables()
 
 

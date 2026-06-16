@@ -1,26 +1,32 @@
 """Helper discovery, search, sync feed, and provider upsert."""
+
 import math
 import uuid
 from datetime import datetime, time, timezone
 
-from sqlalchemy import or_, select
-from sqlalchemy.orm import Session
-
 from app.core.errors import AppError
 from app.models.enums import HelperType
-from app.models.helper import CategoryHelperType, HelperProfile, ServiceCategory
+from app.models.helper import HelperProfile, ServiceCategory
 from app.models.user import User
 from app.services.geo import bounding_box, haversine_km, is_far
+from sqlalchemy import or_, select
+from sqlalchemy.orm import Session
 
 # Distance bands (km) used when scattering demo helpers around the user so the
 # range selector / color bands have data at every radius.
 _SPREAD_RADII_KM = [2.5, 4.0, 6.5, 9.0, 11.5, 14.0]
 
 
-def _offset_latlng(lat: float, lng: float, dist_km: float, bearing_deg: float) -> tuple[float, float]:
+def _offset_latlng(
+    lat: float, lng: float, dist_km: float, bearing_deg: float
+) -> tuple[float, float]:
     """Point [dist_km] away from (lat,lng) along [bearing_deg] (flat-earth approx)."""
     dlat = dist_km / 111.0 * math.cos(math.radians(bearing_deg))
-    dlng = dist_km / (111.0 * max(math.cos(math.radians(lat)), 0.01)) * math.sin(math.radians(bearing_deg))
+    dlng = (
+        dist_km
+        / (111.0 * max(math.cos(math.radians(lat)), 0.01))
+        * math.sin(math.radians(bearing_deg))
+    )
     return lat + dlat, lng + dlng
 
 
@@ -53,7 +59,9 @@ def compute_open_now(opening_hours: dict | None) -> bool | None:
     return now >= open_t or now <= close_t  # overnight
 
 
-def _types_for_category(db: Session, category_key: str | None, helper_type: HelperType | None) -> list[HelperType]:
+def _types_for_category(
+    db: Session, category_key: str | None, helper_type: HelperType | None
+) -> list[HelperType]:
     if helper_type:
         return [helper_type]
     if category_key:
@@ -85,6 +93,7 @@ def _ensure_helpers_nearby(db: Session, lat: float, lng: float) -> None:
     """Scatter curated helpers across distance bands around the user when the area
     is empty, so the range selector has shops at every radius (within 15 km)."""
     from app.models.enums import DataSource
+
     min_lat, max_lat, min_lng, max_lng = bounding_box(lat, lng, 15.0)
     exists_nearby = db.scalar(
         select(HelperProfile.id)
@@ -104,7 +113,14 @@ def _ensure_helpers_nearby(db: Session, lat: float, lng: float) -> None:
             db.commit()
 
 
-def nearby(db: Session, lat: float, lng: float, category: str | None, helper_type: HelperType | None, limit: int) -> list[dict]:
+def nearby(
+    db: Session,
+    lat: float,
+    lng: float,
+    category: str | None,
+    helper_type: HelperType | None,
+    limit: int,
+) -> list[dict]:
     _ensure_helpers_nearby(db, lat, lng)
     types = _types_for_category(db, category, helper_type)
     # Coarse bounding-box pre-filter at progressively larger radii so we always return the nearest.
@@ -141,8 +157,13 @@ def search(db: Session, q: str, lat: float | None, lng: float | None, limit: int
     if lat is not None and lng is not None:
         return _with_distance(rows, lat, lng)
     return [
-        {**{c.name: getattr(h, c.name) for c in h.__table__.columns}, "rating_avg": float(h.rating_avg),
-         "distance_km": 0.0, "is_far": False, "open_now": compute_open_now(h.opening_hours)}
+        {
+            **{c.name: getattr(h, c.name) for c in h.__table__.columns},
+            "rating_avg": float(h.rating_avg),
+            "distance_km": 0.0,
+            "is_far": False,
+            "open_now": compute_open_now(h.opening_hours),
+        }
         for h in rows
     ]
 

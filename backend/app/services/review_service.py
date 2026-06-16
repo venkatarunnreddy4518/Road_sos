@@ -1,18 +1,20 @@
 """Reviews: one per completed request, no self-review, recompute helper aggregate."""
+
 import uuid
 from datetime import datetime, timezone
-
-from sqlalchemy import func, select
-from sqlalchemy.orm import Session
 
 from app.core.errors import AppError
 from app.models.enums import RequestStatus
 from app.models.helper import HelperProfile
 from app.models.request import Review, ServiceRequest
 from app.models.user import User
+from sqlalchemy import func, select
+from sqlalchemy.orm import Session
 
 
-def create_review(db: Session, seeker: User, request_id: uuid.UUID, rating: int, comment: str | None) -> Review:
+def create_review(
+    db: Session, seeker: User, request_id: uuid.UUID, rating: int, comment: str | None
+) -> Review:
     if rating < 1 or rating > 5:
         raise AppError("validation_error", "Rating must be between 1 and 5.", status_code=422)
     req = db.get(ServiceRequest, request_id)
@@ -27,6 +29,8 @@ def create_review(db: Session, seeker: User, request_id: uuid.UUID, rating: int,
     if db.scalar(select(Review).where(Review.request_id == request_id)):
         raise AppError("conflict", "Request already reviewed.", status_code=409)
     helper = db.get(HelperProfile, req.helper_id)
+    if not helper:
+        raise AppError("not_found", "Helper not found.", status_code=404)
     if helper.owner_user_id == seeker.id:
         raise AppError("validation_error", "You cannot review your own service.", status_code=422)
 
@@ -51,6 +55,8 @@ def _recompute_aggregate(db: Session, helper_id: uuid.UUID) -> None:
         select(func.avg(Review.rating), func.count(Review.id)).where(Review.helper_id == helper_id)
     ).one()
     helper = db.get(HelperProfile, helper_id)
+    if helper is None:
+        return
     helper.rating_avg = round(float(avg), 1) if avg is not None else 0
     helper.rating_count = int(count)
 
@@ -60,6 +66,12 @@ def helper_reviews(db: Session, helper_id: uuid.UUID) -> dict:
     if not helper:
         raise AppError("not_found", "Helper not found.", status_code=404)
     reviews = list(
-        db.scalars(select(Review).where(Review.helper_id == helper_id).order_by(Review.created_at.desc()))
+        db.scalars(
+            select(Review).where(Review.helper_id == helper_id).order_by(Review.created_at.desc())
+        )
     )
-    return {"rating_avg": float(helper.rating_avg), "rating_count": helper.rating_count, "reviews": reviews}
+    return {
+        "rating_avg": float(helper.rating_avg),
+        "rating_count": helper.rating_count,
+        "reviews": reviews,
+    }

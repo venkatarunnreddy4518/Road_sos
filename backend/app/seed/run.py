@@ -3,25 +3,39 @@
 Run with: python -m app.seed.run
 Idempotent: clears and reseeds categories + curated demo helpers.
 """
-import random
 
-from sqlalchemy import select
+import random
 
 from app.core.config import settings
 from app.core.logging import get_logger
 from app.db.session import SessionLocal
 from app.models.enums import DataSource, HelperType
 from app.models.helper import CategoryHelperType, HelperProfile, ServiceCategory
+from sqlalchemy import select
 
 log = get_logger("seed")
 
 # key, name, icon, sort_order, base_fare (INR), helper types
 CATEGORIES = [
-    ("puncture", "Puncture Fix", "tire_repair", 0, 250, [HelperType.puncture_shop, HelperType.mechanic]),
+    (
+        "puncture",
+        "Puncture Fix",
+        "tire_repair",
+        0,
+        250,
+        [HelperType.puncture_shop, HelperType.mechanic],
+    ),
     ("fuel", "Out of Fuel", "local_gas_station", 1, 500, [HelperType.petrol_pump]),
     ("breakdown", "Mechanic / Breakdown", "build", 2, 400, [HelperType.mechanic]),
     ("towing", "Towing Service", "fire_truck", 3, 1200, [HelperType.towing]),
-    ("battery", "Jump Start", "battery_charging_full", 4, 350, [HelperType.battery, HelperType.mechanic]),
+    (
+        "battery",
+        "Jump Start",
+        "battery_charging_full",
+        4,
+        350,
+        [HelperType.battery, HelperType.mechanic],
+    ),
 ]
 
 DEMO_NAMES = {
@@ -45,11 +59,14 @@ def seed() -> None:
         for key, name, icon, order, base_fare, types in CATEGORIES:
             cat = existing.get(key)
             if not cat:
-                cat = ServiceCategory(key=key, name=name, icon=icon, sort_order=order, base_fare=base_fare)
+                cat = ServiceCategory(
+                    key=key, name=name, icon=icon, sort_order=order, base_fare=base_fare
+                )
                 db.add(cat)
                 db.flush()
             else:
-                cat.name, cat.icon, cat.sort_order, cat.base_fare = name, icon, order, base_fare
+                cat.name, cat.icon, cat.sort_order = name, icon, order
+                cat.base_fare = base_fare  # type: ignore[assignment]
                 for m in list(cat.helper_types):
                     db.delete(m)
                 db.flush()

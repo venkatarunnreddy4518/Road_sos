@@ -9,6 +9,12 @@
 # GitLab CI runner working directory (local runner artifacts, not source)
 /builds/
 
+# Local SQLite test DBs and coverage artifacts
+backend/*.db
+*.db
+.coverage
+backend/.coverage
+
 # Android ignores
 .gradle/
 local.properties

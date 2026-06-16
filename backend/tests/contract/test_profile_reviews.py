@@ -1,4 +1,5 @@
 """Contract tests for /profile and /reviews (+ helper reviews aggregate) — US4."""
+
 from app.core.config import settings
 
 
@@ -30,7 +31,11 @@ def _completed_request(client, seeker, helper_hdr):
     rid = client.post(
         "/api/v1/requests",
         headers=seeker,
-        json={"category_id": cat["id"], "pickup_lat": settings.seed_center_lat, "pickup_lng": settings.seed_center_lng},
+        json={
+            "category_id": cat["id"],
+            "pickup_lat": settings.seed_center_lat,
+            "pickup_lng": settings.seed_center_lng,
+        },
     ).json()["id"]
     client.post(f"/api/v1/requests/{rid}/accept", headers=helper_hdr)
     for s in ("on_the_way", "arrived", "completed"):
@@ -43,8 +48,11 @@ def test_profile_get_and_patch(client, seed_categories):
     me = client.get("/api/v1/profile", headers=hdr)
     assert me.status_code == 200 and me.json()["display_name"] == "Asha"
 
-    upd = client.patch("/api/v1/profile", headers=hdr,
-                       json={"display_name": "Asha K", "vehicle_info": "Honda Activa", "preferred_language": "hi"})
+    upd = client.patch(
+        "/api/v1/profile",
+        headers=hdr,
+        json={"display_name": "Asha K", "vehicle_info": "Honda Activa", "preferred_language": "hi"},
+    )
     assert upd.status_code == 200
     body = upd.json()
     assert body["display_name"] == "Asha K"
@@ -61,7 +69,9 @@ def test_review_rules_and_aggregate(client, seed_categories):
     bad = client.post("/api/v1/reviews", headers=seeker, json={"request_id": rid, "rating": 6})
     assert bad.status_code == 422
 
-    ok = client.post("/api/v1/reviews", headers=seeker, json={"request_id": rid, "rating": 4, "comment": "Good"})
+    ok = client.post(
+        "/api/v1/reviews", headers=seeker, json={"request_id": rid, "rating": 4, "comment": "Good"}
+    )
     assert ok.status_code == 201
 
     # one review per request (409)

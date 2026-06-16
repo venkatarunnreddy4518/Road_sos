@@ -1,4 +1,5 @@
 """First-accept-wins: two helpers race for one broadcast request; only one wins (FR-019)."""
+
 from app.core.config import settings
 
 

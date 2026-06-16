@@ -4,6 +4,7 @@ Revision ID: 0002_request_fare_helper
 Revises: 0001_initial
 Create Date: 2026-06-14
 """
+
 from typing import Sequence, Union
 
 import sqlalchemy as sa

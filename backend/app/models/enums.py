@@ -1,4 +1,5 @@
 """PostgreSQL enum types used across models."""
+
 import enum
 
 

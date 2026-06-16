@@ -2,6 +2,7 @@
 
 Each test runs against a freshly created schema and is cleaned up afterwards.
 """
+
 import os
 
 import pytest
@@ -18,8 +19,11 @@ os.environ.setdefault(
 # Force deterministic provider behaviour (mock/dev mode) regardless of the
 # developer's local .env, so tests don't break when real credentials are present.
 for _provider_var in (
-    "GOOGLE_CLIENT_ID", "APPLE_CLIENT_ID",
-    "TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN", "TWILIO_FROM_NUMBER",
+    "GOOGLE_CLIENT_ID",
+    "APPLE_CLIENT_ID",
+    "TWILIO_ACCOUNT_SID",
+    "TWILIO_AUTH_TOKEN",
+    "TWILIO_FROM_NUMBER",
 ):
     os.environ[_provider_var] = ""
 

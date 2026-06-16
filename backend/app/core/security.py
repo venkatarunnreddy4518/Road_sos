@@ -1,12 +1,12 @@
 """Password hashing (bcrypt) and JWT token issue/verify (Constitution II)."""
+
 import hashlib
 import secrets
 from datetime import datetime, timedelta, timezone
 
 import bcrypt
-from jose import JWTError, jwt
-
 from app.core.config import settings
+from jose import JWTError, jwt
 
 # bcrypt operates on bytes and only considers the first 72 bytes of the secret.
 _BCRYPT_MAX = 72
