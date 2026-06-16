@@ -170,7 +170,16 @@ def _verify_google_token(id_token: str) -> dict:
     data = resp.json()
 
     if data.get("aud") not in settings.google_client_ids:
-        raise AppError("unauthenticated", "Google token audience mismatch.", status_code=401)
+        log.warning(
+            "Google ID-token audience mismatch token_aud=%s configured=%s",
+            data.get("aud"), settings.google_client_ids,
+        )
+        raise AppError(
+            "unauthenticated",
+            f"Google token audience mismatch: token aud={data.get('aud')!r} "
+            f"is not in the configured GOOGLE_CLIENT_ID(s) {settings.google_client_ids}.",
+            status_code=401,
+        )
     if data.get("iss") not in _GOOGLE_ISSUERS:
         raise AppError("unauthenticated", "Google token issuer mismatch.", status_code=401)
     if data.get("email_verified") in ("false", False):
@@ -192,7 +201,16 @@ def _verify_google_access_token(access_token: str) -> dict:
         raise AppError("unauthenticated", "Invalid Google token.", status_code=401)
     info = ti.json()
     if info.get("aud") not in settings.google_client_ids:
-        raise AppError("unauthenticated", "Google token audience mismatch.", status_code=401)
+        log.warning(
+            "Google access-token audience mismatch token_aud=%s configured=%s",
+            info.get("aud"), settings.google_client_ids,
+        )
+        raise AppError(
+            "unauthenticated",
+            f"Google token audience mismatch: token aud={info.get('aud')!r} "
+            f"is not in the configured GOOGLE_CLIENT_ID(s) {settings.google_client_ids}.",
+            status_code=401,
+        )
 
     sub, email, name = info.get("sub"), info.get("email"), "Google User"
     try:

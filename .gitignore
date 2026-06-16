@@ -6,6 +6,9 @@
 /build/
 !/build/web/
 
+# GitLab CI runner working directory (local runner artifacts, not source)
+/builds/
+
 # Android ignores
 .gradle/
 local.properties

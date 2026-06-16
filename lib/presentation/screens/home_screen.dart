@@ -8,6 +8,7 @@ import 'dart:convert';
 import 'dart:async';
 
 import '../../core/i18n/l10n_ext.dart';
+import '../../core/i18n/strings.dart';
 import '../../core/utils/location_service.dart';
 import '../../core/utils/location_store.dart';
 import '../../data/api/discovery_api.dart';
@@ -289,7 +290,6 @@ class _DiscoverTabState extends State<_DiscoverTab> {
   final _api = DiscoveryApi();
   final _cache = HelperCache();
   final MapController _mapController = MapController();
-  final ScrollController _scrollController = ScrollController();
   List<ServiceCategory> _categories = [];
   List<MarketplaceHelper> _nearby = [];
   Position? _pos;
@@ -297,7 +297,6 @@ class _DiscoverTabState extends State<_DiscoverTab> {
   bool _offline = false;
   DateTime? _cacheAge;
   bool _showPromo = true;
-  double _scrollOffset = 0.0;
 
   /// True once we know we don't have a real fix (denied/skipped) — the map then
   /// shows an approximate area and the location pill invites the user to enable.
@@ -371,10 +370,15 @@ class _DiscoverTabState extends State<_DiscoverTab> {
   }
 
   Future<void> _fetchAddress(double lat, double lng, {bool persist = false}) async {
+    // Ask the geocoder for names in the app's active language so the pill matches
+    // the UI (otherwise Nominatim returns local-script names, e.g. Telugu, in an
+    // English UI). Falls back to English-first when the script isn't available.
+    final lang = '${context.read<LocaleController>().code},en';
     final fallback1 = 'Location near (${lat.toStringAsFixed(4)}, ${lng.toStringAsFixed(4)})';
     try {
       final url = Uri.parse('https://nominatim.openstreetmap.org/reverse?format=json&lat=$lat&lon=$lng&zoom=18');
-      final res = await http.get(url, headers: {'User-Agent': 'roadside_help_app/1.0'});
+      final res = await http.get(url,
+          headers: {'User-Agent': 'roadside_help_app/1.0', 'Accept-Language': lang});
       if (res.statusCode == 200) {
         final data = json.decode(res.body);
         final addr = data['address'] as Map<String, dynamic>?;
@@ -430,18 +434,10 @@ class _DiscoverTabState extends State<_DiscoverTab> {
     // Restore a previously chosen location (accurate on web); otherwise resolve
     // device/network location, prompting via the popup on first entry.
     WidgetsBinding.instance.addPostFrameCallback((_) => _bootstrapLocation());
-    _scrollController.addListener(() {
-      if (mounted) {
-        setState(() {
-          _scrollOffset = _scrollController.offset;
-        });
-      }
-    });
   }
 
   @override
   void dispose() {
-    _scrollController.dispose();
     _debounceTimer?.cancel();
     super.dispose();
   }
@@ -1218,195 +1214,208 @@ class _DiscoverTabState extends State<_DiscoverTab> {
         ],
       );
     } else {
-      const double mapHeight = 440.0;
-      final double mapOffset = -_scrollOffset * 0.18;
-      final double scrimOpacity = (_scrollOffset / 260.0).clamp(0.0, 0.7);
-
+      // Full-bleed interactive map with a draggable content sheet on top (the
+      // standard maps UX). The map fills the screen so pinch-zoom & pan work in
+      // the visible area; the sheet scrolls/drag-expands independently instead of
+      // stealing the map's multi-touch gestures.
+      final double screenH = MediaQuery.of(context).size.height;
       return Stack(
         children: [
+          Positioned.fill(
+            child: FlutterMap(
+              mapController: _mapController,
+              options: MapOptions(
+                initialCenter: LatLng(_lat, _lng),
+                initialZoom: 14.5,
+                interactionOptions: const InteractionOptions(flags: InteractiveFlag.all),
+                onPositionChanged: (camera, hasGesture) {
+                  if (hasGesture && camera.center != null) {
+                    _onMapMove(camera.center!);
+                  }
+                },
+              ),
+              children: [
+                TileLayer(
+                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  userAgentPackageName: 'com.roadsidehelp.app',
+                  maxZoom: 19,
+                ),
+                MarkerLayer(markers: markers),
+              ],
+            ),
+          ),
+          // Helpers-nearby pill (top-left)
           Positioned(
-            top: mapOffset,
+            top: 48,
+            left: 16,
+            child: Builder(
+              builder: (context) {
+                final isDark = Theme.of(context).brightness == Brightness.dark;
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surface,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: isDark ? Colors.black26 : const Color(0x1A14281E),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                    border: Border.all(
+                      color: isDark ? Theme.of(context).colorScheme.outline : const Color(0xFFE7ECEA),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const _PulsingGreenDot(),
+                      const SizedBox(width: 6),
+                      Text(
+                        '${_nearby.length} ${context.tr('helpers_nearby_suffix')}',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
+            ),
+          ),
+          // Locate / refresh buttons (top-right)
+          Positioned(
+            right: 16,
+            top: 48,
+            child: Builder(
+              builder: (context) {
+                final isDark = Theme.of(context).brightness == Brightness.dark;
+                final boxDecoration = BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: isDark ? Colors.black26 : const Color(0x1414281E),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                  border: Border.all(
+                    color: isDark ? Theme.of(context).colorScheme.outline : const Color(0xFFE7ECEA),
+                    width: 1.5,
+                  ),
+                );
+                return Column(
+                  children: [
+                    GestureDetector(
+                      onTap: _useMyLocation,
+                      child: Container(
+                        width: 38,
+                        height: 38,
+                        decoration: boxDecoration,
+                        alignment: Alignment.center,
+                        child: const Text('🎯', style: TextStyle(fontSize: 16)),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    GestureDetector(
+                      onTap: _load,
+                      child: Container(
+                        width: 38,
+                        height: 38,
+                        decoration: boxDecoration,
+                        alignment: Alignment.center,
+                        child: const Text('📡', style: TextStyle(fontSize: 16)),
+                      ),
+                    ),
+                  ],
+                );
+              }
+            ),
+          ),
+          // Pickup-point label, anchored in the visible map area above the sheet.
+          Positioned(
+            top: screenH * 0.22,
             left: 0,
             right: 0,
-            height: mapHeight,
-            child: Stack(
-              children: [
-                Positioned.fill(
-                  child: FlutterMap(
-                    mapController: _mapController,
-                    options: MapOptions(
-                      initialCenter: LatLng(_lat, _lng),
-                      initialZoom: 14.5,
-                      onPositionChanged: (camera, hasGesture) {
-                        if (hasGesture && camera.center != null) {
-                          _onMapMove(camera.center!);
-                        }
-                      },
-                    ),
+            child: IgnorePointer(
+              child: Center(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0E7C52),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: const [
+                      BoxShadow(color: Color(0x330E7C52), blurRadius: 12, offset: Offset(0, 2)),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      TileLayer(
-                        urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                        userAgentPackageName: 'com.roadsidehelp.app',
-                        maxZoom: 19,
+                      const Text('📍 ', style: TextStyle(fontSize: 12)),
+                      Text(
+                        context.tr('pickup_point'),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
-                      MarkerLayer(markers: markers),
                     ],
                   ),
                 ),
-                Positioned(
-                  top: 48,
-                  left: 16,
-                  child: Builder(
-                    builder: (context) {
-                      final isDark = Theme.of(context).brightness == Brightness.dark;
-                      return Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.surface,
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            BoxShadow(
-                              color: isDark ? Colors.black26 : const Color(0x1A14281E),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                          border: Border.all(
-                            color: isDark ? Theme.of(context).colorScheme.outline : const Color(0xFFE7ECEA),
-                            width: 1,
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const _PulsingGreenDot(),
-                            const SizedBox(width: 6),
-                            Text(
-                              '${_nearby.length} ${context.tr('helpers_nearby_suffix')}',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w800,
-                                color: Theme.of(context).colorScheme.onSurface,
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }
-                  ),
-                ),
-                Positioned(
-                  right: 16,
-                  top: 48,
-                  child: Builder(
-                    builder: (context) {
-                      final isDark = Theme.of(context).brightness == Brightness.dark;
-                      final boxDecoration = BoxDecoration(
-                        color: Theme.of(context).colorScheme.surface,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: isDark ? Colors.black26 : const Color(0x1414281E),
-                            blurRadius: 8,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
-                        border: Border.all(
-                          color: isDark ? Theme.of(context).colorScheme.outline : const Color(0xFFE7ECEA),
-                          width: 1.5,
-                        ),
-                      );
-                      return Column(
-                        children: [
-                          GestureDetector(
-                            onTap: _useMyLocation,
-                            child: Container(
-                              width: 38,
-                              height: 38,
-                              decoration: boxDecoration,
-                              alignment: Alignment.center,
-                              child: const Text('🎯', style: TextStyle(fontSize: 16)),
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          GestureDetector(
-                            onTap: _load,
-                            child: Container(
-                              width: 38,
-                              height: 38,
-                              decoration: boxDecoration,
-                              alignment: Alignment.center,
-                              child: const Text('📡', style: TextStyle(fontSize: 16)),
-                            ),
-                          ),
-                        ],
-                      );
-                    }
-                  ),
-                ),
-                Positioned(
-                  top: 180,
-                  left: 0,
-                  right: 0,
-                  child: Center(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF0E7C52),
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: const [
-                          BoxShadow(color: Color(0x330E7C52), blurRadius: 12, offset: Offset(0, 2)),
-                        ],
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Text('📍 ', style: TextStyle(fontSize: 12)),
-                          Text(
-                            context.tr('pickup_point'),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Positioned(
-            top: mapOffset,
-            left: 0,
-            right: 0,
-            height: mapHeight,
-            child: IgnorePointer(
-              child: AnimatedContainer(
-                duration: Duration.zero,
-                color: Colors.black.withValues(alpha: scrimOpacity),
               ),
             ),
           ),
-          NotificationListener<ScrollNotification>(
-            onNotification: (n) {
-              setState(() => _scrollOffset = n.metrics.pixels);
-              return true;
-            },
-            child: ListView(
-              padding: const EdgeInsets.only(top: mapHeight - 32),
-              children: [
-                Container(
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surface,
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-                  ),
-                  child: _buildContentList(isDesktop: true),
+          // Draggable content sheet over the map.
+          DraggableScrollableSheet(
+            initialChildSize: 0.46,
+            minChildSize: 0.30,
+            maxChildSize: 0.92,
+            snap: true,
+            snapSizes: const [0.46, 0.92],
+            builder: (context, scrollController) {
+              return Container(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.12),
+                      blurRadius: 16,
+                      offset: const Offset(0, -4),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+                clipBehavior: Clip.antiAlias,
+                child: Column(
+                  children: [
+                    // Grab handle
+                    Padding(
+                      padding: const EdgeInsets.only(top: 10, bottom: 2),
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.outline,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: _buildContentList(
+                        controller: scrollController,
+                        isDesktop: false,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
           ),
         ],
       );
@@ -1687,12 +1696,14 @@ class _LocationSearchSheetState extends State<_LocationSearchSheet> {
   }
 
   Future<void> _search(String q) async {
+    final lang = '${context.read<LocaleController>().code},en';
     try {
       final url = Uri.parse(
         'https://nominatim.openstreetmap.org/search'
         '?format=json&limit=6&addressdetails=1&q=${Uri.encodeQueryComponent(q)}',
       );
-      final res = await http.get(url, headers: {'User-Agent': 'roadside_help_app/1.0'});
+      final res = await http.get(url,
+          headers: {'User-Agent': 'roadside_help_app/1.0', 'Accept-Language': lang});
       if (!mounted) return;
       setState(() {
         _results = res.statusCode == 200 ? (json.decode(res.body) as List) : [];
