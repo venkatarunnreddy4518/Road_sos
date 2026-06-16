@@ -15,7 +15,11 @@
 #
 # Optional env vars / flags:
 #   GITLAB_HOST           — default: inferred from URL / https://gitlab.com
-#   RUNNER_EXECUTOR       — shell | docker (default: shell)
+#   RUNNER_EXECUTOR       — shell | docker (default: docker)
+#                           The .gitlab-ci.yml uses per-job `image:` and service
+#                           containers (postgres, docker:dind), so it REQUIRES the
+#                           docker executor; the shell executor ignores `image:`
+#                           and fails with "python: command not found" etc.
 #   RUNNER_DOCKER_IMAGE   — default: alpine:latest (docker executor only)
 #   RUNNER_TAG_LIST       — comma-separated tags
 #
@@ -29,7 +33,7 @@ set -euo pipefail
 # ─── Defaults ────────────────────────────────────────────────────────────────
 GITLAB_HOST="${GITLAB_HOST:-https://gitlab.com}"
 GITLAB_PAT="${GITLAB_PAT:-}"
-RUNNER_EXECUTOR="${RUNNER_EXECUTOR:-shell}"
+RUNNER_EXECUTOR="${RUNNER_EXECUTOR:-docker}"
 RUNNER_DOCKER_IMAGE="${RUNNER_DOCKER_IMAGE:-alpine:latest}"
 RUNNER_TAG_LIST="${RUNNER_TAG_LIST:-}"
 CONFIG_DIR="${CONFIG_DIR:-$HOME/.gitlab-runner}"
@@ -359,7 +363,14 @@ REGISTER_ARGS=(
 )
 
 [[ -n "$RUNNER_TAG_LIST" ]] && REGISTER_ARGS+=(--tag-list "$RUNNER_TAG_LIST")
-[[ "$RUNNER_EXECUTOR" == "docker" ]] && REGISTER_ARGS+=(--docker-image "$RUNNER_DOCKER_IMAGE")
+if [[ "$RUNNER_EXECUTOR" == "docker" ]]; then
+  REGISTER_ARGS+=(--docker-image "$RUNNER_DOCKER_IMAGE")
+  # Privileged mode + the dind-friendly defaults are required for the
+  # docker:24.0.7-dind service used by the docker-build-test job. Harmless for
+  # the other jobs (which just pull python/flutter images).
+  REGISTER_ARGS+=(--docker-privileged)
+  REGISTER_ARGS+=(--docker-volumes "/certs/client")
+fi
 
 if gitlab-runner register "${REGISTER_ARGS[@]}"; then
   success "Runner registered."

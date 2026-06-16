@@ -1,0 +1,10 @@
+# Force LF on shell scripts so they aren't corrupted to CRLF on Windows
+# checkouts — bash fails on CRLF with errors like `$'\r': command not found`.
+*.sh text eol=lf
+
+# Other text files: normalize to LF in the repo, let Git handle the working tree.
+*.py text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.toml text eol=lf
+*.dart text
