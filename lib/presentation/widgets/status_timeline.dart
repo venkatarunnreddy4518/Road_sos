@@ -38,11 +38,26 @@ class StatusTimeline extends StatelessWidget {
 
   // Design tokens (kept consistent with the app's blue + a status green).
   static const _green = Color(0xFF1A9E5C);
-  static const _blue = Color(0xFF2563EB);
   static const _idleBg = Color(0xFFE6E8EC);
   static const _idleFg = Color(0xFF9CA3AF);
   static const _ink = Color(0xFF14181F);
   static const _muted = Color(0xFF6B7280);
+
+  /// Per-step accent palette — each lifecycle step has its own colour so the
+  /// active node, its pulse ring and the screen's status banner stay in sync.
+  static const stepFill = <Color>[
+    Color(0xFFF5A623), // requested  – amber
+    Color(0xFF2563EB), // accepted   – blue
+    Color(0xFF7C5CFC), // on the way – violet
+    Color(0xFF1A9E5C), // arrived    – green
+    Color(0xFF1A9E5C), // completed  – green
+  ];
+
+  /// Accent colour for [status] in the lifecycle order (falls back to amber).
+  static Color colorFor(RequestStatus status) {
+    final i = _order.indexOf(status);
+    return i < 0 ? stepFill.first : stepFill[i];
+  }
 
   List<_StepMeta> _steps() {
     final helper = (helperName != null && helperName!.trim().isNotEmpty)
@@ -98,7 +113,7 @@ class StatusTimeline extends StatelessWidget {
           nodeBg = _green;
           nodeFg = Colors.white;
         } else if (isActive) {
-          nodeBg = _blue;
+          nodeBg = stepFill[i];
           nodeFg = Colors.white;
         }
 
@@ -113,6 +128,7 @@ class StatusTimeline extends StatelessWidget {
                     fg: nodeFg,
                     icon: isDone ? Icons.check_rounded : meta.icon,
                     active: isActive,
+                    pulseColor: stepFill[i],
                   ),
                   if (!isLast)
                     Expanded(
@@ -162,7 +178,14 @@ class _Node extends StatefulWidget {
   final Color fg;
   final IconData icon;
   final bool active;
-  const _Node({required this.bg, required this.fg, required this.icon, required this.active});
+  final Color pulseColor;
+  const _Node({
+    required this.bg,
+    required this.fg,
+    required this.icon,
+    required this.active,
+    this.pulseColor = const Color(0xFF2563EB),
+  });
 
   @override
   State<_Node> createState() => _NodeState();
@@ -223,7 +246,7 @@ class _NodeState extends State<_Node> with SingleTickerProviderStateMixin {
                 height: 36 + 18 * v,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: const Color(0xFF2563EB).withValues(alpha: 0.30 * (1 - v)),
+                  color: widget.pulseColor.withValues(alpha: 0.30 * (1 - v)),
                 ),
               );
             },

@@ -208,6 +208,9 @@ class _EmailAuthScreenState extends State<EmailAuthScreen>
                               controller: _name,
                               hint: context.tr('your_full_name'),
                               prefixIcon: Icons.person_outline_rounded,
+                              textInputAction: TextInputAction.next,
+                              onSubmitted: (_) =>
+                                  FocusScope.of(context).nextFocus(),
                               validator: (v) => (v == null || v.trim().isEmpty)
                                   ? 'Required'
                                   : null,
@@ -223,6 +226,9 @@ class _EmailAuthScreenState extends State<EmailAuthScreen>
                             hint: 'you@example.com',
                             keyboardType: TextInputType.emailAddress,
                             prefixIcon: Icons.mail_outline_rounded,
+                            textInputAction: TextInputAction.next,
+                            onSubmitted: (_) =>
+                                FocusScope.of(context).nextFocus(),
                             validator: (v) => (v == null || !v.contains('@'))
                                 ? 'Enter a valid email'
                                 : null,
@@ -254,6 +260,10 @@ class _EmailAuthScreenState extends State<EmailAuthScreen>
                             hint: '••••••••',
                             obscureText: _obscure,
                             prefixIcon: Icons.lock_outline_rounded,
+                            textInputAction: TextInputAction.done,
+                            onSubmitted: (_) {
+                              if (!_busy) _submit();
+                            },
                             suffixIcon: GestureDetector(
                               onTap: () =>
                                   setState(() => _obscure = !_obscure),
@@ -365,11 +375,15 @@ class _EmailAuthScreenState extends State<EmailAuthScreen>
     IconData? prefixIcon,
     Widget? suffixIcon,
     String? Function(String?)? validator,
+    TextInputAction? textInputAction,
+    void Function(String)? onSubmitted,
   }) {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
       obscureText: obscureText,
+      textInputAction: textInputAction,
+      onFieldSubmitted: onSubmitted,
       style: const TextStyle(fontSize: 14, color: _ink),
       validator: validator,
       decoration: InputDecoration(
