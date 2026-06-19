@@ -8,6 +8,7 @@ import 'presentation/screens/home_screen.dart';
 import 'presentation/screens/welcome_screen.dart';
 import 'presentation/state/ai_config_state.dart';
 import 'presentation/state/auth_state.dart';
+import 'presentation/state/role_state.dart';
 import 'presentation/state/theme_state.dart';
 
 void main() {
@@ -23,6 +24,7 @@ class RoadsideHelpApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => LocaleController()..load()),
         ChangeNotifierProvider(create: (_) => AuthState()..restore()),
+        ChangeNotifierProvider(create: (_) => RoleState()..restore()),
         ChangeNotifierProvider(create: (_) => ThemeState()..restore()),
         ChangeNotifierProvider(create: (_) => AiConfigState()..load()),
       ],

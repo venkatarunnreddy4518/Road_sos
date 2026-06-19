@@ -17,6 +17,8 @@ import '../../data/models/category.dart';
 import '../../data/models/marketplace_helper.dart';
 import '../../data/repositories/helper_cache.dart';
 import '../state/auth_state.dart';
+import '../state/role_state.dart';
+import '../state/theme_state.dart';
 import '../utils/helper_actions.dart';
 import '../utils/incoming_request_alert.dart';
 import '../widgets/category_grid.dart';
@@ -27,6 +29,7 @@ import 'helper_detail_screen.dart';
 import 'helper_results_screen.dart';
 import 'history_screen.dart';
 import 'profile_screen.dart';
+import 'provider/provider_inbox_screen.dart';
 import 'provider/provider_job_screen.dart';
 import 'search_screen.dart';
 import 'ai_assistant_screen.dart';
@@ -155,8 +158,23 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final role = context.watch<RoleState>().role;
+
+    // Home tab carries the mode bar (Seeker/Helper + theme) and swaps its body
+    // to the helper inbox when in Helper mode.
+    final Widget homeTab = Column(
+      children: [
+        const _HomeModeBar(),
+        Expanded(
+          child: role == AppRole.helper
+              ? const ProviderInboxScreen(embedded: true)
+              : const _DiscoverTab(),
+        ),
+      ],
+    );
+
     final pages = [
-      const _DiscoverTab(),
+      homeTab,
       const HistoryScreen(),
       const _NearbyPlaceholderTab(),
       const _TravelPlaceholderTab(),
@@ -297,6 +315,7 @@ class _DiscoverTabState extends State<_DiscoverTab> {
   bool _offline = false;
   DateTime? _cacheAge;
   bool _showPromo = true;
+  bool _showNearbyList = false; // expands the helpers-nearby pill into a list
 
   /// True once we know we don't have a real fix (denied/skipped) — the map then
   /// shows an approximate area and the location pill invites the user to enable.
@@ -997,6 +1016,185 @@ class _DiscoverTabState extends State<_DiscoverTab> {
     );
   }
 
+  // ── Helpers-nearby pill (tap to expand a one-line list) ──
+  Widget _helpersNearbyOverlay() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _helpersNearbyPill(),
+        if (_showNearbyList) ...[
+          const SizedBox(height: 8),
+          _nearbyListPanel(),
+        ],
+      ],
+    );
+  }
+
+  Widget _helpersNearbyPill() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => setState(() => _showNearbyList = !_showNearbyList),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: isDark ? Colors.black26 : const Color(0x1A14281E),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+          border: Border.all(
+            color: isDark ? theme.colorScheme.outline : const Color(0xFFE7ECEA),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const _PulsingGreenDot(),
+            const SizedBox(width: 6),
+            Text(
+              '${_nearby.length} ${context.tr('helpers_nearby_suffix')}',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                color: theme.colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(width: 3),
+            Icon(
+              _showNearbyList ? Icons.expand_less_rounded : Icons.expand_more_rounded,
+              size: 15,
+              color: theme.colorScheme.tertiary,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _nearbyListPanel() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    return Container(
+      width: 264,
+      constraints: const BoxConstraints(maxHeight: 248),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: isDark ? Colors.black38 : const Color(0x1F14281E),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+        border: Border.all(
+          color: isDark ? theme.colorScheme.outline : const Color(0xFFE7ECEA),
+          width: 1,
+        ),
+      ),
+      child: _nearby.isEmpty
+          ? Padding(
+              padding: const EdgeInsets.all(14),
+              child: Text(
+                context.tr('no_helpers_nearby'),
+                style: TextStyle(fontSize: 12.5, color: theme.colorScheme.tertiary),
+              ),
+            )
+          : Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
+                  child: Text(
+                    '${_nearby.length} ${context.tr('helpers_nearby_suffix')}',
+                    style: TextStyle(
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.4,
+                      color: theme.colorScheme.tertiary,
+                    ),
+                  ),
+                ),
+                Flexible(
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    padding: EdgeInsets.zero,
+                    itemCount: _nearby.length,
+                    separatorBuilder: (_, __) => Divider(
+                      height: 1,
+                      thickness: 1,
+                      color: (isDark ? theme.colorScheme.outline : const Color(0xFFEFF1F5)),
+                    ),
+                    itemBuilder: (_, i) => _nearbyRow(_nearby[i]),
+                  ),
+                ),
+              ],
+            ),
+    );
+  }
+
+  Widget _nearbyRow(MarketplaceHelper h) {
+    final theme = Theme.of(context);
+    final dist = h.distanceKm != null ? '${h.distanceKm!.toStringAsFixed(1)} km' : '';
+    return InkWell(
+      onTap: () {
+        setState(() => _showNearbyList = false);
+        Navigator.of(context).push(MaterialPageRoute(
+          builder: (_) => HelperDetailScreen(helperId: h.id, categoryId: null),
+        ));
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+        child: Row(
+          children: [
+            Text(_typeEmoji(h.helperType), style: const TextStyle(fontSize: 14)),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                '${h.name} · ${h.typeLabel}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                  color: theme.colorScheme.onSurface,
+                ),
+              ),
+            ),
+            if (dist.isNotEmpty) ...[
+              const SizedBox(width: 6),
+              Text(
+                dist,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: theme.colorScheme.tertiary,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _typeEmoji(String t) {
+    if (t.contains('puncture')) return '🛞';
+    if (t.contains('petrol') || t.contains('fuel')) return '⛽';
+    if (t.contains('tow')) return '🚒';
+    if (t.contains('battery')) return '🔋';
+    return '🔧';
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDesktop = MediaQuery.of(context).size.width > 768;
@@ -1120,44 +1318,7 @@ class _DiscoverTabState extends State<_DiscoverTab> {
                 Positioned(
                   top: 24,
                   left: 24,
-                  child: Builder(
-                    builder: (context) {
-                      final isDark = Theme.of(context).brightness == Brightness.dark;
-                      return Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.surface,
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            BoxShadow(
-                              color: isDark ? Colors.black26 : const Color(0x1A14281E),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                          border: Border.all(
-                            color: isDark ? Theme.of(context).colorScheme.outline : const Color(0xFFE7ECEA),
-                            width: 1,
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const _PulsingGreenDot(),
-                            const SizedBox(width: 6),
-                            Text(
-                              '${_nearby.length} ${context.tr('helpers_nearby_suffix')}',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w800,
-                                color: Theme.of(context).colorScheme.onSurface,
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }
-                  ),
+                  child: _helpersNearbyOverlay(),
                 ),
                 Positioned(
                   right: 24,
@@ -1244,48 +1405,11 @@ class _DiscoverTabState extends State<_DiscoverTab> {
               ],
             ),
           ),
-          // Helpers-nearby pill (top-left)
+          // Helpers-nearby pill (top-left) — tap to expand a one-line list
           Positioned(
             top: 48,
             left: 16,
-            child: Builder(
-              builder: (context) {
-                final isDark = Theme.of(context).brightness == Brightness.dark;
-                return Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surface,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: isDark ? Colors.black26 : const Color(0x1A14281E),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                    border: Border.all(
-                      color: isDark ? Theme.of(context).colorScheme.outline : const Color(0xFFE7ECEA),
-                      width: 1,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const _PulsingGreenDot(),
-                      const SizedBox(width: 6),
-                      Text(
-                        '${_nearby.length} ${context.tr('helpers_nearby_suffix')}',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w800,
-                          color: Theme.of(context).colorScheme.onSurface,
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }
-            ),
+            child: _helpersNearbyOverlay(),
           ),
           // Locate / refresh buttons (top-right)
           Positioned(
@@ -1837,6 +1961,183 @@ class _MapCenterPin extends StatelessWidget {
                 shadows: [
                   Shadow(color: Colors.black.withValues(alpha: 0.35), blurRadius: 6, offset: const Offset(0, 2)),
                 ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Home header: the Seeker/Helper role switch plus a light/dark slide toggle.
+/// Persists both choices (RoleState / ThemeState) and flips the whole home.
+class _HomeModeBar extends StatelessWidget {
+  const _HomeModeBar();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final roleState = context.watch<RoleState>();
+    final themeState = context.watch<ThemeState>();
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        border: Border(
+          bottom: BorderSide(
+            color: isDark ? theme.colorScheme.outline : const Color(0xFFECEEF4),
+            width: 1,
+          ),
+        ),
+      ),
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+          child: Row(
+            children: [
+              Expanded(
+                child: _RoleSegment(
+                  role: roleState.role,
+                  onChanged: roleState.setRole,
+                ),
+              ),
+              const SizedBox(width: 12),
+              _ThemeSlideToggle(
+                isDark: isDark,
+                onChanged: (dark) => themeState.setThemeMode(
+                    dark ? ThemeMode.dark : ThemeMode.light),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Two-segment Seeker | Helper switch with an animated sliding highlight.
+class _RoleSegment extends StatelessWidget {
+  final AppRole role;
+  final ValueChanged<AppRole> onChanged;
+  const _RoleSegment({required this.role, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final seeker = role == AppRole.seeker;
+    return Container(
+      height: 38,
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white10 : const Color(0xFFEFF1F5),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Stack(
+        children: [
+          AnimatedAlign(
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOut,
+            alignment: seeker ? Alignment.centerLeft : Alignment.centerRight,
+            child: FractionallySizedBox(
+              widthFactor: 0.5,
+              heightFactor: 1,
+              child: Container(
+                margin: const EdgeInsets.all(3),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary,
+                  borderRadius: BorderRadius.circular(8),
+                  boxShadow: [
+                    BoxShadow(
+                      color: theme.colorScheme.primary.withValues(alpha: 0.3),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Row(
+            children: [
+              _seg(context, '🆘  Seeker', seeker, () => onChanged(AppRole.seeker)),
+              _seg(context, '🛠  Helper', !seeker, () => onChanged(AppRole.helper)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _seg(BuildContext context, String label, bool active, VoidCallback onTap) {
+    final theme = Theme.of(context);
+    return Expanded(
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Center(
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 12.5,
+              fontWeight: FontWeight.w800,
+              color: active ? theme.colorScheme.onPrimary : theme.colorScheme.tertiary,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Light/dark slide toggle (sun ↔ moon) driving ThemeState.
+class _ThemeSlideToggle extends StatelessWidget {
+  final bool isDark;
+  final ValueChanged<bool> onChanged;
+  const _ThemeSlideToggle({required this.isDark, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => onChanged(!isDark),
+      child: Container(
+        width: 66,
+        height: 36,
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E2530) : const Color(0xFFEFF1F5),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Stack(
+          children: [
+            const Positioned(
+              left: 9, top: 0, bottom: 0,
+              child: Center(child: Text('☀️', style: TextStyle(fontSize: 13))),
+            ),
+            const Positioned(
+              right: 9, top: 0, bottom: 0,
+              child: Center(child: Text('🌙', style: TextStyle(fontSize: 12))),
+            ),
+            AnimatedAlign(
+              duration: const Duration(milliseconds: 220),
+              curve: Curves.easeOut,
+              alignment: isDark ? Alignment.centerRight : Alignment.centerLeft,
+              child: Container(
+                width: 30,
+                height: 30,
+                margin: const EdgeInsets.all(3),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF3B82F6) : Colors.white,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.18),
+                      blurRadius: 4,
+                      offset: const Offset(0, 1),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],

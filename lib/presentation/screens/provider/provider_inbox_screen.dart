@@ -16,7 +16,10 @@ import 'provider_job_screen.dart';
 
 /// Provider mode: register as a helper (if needed), then see + accept open requests.
 class ProviderInboxScreen extends StatefulWidget {
-  const ProviderInboxScreen({super.key});
+  /// When embedded inside the home shell (helper mode), the screen's own AppBar
+  /// is hidden since the home already shows the mode bar.
+  final bool embedded;
+  const ProviderInboxScreen({super.key, this.embedded = false});
 
   @override
   State<ProviderInboxScreen> createState() => _ProviderInboxScreenState();
@@ -126,7 +129,9 @@ class _ProviderInboxScreenState extends State<ProviderInboxScreen> {
   Widget build(BuildContext context) {
     final isHelper = context.watch<AuthState>().user?.isHelper ?? false;
     return Scaffold(
-      appBar: AppBar(title: Text(context.tr('provider_mode'))),
+      appBar: widget.embedded
+          ? null
+          : AppBar(title: Text(context.tr('provider_mode'))),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : !isHelper
