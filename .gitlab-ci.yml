@@ -37,6 +37,8 @@ flutter-analyze:
   # `stable` bundles Dart >= 3.5, satisfying pubspec sdk: '>=3.4.0 <4.0.0'.
   image: ghcr.io/cirruslabs/flutter:stable
   allow_failure: true
+  # Pulls the multi-GB flutter image; retry to ride out transient pull drops.
+  retry: 2
   before_script: []
   script:
     - flutter pub get
@@ -134,6 +136,7 @@ flutter-test:
   stage: test
   allow_failure: true
   # Same valid, existing tag as flutter-analyze (see note there).
+  retry: 2
   image: ghcr.io/cirruslabs/flutter:stable
   before_script: []
   script:
@@ -145,6 +148,10 @@ flutter-test:
 # ==========================================
 docker-build-test:
   stage: build
+  # dind starts with an empty image cache and must pull the base image + run
+  # apt/pip over the network; retry to ride out transient pull drops
+  # (e.g. "unexpected EOF" / "connection reset" on a flaky network).
+  retry: 2
   image: docker:24.0.7
   services:
     - docker:24.0.7-dind
