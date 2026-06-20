@@ -32,7 +32,10 @@ mypy-typecheck:
 
 flutter-analyze:
   stage: lint
-  image: ghcr.io/cirruslabs/flutter:3.44.1
+  # cirruslabs publishes `stable`/`beta`/version tags; pin a tag that exists.
+  # (The old `3.44.1` tag was never published -> "manifest unknown" pull error.)
+  # `stable` bundles Dart >= 3.5, satisfying pubspec sdk: '>=3.4.0 <4.0.0'.
+  image: ghcr.io/cirruslabs/flutter:stable
   allow_failure: true
   before_script: []
   script:
@@ -130,7 +133,8 @@ pytest-backend:
 flutter-test:
   stage: test
   allow_failure: true
-  image: ghcr.io/cirruslabs/flutter:3.44.1
+  # Same valid, existing tag as flutter-analyze (see note there).
+  image: ghcr.io/cirruslabs/flutter:stable
   before_script: []
   script:
     - flutter pub get

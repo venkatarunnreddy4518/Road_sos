@@ -24,6 +24,10 @@ regexes = [
   '''DEV_OTP\s*=\s*["']0{6}["']''',
   # Low-entropy mock API keys in tests.
   '''test-(gemini-)?key''',
+  # Docstring describing Google token verification ("signature/expiry via
+  # tokeninfo"). gitleaks' generic-api-key rule flags the literal "signature/expiry"
+  # on entropy; it is prose in a comment, not a credential.
+  '''signature/expiry via tokeninfo''',
 ]
 paths = [
   # Documentation and example env files (placeholders only).
