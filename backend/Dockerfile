@@ -2,13 +2,10 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    libpq-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install Python dependencies
+# Install Python dependencies. Every dependency ships a prebuilt wheel and
+# psycopg uses the [binary] package (bundles its own libpq), so no compiler or
+# system dev libs are needed. Dropping the apt layer removes ~96 MB of network
+# downloads (the flaky step in CI dind) and shrinks the image.
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
