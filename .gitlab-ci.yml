@@ -6,6 +6,7 @@ stages:
   - test
   - coverage
   - build
+  - release
 
 default:
   image: python:3.11-slim
@@ -204,3 +205,24 @@ docker-build-test:
   before_script: []
   script:
     - docker build -t roadside-backend:latest ./backend
+
+# ==========================================
+# RELEASE STAGE
+# ==========================================
+# Auto-creates a GitLab Release whenever a version tag is pushed, matching the
+# project's tag+release convention. `needs: []` lets it run immediately,
+# independent of the heavier lint/test/build jobs.
+create-release:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  rules:
+    - if: '$CI_COMMIT_TAG'
+  needs: []
+  allow_failure: true
+  before_script: []
+  script:
+    - echo "Creating GitLab Release for $CI_COMMIT_TAG"
+  release:
+    tag_name: '$CI_COMMIT_TAG'
+    name: 'Release $CI_COMMIT_TAG'
+    description: 'Automated release for $CI_COMMIT_TAG. See CHANGELOG.md for details.'
