@@ -34,6 +34,13 @@ variables:
   PIP_RETRIES: "10"
   PIP_DISABLE_PIP_VERSION_CHECK: "1"
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  # Run each build on its own bridge network so service containers are reachable
+  # by their alias (postgres `db`, docker:dind `docker`). Without this the
+  # runner's default/legacy networking can't reach services, which surfaced as
+  # the postgres health-check timeout in pytest-backend and
+  #   "Get http://docker:2375/_ping: dial tcp: lookup docker ... no such host"
+  # in docker-build-test.
+  FF_NETWORK_PER_BUILD: "true"
 
 cache:
   key: pip-wheels
