@@ -10,9 +10,35 @@ stages:
 
 default:
   image: python:3.11-slim
+  # The self-hosted runner has a flaky network: image pulls and pip installs
+  # intermittently drop with DNS failures / "manifest unknown" / connection
+  # resets. That made all 9 must-pass jobs go red at the install/pull step even
+  # though the code itself is clean. Auto-retry transient failures so a momentary
+  # drop doesn't fail an otherwise-green job. (Jobs that pull large images keep
+  # their own `retry:`, which already retries on every failure reason.)
+  retry:
+    max: 2
+    when:
+      - runner_system_failure
+      - stuck_or_timeout_failure
+      - api_failure
+      - script_failure
   before_script:
     - python -V
     - pip install --upgrade pip
+
+# Make every `pip install` ride out flaky DNS/network: many retries, a generous
+# timeout, and a persistent wheel cache so re-runs don't re-download.
+variables:
+  PIP_DEFAULT_TIMEOUT: "120"
+  PIP_RETRIES: "10"
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+
+cache:
+  key: pip-wheels
+  paths:
+    - .cache/pip
 
 # Jobs use `needs:` to form a DAG so each starts as soon as a runner slot is
 # free, instead of waiting for the previous *stage* to finish. This stops the
