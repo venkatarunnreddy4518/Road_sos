@@ -14,11 +14,18 @@ default:
     - python -V
     - pip install --upgrade pip
 
+# Jobs use `needs:` to form a DAG so each starts as soon as a runner slot is
+# free, instead of waiting for the previous *stage* to finish. This stops the
+# fast Python jobs (format/type_check/security/test) from being blocked behind
+# the slow multi-GB Flutter image pull in the lint stage. Stage names are kept
+# so external compliance scanners still detect every pipeline stage.
+
 # ==========================================
 # LINT STAGE
 # ==========================================
 ruff-lint:
   stage: lint
+  needs: []
   allow_failure: true
   script:
     - pip install ruff
@@ -29,6 +36,7 @@ ruff-lint:
 # ==========================================
 ruff-format:
   stage: format
+  needs: []
   allow_failure: true
   script:
     - pip install ruff
@@ -41,6 +49,7 @@ ruff-format:
 # ==========================================
 mypy-typecheck:
   stage: type_check
+  needs: []
   allow_failure: true
   script:
     - pip install mypy pydantic pydantic-settings sqlalchemy types-requests
@@ -48,6 +57,7 @@ mypy-typecheck:
 
 flutter-analyze:
   stage: lint
+  needs: []
   # cirruslabs publishes `stable`/`beta`/version tags; pin a tag that exists.
   # (The old `3.44.1` tag was never published -> "manifest unknown" pull error.)
   # `stable` bundles Dart >= 3.5, satisfying pubspec sdk: '>=3.4.0 <4.0.0'.
@@ -64,6 +74,7 @@ flutter-analyze:
 
 pylint-lint:
   stage: lint
+  needs: []
   allow_failure: true
   script:
     - pip install pylint
@@ -72,6 +83,7 @@ pylint-lint:
 
 flake8-lint:
   stage: lint
+  needs: []
   allow_failure: true
   script:
     - pip install flake8
@@ -79,6 +91,7 @@ flake8-lint:
 
 semgrep-scan:
   stage: lint
+  needs: []
   allow_failure: true
   image: returntocorp/semgrep:latest
   before_script: []
@@ -87,6 +100,7 @@ semgrep-scan:
 
 pyupgrade-lint:
   stage: lint
+  needs: []
   allow_failure: true
   script:
     - pip install pyupgrade
@@ -98,6 +112,7 @@ pyupgrade-lint:
 # ==========================================
 bandit-security:
   stage: security
+  needs: []
   allow_failure: true
   script:
     - pip install bandit
@@ -105,6 +120,7 @@ bandit-security:
 
 pip-audit-dependencies:
   stage: security
+  needs: []
   allow_failure: true
   script:
     - pip install pip-audit
@@ -117,6 +133,7 @@ pip-audit-dependencies:
 
 gitleaks-secrets:
   stage: security
+  needs: []
   allow_failure: true
   image:
     name: zricethezav/gitleaks:latest
@@ -130,6 +147,7 @@ gitleaks-secrets:
 # ==========================================
 pytest-backend:
   stage: test
+  needs: []
   allow_failure: true
   services:
     - name: postgres:16-alpine
@@ -161,6 +179,7 @@ pytest-backend:
 
 flutter-test:
   stage: test
+  needs: []
   allow_failure: true
   # Same valid, existing tag as flutter-analyze (see note there).
   retry: 2
@@ -192,6 +211,7 @@ coverage-report:
 # ==========================================
 docker-build-test:
   stage: build
+  needs: []
   # dind starts with an empty image cache and must pull the base image + run
   # apt/pip over the network; retry to ride out transient pull drops
   # (e.g. "unexpected EOF" / "connection reset" on a flaky network).
@@ -210,10 +230,10 @@ docker-build-test:
 # RELEASE STAGE
 # ==========================================
 # Auto-creates a GitLab Release whenever a version tag is pushed, so the latest
-# tag is always a "release tag" (compliance requirement). Uses the already-
-# cached python:3.11-slim image + stdlib urllib with the CI job token, so it
-# needs no extra image pull (the previous release-cli image pull was flaky on
-# this network). `needs: []` runs it immediately; `retry` rides out drops.
+# tag is always a "release tag". Uses the already-cached python:3.11-slim image
+# + stdlib urllib with the CI job token, so it needs no extra image pull (the
+# previous release-cli image pull was flaky on this network). `needs: []` runs
+# it immediately; `retry` rides out drops.
 create-release:
   stage: release
   image: python:3.11-slim
