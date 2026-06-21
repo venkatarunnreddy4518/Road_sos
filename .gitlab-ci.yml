@@ -1,7 +1,10 @@
 stages:
   - lint
+  - format
+  - type_check
   - security
   - test
+  - coverage
   - build
 
 default:
@@ -19,12 +22,24 @@ ruff-lint:
   script:
     - pip install ruff
     - ruff check .
+
+# ==========================================
+# FORMAT STAGE
+# ==========================================
+ruff-format:
+  stage: format
+  allow_failure: true
+  script:
+    - pip install ruff
     # Formatting is advisory: code is kept black/isort-formatted (ruff-compatible),
     # but we don't hard-fail the pipeline on the formatter's exact byte output.
     - ruff format --check . || true
 
+# ==========================================
+# TYPE CHECK STAGE
+# ==========================================
 mypy-typecheck:
-  stage: lint
+  stage: type_check
   allow_failure: true
   script:
     - pip install mypy pydantic pydantic-settings sqlalchemy types-requests
@@ -129,8 +144,19 @@ pytest-backend:
     - cd backend
     # Coverage is reported on every run; the hard floor is lowered from 80 to a
     # realistic prototype level (suite currently ~83%) so it guards against big
-    # regressions without flaking on small swings.
-    - pytest --cov=app --cov-fail-under=70
+    # regressions without flaking on small swings. Cobertura + the `coverage:`
+    # regex feed GitLab's merge-request coverage widget and external scanners.
+    - pytest --cov=app --cov-fail-under=70 --cov-report=term --cov-report=xml:coverage.xml
+  coverage: '/TOTAL.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
+  artifacts:
+    when: always
+    paths:
+      - backend/coverage.xml
+      - backend/.coverage
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: backend/coverage.xml
 
 flutter-test:
   stage: test
@@ -142,6 +168,23 @@ flutter-test:
   script:
     - flutter pub get
     - flutter test
+
+# ==========================================
+# COVERAGE STAGE
+# ==========================================
+coverage-report:
+  stage: coverage
+  needs:
+    - job: pytest-backend
+      artifacts: true
+  allow_failure: true
+  script:
+    - pip install coverage
+    - cd backend
+    # Re-render the report from the data file produced by pytest-backend so the
+    # coverage total is surfaced as its own pipeline stage (in addition to the
+    # cobertura widget) for compliance scanners that look for a coverage stage.
+    - coverage report
 
 # ==========================================
 # BUILD STAGE
