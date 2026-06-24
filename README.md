@@ -232,22 +232,24 @@ $env:PGPASSWORD="YOUR_POSTGRES_PASSWORD"
 ---
 
 ### Step 3: Run or Build the Flutter App (Web/Local)
-Start a new terminal session at the project root folder.
+Start a new terminal session in the `frontend/` folder (the Flutter app lives there).
 
 #### Running locally in Chrome:
 ```powershell
+cd frontend
 flutter pub get
 flutter run -d chrome --dart-define=API_BASE_URL=http://localhost:8000
 ```
 
 #### Compiling static assets for web deployment (e.g. Vercel hosting):
-Because Vercel serves the app statically via precompiled assets defined in `vercel.json`'s `outputDirectory: "build/web"`, any new local code edits must be built and committed back to the repository:
+Because Vercel serves the app statically via precompiled assets defined in `vercel.json`'s `outputDirectory: "frontend/build/web"`, any new local code edits must be built and committed back to the repository:
 ```powershell
+cd frontend
 # Compile production-ready web assets
 flutter build web
 
 # Add new compiled builds (bypassing generic gitignore rules)
-git add -f build/web/
+git add -f frontend/build/web/
 git commit -m "build: compile web assets for production"
 git push github
 ```
@@ -279,6 +281,7 @@ pytest --cov=app --cov-fail-under=80
 
 ### Flutter Frontend Checks
 ```powershell
+cd frontend
 # Analyze Dart codebase for compiler/static warnings
 flutter analyze
 

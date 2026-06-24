@@ -9,10 +9,10 @@ This file describes how AI coding agents (Claude Code, Copilot, Cursor, etc.) an
 | Component | Language | Location | Entry point |
 |-----------|----------|----------|-------------|
 | Backend API | Python 3.11+ / FastAPI | `backend/` | `app/main.py` |
-| Flutter frontend | Dart 3 / Flutter 3.x | `lib/` | `lib/main.dart` |
+| Flutter frontend | Dart 3 / Flutter 3.x | `frontend/` | `frontend/lib/main.dart` |
 | Database migrations | Alembic | `backend/alembic/` | `alembic/versions/` |
 | Tests (backend) | pytest | `backend/tests/` | `pytest` |
-| Tests (frontend) | flutter_test | `test/` | `flutter test` |
+| Tests (frontend) | flutter_test | `frontend/test/` | `cd frontend && flutter test` |
 | Spec & design docs | Markdown | `specs/` | `specs/002-roadside-marketplace/` |
 
 ---
@@ -41,7 +41,8 @@ mypy app/                         # type checking
 bandit -r app/ -ll                # security scanning
 pytest --cov=app --cov-fail-under=80   # tests + coverage
 
-# From project root (Flutter)
+# Flutter app (lives in frontend/)
+cd frontend
 flutter analyze                   # static analysis
 flutter test                      # widget + unit tests
 ```

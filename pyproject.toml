@@ -21,16 +21,16 @@ select = ["E", "F", "W"]
 [tool.mypy]
 python_version = "3.11"
 ignore_missing_imports = true
-exclude = ["build/", "ios/", "android/", ".venv/"]
+exclude = ["frontend/", ".venv/"]
 
 [tool.bandit]
-exclude_dirs = ["tests", ".venv", "build", "ios", "android"]
+exclude_dirs = ["tests", ".venv", "frontend"]
 
 [tool.vulture]
 min_confidence = 80
 paths = ["backend"]
 sort_by_size = true
-exclude = [".venv", "build"]
+exclude = [".venv", "frontend"]
 
 [tool.pylint.master]
 load-plugins = []
@@ -58,7 +58,7 @@ config = [".semgrep.yml"]
 
 [tool.flake8]
 max-line-length = 100
-exclude = [".git", ".venv", "build", "ios", "android", "backend/.venv"]
+exclude = [".git", ".venv", "frontend", "backend/.venv"]
 ignore = ["E203", "W503"]
 
 [tool.vercel]
