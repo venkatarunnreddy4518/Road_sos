@@ -7,12 +7,16 @@ frontend/build/
 # keep the precompiled web bundle that Vercel serves (see vercel.json)
 !frontend/build/web/
 
-# GitLab CI runner working directory (local runner artifacts, not source)
+# GitLab CI runner working directory + local runner artifacts (not source)
 /builds/
+.runner_system_id
 
 # Local SQLite test DBs and coverage artifacts
 backend/*.db
 *.db
+*.db-shm
+*.db-wal
+*.db-journal
 .coverage
 backend/.coverage
 
