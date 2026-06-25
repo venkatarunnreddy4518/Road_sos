@@ -42,7 +42,9 @@ Pods/
 
 # IDE ignores
 .idea/
-.vscode/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
 *.iml
 .DS_Store
 Thumbs.db
