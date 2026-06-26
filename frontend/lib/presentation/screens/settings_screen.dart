@@ -7,6 +7,7 @@ import '../../data/api/profile_api.dart';
 import '../state/auth_state.dart';
 import '../state/theme_state.dart';
 import 'ai_settings_screen.dart';
+import 'loader_gallery_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -96,6 +97,48 @@ class SettingsScreen extends StatelessWidget {
                                 fontFamily: 'Outfit', fontWeight: FontWeight.w700, fontSize: 14, color: _ink)),
                         const SizedBox(height: 2),
                         const Text('AI mechanic preferences & data',
+                            style: TextStyle(fontSize: 12, color: _muted)),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.chevron_right_rounded, size: 18, color: Color(0xFFC0C4CC)),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 10),
+
+          // ── Loading screens gallery ──
+          GestureDetector(
+            onTap: () => Navigator.of(context)
+                .push(MaterialPageRoute(builder: (_) => const LoaderGalleryScreen())),
+            behavior: HitTestBehavior.opaque,
+            child: Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                  color: Colors.white, borderRadius: BorderRadius.circular(14), border: Border.all(color: _line)),
+              child: Row(
+                children: [
+                  Container(
+                    width: 38,
+                    height: 38,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                        color: _brand.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(11)),
+                    child: const Icon(Icons.animation_rounded, size: 18, color: _brand),
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text('Loading Screens',
+                            style: TextStyle(
+                                fontFamily: 'Outfit', fontWeight: FontWeight.w700, fontSize: 14, color: _ink)),
+                        SizedBox(height: 2),
+                        Text('Preview all 10 situation loaders',
                             style: TextStyle(fontSize: 12, color: _muted)),
                       ],
                     ),

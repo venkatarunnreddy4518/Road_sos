@@ -7,6 +7,7 @@ import '../../core/network/ai_service.dart';
 import '../../data/api/discovery_api.dart';
 import '../../data/models/category.dart';
 import '../state/ai_config_state.dart';
+import '../widgets/loaders.dart';
 import 'helper_results_screen.dart';
 
 // ── Design tokens ──
@@ -345,7 +346,15 @@ You are the AI Roadside Mechanic for "Roadside SOS".
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
               itemCount: _messages.length + (_thinking ? 1 : 0),
               itemBuilder: (context, i) {
-                if (_thinking && i == _messages.length) return const _TypingRow();
+                if (_thinking && i == _messages.length) {
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.all(Radius.circular(14)),
+                      child: SizedBox(height: 150, child: RoadScanner()),
+                    ),
+                  );
+                }
                 return _MessageRow(msg: _messages[i], onFindHelp: _findHelp);
               },
             ),
