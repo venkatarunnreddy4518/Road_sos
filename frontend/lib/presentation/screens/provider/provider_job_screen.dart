@@ -244,7 +244,7 @@ class _ProviderJobScreenState extends State<ProviderJobScreen> {
                         ),
                         Switch(
                           value: _autopilot,
-                          activeColor: const Color(0xFF1976D2),
+                          activeThumbColor: const Color(0xFF1976D2),
                           onChanged: (val) {
                             setState(() {
                               _autopilot = val;
