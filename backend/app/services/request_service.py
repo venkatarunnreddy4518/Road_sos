@@ -325,5 +325,11 @@ def record_location(
             request_id=request_id, helper_id=helper.id, latitude=lat, longitude=lng, recorded_at=now
         )
     )
+    # Automatic geofence arrival transition
+    if req.status == RequestStatus.on_the_way:
+        dist_km = haversine_km(lat, lng, req.pickup_lat, req.pickup_lng)
+        if dist_km <= 0.1:  # 100 meters
+            req.status = RequestStatus.arrived
+            req.arrived_at = now
     db.commit()
     return now

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../../core/i18n/l10n_ext.dart';
+import '../../../core/utils/geo_distance.dart';
 import '../../../core/utils/location_service.dart';
 import '../../../data/api/request_api.dart';
 import '../../../data/models/service_request.dart';
@@ -23,6 +24,12 @@ class _ProviderJobScreenState extends State<ProviderJobScreen> {
   Timer? _locationTimer;
   ServiceRequest? _req;
   bool _busy = false;
+
+  // Autopilot simulation state
+  double? _simStartLat;
+  double? _simStartLng;
+  double _simProgress = 0.0;
+  bool _autopilot = false;
 
   static const _next = {
     RequestStatus.accepted: RequestStatus.onTheWay,
@@ -54,12 +61,60 @@ class _ProviderJobScreenState extends State<ProviderJobScreen> {
   Future<void> _pushLocation() async {
     final r = _req;
     if (r == null || r.status.isTerminal) return;
-    final pos = await LocationService.current();
-    final lat = pos?.latitude ?? r.pickupLat + 0.01;
-    final lng = pos?.longitude ?? r.pickupLng + 0.01;
+
+    double lat;
+    double lng;
+
+    if (_autopilot) {
+      // Simulate movement towards pickup coordinates
+      if (_simStartLat == null || _simStartLng == null) {
+        final pos = await LocationService.current();
+        _simStartLat = pos?.latitude ?? (r.pickupLat + 0.005);
+        _simStartLng = pos?.longitude ?? (r.pickupLng + 0.005);
+        _simProgress = 0.0;
+      }
+
+      if (_simProgress < 1.0) {
+        _simProgress = double.parse((_simProgress + 0.25).toStringAsFixed(2));
+        if (_simProgress > 1.0) _simProgress = 1.0;
+      }
+
+      lat = _simStartLat! + (r.pickupLat - _simStartLat!) * _simProgress;
+      lng = _simStartLng! + (r.pickupLng - _simStartLng!) * _simProgress;
+    } else {
+      final pos = await LocationService.current();
+      lat = pos?.latitude ?? (r.pickupLat + 0.01);
+      lng = pos?.longitude ?? (r.pickupLng + 0.01);
+    }
+
     try {
       await _api.postLocation(widget.requestId, lat, lng);
+      // Reload request to pick up backend auto-transition
+      await _load();
     } catch (_) {}
+
+    // Client-side geofencing backup in case backend didn't auto-transition
+    if (_req != null && _req!.status == RequestStatus.onTheWay) {
+      final dist = GeoDistance.haversineKm(lat, lng, _req!.pickupLat, _req!.pickupLng);
+      if (dist <= 0.1) {
+        await _advance(RequestStatus.arrived);
+      }
+    }
+
+    // Auto-advance logic for autopilot
+    if (_autopilot && _req != null) {
+      final currentStatus = _req!.status;
+      if (currentStatus == RequestStatus.accepted) {
+        await _advance(RequestStatus.onTheWay);
+      } else if (currentStatus == RequestStatus.arrived) {
+        // Wait a short duration and automatically mark as completed
+        Future.delayed(const Duration(seconds: 4), () {
+          if (mounted && _autopilot && _req?.status == RequestStatus.arrived) {
+            _advance(RequestStatus.completed);
+          }
+        });
+      }
+    }
   }
 
   Future<void> _advance(RequestStatus next) async {
@@ -143,10 +198,105 @@ class _ProviderJobScreenState extends State<ProviderJobScreen> {
                       ],
                     ),
                   ),
+                  const SizedBox(height: 12),
+                  // Autopilot Mode Toggle card
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: _autopilot 
+                          ? const Color(0xFFE3F2FD)
+                          : Theme.of(context).brightness == Brightness.dark
+                              ? Colors.white.withValues(alpha: 0.05)
+                              : const Color(0xFFF5F7FA),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: _autopilot ? const Color(0xFF90CAF9) : Colors.transparent,
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              _autopilot ? Icons.auto_mode : Icons.person_pin_circle_outlined,
+                              color: _autopilot ? const Color(0xFF1976D2) : Colors.grey,
+                            ),
+                            const SizedBox(width: 12),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Autopilot Mode',
+                                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                                ),
+                                Text(
+                                  _autopilot ? 'Simulating trip to seeker...' : 'Manual workflow tracking',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: _autopilot ? const Color(0xFF1565C0) : Colors.grey,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        Switch(
+                          value: _autopilot,
+                          activeColor: const Color(0xFF1976D2),
+                          onChanged: (val) {
+                            setState(() {
+                              _autopilot = val;
+                              if (val) {
+                                _simStartLat = null;
+                                _simStartLng = null;
+                                _simProgress = 0.0;
+                              }
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
                   const SizedBox(height: 16),
                   if (r.note?.isNotEmpty == true)
                     Text(r.note!, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
                   const SizedBox(height: 20),
+                  // Distance to seeker info
+                  Builder(
+                    builder: (context) {
+                      double? currentLat;
+                      double? currentLng;
+                      if (_autopilot && _simStartLat != null && _simStartLng != null) {
+                        currentLat = _simStartLat! + (r.pickupLat - _simStartLat!) * _simProgress;
+                        currentLng = _simStartLng! + (r.pickupLng - _simStartLng!) * _simProgress;
+                      }
+                      
+                      if (currentLat != null && currentLng != null) {
+                        final dist = GeoDistance.haversineKm(currentLat, currentLng, r.pickupLat, r.pickupLng);
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 16),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.navigation, size: 16, color: Colors.grey),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Distance to Seeker: ${dist.toStringAsFixed(2)} km (${(_simProgress * 100).round()}% progressed)',
+                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                              ),
+                            ],
+                          ),
+                        );
+                      }
+                      return const SizedBox.shrink();
+                    }
+                  ),
                   StatusTimeline(current: r.status),
                   const SizedBox(height: 16),
                   OutlinedButton.icon(
