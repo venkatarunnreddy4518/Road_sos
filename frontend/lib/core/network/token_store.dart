@@ -1,5 +1,6 @@
 // lib/core/network/token_store.dart
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Securely persists auth tokens across launches (Constitution II).
 class TokenStore {
@@ -10,15 +11,29 @@ class TokenStore {
   Future<void> save({required String access, required String refresh}) async {
     await _storage.write(key: _access, value: access);
     await _storage.write(key: _refresh, value: refresh);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('plain_access_token', access);
+    } catch (_) {}
   }
 
   Future<String?> get accessToken => _storage.read(key: _access);
   Future<String?> get refreshToken => _storage.read(key: _refresh);
 
-  Future<void> updateAccess(String access) => _storage.write(key: _access, value: access);
+  Future<void> updateAccess(String access) async {
+    await _storage.write(key: _access, value: access);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('plain_access_token', access);
+    } catch (_) {}
+  }
 
   Future<void> clear() async {
     await _storage.delete(key: _access);
     await _storage.delete(key: _refresh);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('plain_access_token');
+    } catch (_) {}
   }
 }

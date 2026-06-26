@@ -228,18 +228,28 @@
   </div>
 
   <script>
+    if (localStorage.getItem('flutter.plain_access_token') || localStorage.getItem('plain_access_token')) {
+      document.documentElement.style.visibility = 'hidden';
+    }
+
     // Database check to see if user is existing (who ever logged in before)
     async function checkExistingUser() {
       let token = null;
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key === 'access_token' || key === 'flutter.access_token' || key.endsWith('access_token')) {
-          token = localStorage.getItem(key);
-          if (token && token.startsWith('"') && token.endsWith('"')) {
-            token = token.slice(1, -1);
+      const plainVal = localStorage.getItem('flutter.plain_access_token') || localStorage.getItem('plain_access_token');
+      if (plainVal) {
+        token = plainVal;
+      } else {
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key === 'access_token' || key === 'flutter.access_token' || key.endsWith('access_token')) {
+            token = localStorage.getItem(key);
+            break;
           }
-          break;
         }
+      }
+
+      if (token && token.startsWith('"') && token.endsWith('"')) {
+        token = token.slice(1, -1);
       }
 
       if (token) {
@@ -266,6 +276,7 @@
           console.error("Error checking auth status:", err);
         }
       }
+      document.documentElement.style.visibility = '';
       return false;
     }
     
@@ -276,10 +287,10 @@
       { t:'नमस्ते',           l:'हिन्दी',     dir:'ltr', code:'hi' },
       { t:'నమస్కారం',         l:'తెలుగు',     dir:'ltr', code:'te' },
       { t:'வணக்கம்',          l:'தமிழ்',      dir:'ltr', code:'ta' },
-      { t:'నమస్కార',          l:'ಕನ್ನಡ',      dir:'ltr', code:'kn' },
+      { t:'ನಮಸ್ಕಾರ',          l:'ಕನ್ನಡ',      dir:'ltr', code:'kn' },
       { t:'নমস্কার',          l:'বাংলা',      dir:'ltr', code:'bn' },
       { t:'નમસ્તે',           l:'ગુજરાતી',    dir:'ltr', code:'gu' },
-      { t:'ਸਤ ਸ੍ਰੀ ਅਕਾਲ',     l:'ਪੰਜਾਬੀ',     dir:'ltr', code:'pa' },
+      { t:'ਸਤ ਸ੍ਰี ਅਕਾਲ',     l:'ਪੰਜਾਬੀ',     dir:'ltr', code:'pa' },
       { t:'നമസ്കാരം',         l:'മലയാളം',     dir:'ltr', code:'ml' },
       { t:'नमस्कार',          l:'मराठी',      dir:'ltr', code:'mr' },
       { t:'ନମସ୍କାର',          l:'ଓଡ଼ିଆ',      dir:'ltr', code:'or' },
@@ -293,7 +304,7 @@
       },
       hi: {
         cta: "शुरू करें",
-        terms: 'मदद रास्ते में, भारत में कहीं भी।<br/>जारी रखने पर आप हमारी <a href="#">शर्तوں</a> और <a href="#">गोपनीयता नीति</a> से सहमत होते हैं।'
+        terms: 'मदद रास्ते में, भारत में कहीं भी।<br/>जारी रखने पर आप हमारी <a href="#">शर्तों</a> और <a href="#">गोपनीयता नीति</a> से सहमत होते हैं।'
       },
       te: {
         cta: "ప్రారంభించండి",
