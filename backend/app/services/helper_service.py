@@ -92,25 +92,8 @@ def _with_distance(rows: list[HelperProfile], lat: float, lng: float) -> list[di
 def _ensure_helpers_nearby(db: Session, lat: float, lng: float) -> None:
     """Scatter curated helpers across distance bands around the user when the area
     is empty, so the range selector has shops at every radius (within 15 km)."""
-    from app.models.enums import DataSource
-
-    min_lat, max_lat, min_lng, max_lng = bounding_box(lat, lng, 15.0)
-    exists_nearby = db.scalar(
-        select(HelperProfile.id)
-        .where(
-            HelperProfile.is_active.is_(True),
-            HelperProfile.latitude.between(min_lat, max_lat),
-            HelperProfile.longitude.between(min_lng, max_lng),
-        )
-        .limit(1)
-    )
-    if not exists_nearby:
-        curated_helpers = list(
-            db.scalars(select(HelperProfile).where(HelperProfile.data_source == DataSource.curated))
-        )
-        if curated_helpers:
-            spread_helpers_around(curated_helpers, lat, lng)
-            db.commit()
+    # Disabled dynamic faking of curated helper locations to ensure real-time, accurate data.
+    return
 
 
 def nearby(
@@ -123,8 +106,8 @@ def nearby(
 ) -> list[dict]:
     _ensure_helpers_nearby(db, lat, lng)
     types = _types_for_category(db, category, helper_type)
-    # Coarse bounding-box pre-filter at progressively larger radii so we always return the nearest.
-    for radius in (10, 25, 75, 250, 20000):
+    # Coarse bounding-box pre-filter at progressively larger radii so we always return the nearest (up to 50 km).
+    for radius in (10, 25, 50):
         min_lat, max_lat, min_lng, max_lng = bounding_box(lat, lng, radius)
         stmt = select(HelperProfile).where(
             HelperProfile.is_active.is_(True),
@@ -134,7 +117,7 @@ def nearby(
         if types:
             stmt = stmt.where(HelperProfile.helper_type.in_(types))
         rows = list(db.scalars(stmt))
-        if len(rows) >= limit or radius == 20000:
+        if len(rows) >= limit or radius == 50:
             return _with_distance(rows, lat, lng)[:limit]
     return []
 
