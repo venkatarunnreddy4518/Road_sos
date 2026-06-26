@@ -1,6 +1,6 @@
 // lib/core/network/api_client.dart
 import 'dart:convert';
-
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 
 import 'token_store.dart';
@@ -15,16 +15,25 @@ class ApiException implements Exception {
   String toString() => message;
 }
 
-/// Thin REST client: base URL from --dart-define=API_BASE_URL, bearer auth,
+/// Thin REST client: base URL resolved dynamically, bearer auth,
 /// JSON encode/decode, transparent access-token refresh on 401.
 class ApiClient {
   ApiClient({TokenStore? tokenStore})
       : _tokens = tokenStore ?? TokenStore();
 
-  static const String baseUrl = String.fromEnvironment(
-    'API_BASE_URL',
-    defaultValue: 'http://localhost:8000',
-  );
+  static String get baseUrl {
+    const fromEnv = String.fromEnvironment('API_BASE_URL');
+    if (fromEnv.isNotEmpty) {
+      return fromEnv;
+    }
+    if (kIsWeb) {
+      final host = Uri.base.host;
+      if (host != 'localhost' && host != '127.0.0.1' && host.isNotEmpty) {
+        return 'https://roadside-help-api.onrender.com';
+      }
+    }
+    return 'http://localhost:8000';
+  }
 
   final TokenStore _tokens;
   final http.Client _http = http.Client();
