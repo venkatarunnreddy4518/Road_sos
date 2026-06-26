@@ -2,11 +2,59 @@
 <html>
 <head>
   <script>
-    if (window.location.pathname === '/' || window.location.pathname === '/index.html' || window.location.pathname.endsWith('/index.html')) {
-      if (!sessionStorage.getItem('welcome_completed')) {
-        window.location.href = 'welcome.html';
+    (function() {
+      if (sessionStorage.getItem('welcome_completed')) {
+        return;
       }
-    }
+
+      const isIndex = window.location.pathname === '/' || 
+                      window.location.pathname === '/index.html' || 
+                      window.location.pathname.endsWith('/index.html');
+      
+      if (!isIndex) return;
+
+      let token = null;
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key === 'access_token' || key === 'flutter.access_token' || key.endsWith('access_token')) {
+          token = localStorage.getItem(key);
+          if (token && token.startsWith('"') && token.endsWith('"')) {
+            token = token.slice(1, -1);
+          }
+          break;
+        }
+      }
+
+      if (!token) {
+        window.location.href = 'welcome.html';
+      } else {
+        document.documentElement.style.visibility = 'hidden';
+
+        const apiBase = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+          ? 'http://localhost:8000'
+          : 'https://roadside-help-api.onrender.com';
+
+        fetch(`${apiBase}/api/v1/auth/me`, {
+          method: 'GET',
+          headers: {
+            'Authorization': 'Bearer ' + token
+          }
+        })
+        .then(function(response) {
+          if (response.ok) {
+            sessionStorage.setItem('welcome_completed', 'true');
+            document.documentElement.style.visibility = '';
+          } else {
+            window.location.href = 'welcome.html';
+          }
+        })
+        .catch(function(err) {
+          console.error("Auth check failed:", err);
+          sessionStorage.setItem('welcome_completed', 'true');
+          document.documentElement.style.visibility = '';
+        });
+      }
+    })();
   </script>
   <!--
     If you are serving your web app in a path other than the root, change the

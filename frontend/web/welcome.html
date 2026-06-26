@@ -89,9 +89,108 @@
   @keyframes rise{ from{ opacity:0; transform:translateY(16px); } to{ opacity:1; transform:translateY(0); } }
   @keyframes breathe{ 0%,100%{ transform:scale(.96); opacity:.5; } 50%{ transform:scale(1.04); opacity:1; } }
   @keyframes ping{ 0%{ transform:scale(.9); opacity:.7; } 70%,100%{ transform:scale(1.5); opacity:0; } }
+
+  /* language selector in top right */
+  .lang-select-container {
+    position: absolute;
+    top: 24px;
+    right: 24px;
+    z-index: 10;
+  }
+  .lang-select-btn {
+    background: rgba(255, 255, 255, 0.85);
+    border: 1px solid rgba(14, 124, 82, 0.20);
+    color: var(--green);
+    padding: 8px 14px;
+    border-radius: 12px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 4px 12px rgba(14, 124, 82, 0.08);
+    transition: all 0.15s ease;
+    backdrop-filter: blur(8px);
+  }
+  .lang-select-btn:hover {
+    background: #fff;
+    border-color: var(--green);
+    box-shadow: 0 6px 16px rgba(14, 124, 82, 0.15);
+    transform: translateY(-1px);
+  }
+  .lang-select-btn:active {
+    transform: translateY(0);
+  }
+  .lang-dropdown {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    background: #fff;
+    border: 1px solid rgba(0,0,0,0.06);
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    list-style: none;
+    padding: 6px;
+    min-width: 140px;
+    display: none;
+    flex-direction: column;
+    gap: 2px;
+    z-index: 100;
+    animation: scaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  .lang-dropdown.show {
+    display: flex;
+  }
+  .lang-dropdown li {
+    padding: 8px 12px;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--ink);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.1s;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .lang-dropdown li:hover {
+    background: rgba(14, 124, 82, 0.06);
+    color: var(--green);
+  }
+  .lang-dropdown li.active {
+    background: rgba(14, 124, 82, 0.1);
+    color: var(--green);
+  }
+  
+  @keyframes scaleIn {
+    from { opacity: 0; transform: scale(0.95) translateY(-4px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
 </style>
 </head>
 <body>
+
+  <div class="lang-select-container">
+    <button class="lang-select-btn" id="langSelectBtn">
+      <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="2" y1="12" x2="22" y2="12"></line>
+        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+      </svg>
+      <span id="activeLangName">English</span>
+      <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="6 9 12 15 18 9"></polyline>
+      </svg>
+    </button>
+    <ul class="lang-dropdown" id="langDropdown">
+      <li data-code="en" class="active">English</li>
+      <li data-code="hi">हिन्दी</li>
+      <li data-code="te">తెలుగు</li>
+      <li data-code="ta">தமிழ்</li>
+    </ul>
+  </div>
 
   <svg class="ambient" viewBox="0 0 680 680" aria-hidden="true">
     <circle class="r1" cx="340" cy="340" r="150"/>
@@ -125,38 +224,177 @@
   </div>
 
   <script>
+    // Database check to see if user is existing (who ever logged in before)
+    async function checkExistingUser() {
+      let token = null;
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key === 'access_token' || key === 'flutter.access_token' || key.endsWith('access_token')) {
+          token = localStorage.getItem(key);
+          if (token && token.startsWith('"') && token.endsWith('"')) {
+            token = token.slice(1, -1);
+          }
+          break;
+        }
+      }
+
+      if (token) {
+        try {
+          const apiBase = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+            ? 'http://localhost:8000'
+            : 'https://roadside-help-api.onrender.com';
+          
+          const response = await fetch(`${apiBase}/api/v1/auth/me`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+          
+          if (response.ok) {
+            // Token is valid! This is an existing user.
+            // Bypass welcome screen immediately.
+            sessionStorage.setItem('welcome_completed', 'true');
+            window.location.href = 'index.html';
+            return true;
+          }
+        } catch (err) {
+          console.error("Error checking auth status:", err);
+        }
+      }
+      return false;
+    }
+    
+    checkExistingUser();
+
     var greetings = [
-      { t:'Hello',           l:'English',   dir:'ltr' },
-      { t:'नमस्ते',           l:'हिन्दी',     dir:'ltr' },
-      { t:'నమస్కారం',         l:'తెలుగు',     dir:'ltr' },
-      { t:'வணக்கம்',          l:'தமிழ்',      dir:'ltr' },
-      { t:'ನಮಸ್ಕಾರ',          l:'ಕನ್ನಡ',      dir:'ltr' },
-      { t:'নমস্কার',          l:'বাংলা',      dir:'ltr' },
-      { t:'નમસ્તે',           l:'ગુજરાતી',    dir:'ltr' },
-      { t:'ਸਤ ਸ੍ਰੀ ਅਕਾਲ',     l:'ਪੰਜਾਬੀ',     dir:'ltr' },
-      { t:'നമസ്കാരം',         l:'മലയാളം',     dir:'ltr' },
-      { t:'नमस्कार',          l:'मराठी',      dir:'ltr' },
-      { t:'ନମସ୍କାର',          l:'ଓଡ଼ିଆ',      dir:'ltr' },
-      { t:'السلام علیکم',     l:'اردو',       dir:'rtl' }
+      { t:'Hello',           l:'English',   dir:'ltr', code:'en' },
+      { t:'नमस्ते',           l:'हिन्दी',     dir:'ltr', code:'hi' },
+      { t:'నమస్కారం',         l:'తెలుగు',     dir:'ltr', code:'te' },
+      { t:'வணக்கம்',          l:'தமிழ்',      dir:'ltr', code:'ta' },
+      { t:'ನಮಸ್ಕಾರ',          l:'ಕನ್ನಡ',      dir:'ltr', code:'kn' },
+      { t:'নমস্কার',          l:'বাংলা',      dir:'ltr', code:'bn' },
+      { t:'નમસ્તે',           l:'ગુજરાતી',    dir:'ltr', code:'gu' },
+      { t:'ਸਤ ਸ੍ਰี ਅਕਾਲ',     l:'ਪੰਜਾਬੀ',     dir:'ltr', code:'pa' },
+      { t:'നമസ്കാരം',         l:'മലയാളം',     dir:'ltr', code:'ml' },
+      { t:'नमस्कार',          l:'मराठी',      dir:'ltr', code:'mr' },
+      { t:'ନମସ୍କାର',          l:'ଓଡ଼ିଆ',      dir:'ltr', code:'or' },
+      { t:'السلام علیکم',     l:'اردو',       dir:'rtl', code:'ur' }
     ];
+    
+    var translations = {
+      en: {
+        cta: "Get started",
+        terms: 'Help on the way, anywhere in India.<br/>By continuing you agree to our <a href="#">Terms</a> &amp; <a href="#">Privacy</a>.'
+      },
+      hi: {
+        cta: "शुरू करें",
+        terms: 'मदद रास्ते में, भारत में कहीं भी।<br/>जारी रखने पर आप हमारी <a href="#">शर्तों</a> और <a href="#">गोपनीयता नीति</a> से सहमत होते हैं।'
+      },
+      te: {
+        cta: "ప్రారంభించండి",
+        terms: 'సహాయం దారిలో ఉంది, భారతదేశంలో ఎక్కడైనా.<br/>కొనసాగడం ద్వారా మీరు మా <a href="#">నిబంధనలు</a> &amp; <a href="#">గోపనీయత</a>ను అంగీకరిస్తారు.'
+      },
+      ta: {
+        cta: "தொடங்கவும்",
+        terms: 'உதவி வழியில் உள்ளது, இந்தியாவில் எங்கும்.<br/>தொடர்வதன் மூலம் எங்கள் <a href="#">விதிமுறைகள்</a> &amp; <a href="#">தனியுரிமை</a> கொள்கைகளை ஒப்புக்கொள்கிறீர்கள்.'
+      }
+    };
+
     var hello = document.getElementById('hello');
     var lang  = document.getElementById('lang');
     var i = 0;
+    var timer = null;
+    var userSelectedCode = null;
 
     function paint(g){
       hello.textContent = g.t; hello.style.direction = g.dir;
       lang.textContent = g.l;  lang.style.direction = g.dir;
       hello.classList.add('show'); lang.classList.add('show');
     }
-    paint(greetings[0]);
+    
+    function startCycle() {
+      if (timer) clearInterval(timer);
+      timer = setInterval(function(){
+        hello.classList.remove('show'); lang.classList.remove('show');
+        setTimeout(function(){
+          if (userSelectedCode) {
+            var matchIdx = greetings.findIndex(g => g.code === userSelectedCode);
+            if (matchIdx !== -1) {
+              i = matchIdx;
+              userSelectedCode = null; // Resume normal cycle after showing it once
+            }
+          } else {
+            i = (i + 1) % greetings.length;
+          }
+          paint(greetings[i]);
+        }, 480);
+      }, 2100);
+    }
 
-    setInterval(function(){
-      hello.classList.remove('show'); lang.classList.remove('show');
-      setTimeout(function(){
-        i = (i + 1) % greetings.length;
-        paint(greetings[i]);
-      }, 480);
-    }, 2100);
+    paint(greetings[0]);
+    startCycle();
+
+    // Language Dropdown Logic
+    var langSelectBtn = document.getElementById('langSelectBtn');
+    var langDropdown = document.getElementById('langDropdown');
+    var activeLangName = document.getElementById('activeLangName');
+
+    langSelectBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      langDropdown.classList.toggle('show');
+    });
+
+    document.addEventListener('click', function() {
+      langDropdown.classList.remove('show');
+    });
+
+    // Handle Language Change
+    var dropdownItems = langDropdown.querySelectorAll('li');
+    dropdownItems.forEach(function(item) {
+      item.addEventListener('click', function() {
+        var code = this.getAttribute('data-code');
+        var name = this.textContent;
+        
+        dropdownItems.forEach(i => i.classList.remove('active'));
+        this.classList.add('active');
+        activeLangName.textContent = name.split(' ')[0];
+        
+        // Save preferences for Flutter app
+        localStorage.setItem('flutter.language', '"' + code + '"');
+        localStorage.setItem('language', code);
+        
+        // Update welcome UI translations
+        if (translations[code]) {
+          document.querySelector('.cta').innerHTML = translations[code].cta + ' ' + 
+            '<svg viewBox="0 0 16 16" fill="none"><path d="M3 8h9M9 4.5 12.5 8 9 11.5" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+          document.querySelector('.terms').innerHTML = translations[code].terms;
+        }
+
+        // Show the greeting for selected language immediately
+        var gIdx = greetings.findIndex(g => g.code === code);
+        if (gIdx !== -1) {
+          hello.classList.remove('show'); lang.classList.remove('show');
+          setTimeout(function() {
+            i = gIdx;
+            paint(greetings[gIdx]);
+          }, 200);
+          userSelectedCode = code;
+        }
+      });
+    });
+
+    // Check if a language preference was already stored
+    var storedLang = localStorage.getItem('flutter.language') || localStorage.getItem('language');
+    if (storedLang) {
+      if (storedLang.startsWith('"') && storedLang.endsWith('"')) {
+        storedLang = storedLang.slice(1, -1);
+      }
+      var activeItem = langDropdown.querySelector('li[data-code="' + storedLang + '"]');
+      if (activeItem) {
+        activeItem.click();
+      }
+    }
   </script>
 </body>
 </html>
