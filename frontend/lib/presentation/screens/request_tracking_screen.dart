@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/audio/alert_sound.dart';
+import '../widgets/loaders.dart';
 import '../../core/i18n/l10n_ext.dart';
 import '../../data/api/discovery_api.dart';
 import '../../data/api/request_api.dart';
@@ -254,7 +255,7 @@ class _RequestTrackingScreenState extends State<RequestTrackingScreen> {
         title: Text(context.tr('request_help')),
       ),
       body: r == null
-          ? const Center(child: CircularProgressIndicator())
+          ? const CarOnRoute(message: 'Loading your request', sub: 'Fetching live status…')
           : Column(
               children: [
                 SizedBox(

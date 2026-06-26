@@ -4,6 +4,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../core/utils/location_service.dart';
+import '../widgets/loaders.dart';
 
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
@@ -63,7 +64,7 @@ class _MapScreenState extends State<MapScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Your Location')),
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? const MapTiles()
           : Stack(
               children: [
                 FlutterMap(

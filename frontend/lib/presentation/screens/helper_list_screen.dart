@@ -7,6 +7,7 @@ import 'package:roadside_help/presentation/demo/demo_helpers.dart';
 import 'package:roadside_help/presentation/utils/helper_type_ui.dart';
 
 import '../widgets/helper_card.dart';
+import '../widgets/loaders.dart';
 
 class HelperListScreen extends StatefulWidget {
   final HelperType type;
@@ -113,7 +114,7 @@ class _HelperListScreenState extends State<HelperListScreen> {
               if (loading)
                 const SliverFillRemaining(
                   hasScrollBody: false,
-                  child: Center(child: CircularProgressIndicator()),
+                  child: HelperRadar(),
                 )
               else
                 SliverList.builder(
