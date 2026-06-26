@@ -9,6 +9,7 @@ import '../state/auth_state.dart';
 import '../utils/helper_actions.dart';
 import '../widgets/app_map.dart';
 import '../widgets/rating_stars.dart';
+import '../widgets/loaders.dart';
 import 'auth/email_auth_screen.dart';
 import 'request_tracking_screen.dart';
 
@@ -87,8 +88,10 @@ class _HelperDetailScreenState extends State<HelperDetailScreen> {
     final h = _helper;
     return Scaffold(
       appBar: AppBar(title: Text(h?.name ?? '...')),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
+      body: (_loading || _requesting)
+          ? (_requesting
+              ? const PulseSOS()
+              : const VerifiedBadge(message: 'Loading helper', sub: 'Fetching profile…'))
           : h == null
               ? Center(child: Text(context.tr('needs_connection')))
               : Column(
