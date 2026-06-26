@@ -106,7 +106,8 @@ def nearby(
 ) -> list[dict]:
     _ensure_helpers_nearby(db, lat, lng)
     types = _types_for_category(db, category, helper_type)
-    # Coarse bounding-box pre-filter at progressively larger radii so we always return the nearest (up to 50 km).
+    # Coarse bounding-box pre-filter at progressively larger radii so we always
+    # return the nearest (up to 50 km).
     for radius in (10, 25, 50):
         min_lat, max_lat, min_lng, max_lng = bounding_box(lat, lng, radius)
         stmt = select(HelperProfile).where(
