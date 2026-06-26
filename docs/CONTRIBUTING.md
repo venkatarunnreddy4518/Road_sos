@@ -1,134 +1,210 @@
-# Contributing to Roadside Help
+# Contributing to Roadside SOS
 
-Thank you for contributing! This guide covers everything you need to submit quality work.
+Thank you for your interest in contributing! This document outlines everything you need to know to get started, submit changes, and meet our quality bar.
+
+---
 
 ## Table of Contents
+
 - [Code of Conduct](#code-of-conduct)
 - [Getting Started](#getting-started)
-- [Development Workflow](#development-workflow)
-- [Branch Naming](#branch-naming)
-- [Commit Messages](#commit-messages)
-- [Pull / Merge Request Process](#pull--merge-request-process)
-- [Testing Requirements](#testing-requirements)
-- [Code Style](#code-style)
+- [Development Setup](#development-setup)
+- [Branch & Commit Conventions](#branch--commit-conventions)
+- [Submitting a Merge Request](#submitting-a-merge-request)
+- [Quality Checklist](#quality-checklist)
+- [Project Structure](#project-structure)
+- [Spec-Kit Workflow](#spec-kit-workflow)
 
 ---
 
 ## Code of Conduct
 
-All contributors are expected to follow our [Code of Conduct](CODE_OF_CONDUCT.md). Respectful, inclusive collaboration is mandatory.
+All contributors are expected to abide by our [Code of Conduct](CODE_OF_CONDUCT.md). Please read it before participating.
 
 ---
 
 ## Getting Started
 
-1. **Fork & clone** the repository.
-2. Set up the backend (Python 3.11+):
-   ```powershell
-   cd backend
-   python -m venv .venv
-   .\.venv\Scripts\Activate.ps1
-   pip install -r requirements.txt
-   pip install -r requirements-dev.txt
-   ```
-3. Install Flutter SDK 3.x and run `flutter pub get` at the project root.
-4. Install pre-commit hooks:
+1. **Fork** the repository on GitLab.
+2. **Clone** your fork locally:
    ```bash
-   pip install pre-commit
-   pre-commit install
+   git clone https://gitlab.com/<your-username>/speckit_project.git
+   cd speckit_project
    ```
-5. Copy `.env.example` → `.env` and fill in your values.
-
----
-
-## Development Workflow
-
-1. Create a feature branch from `main` (see [Branch Naming](#branch-naming)).
-2. Make changes with tests.
-3. Run the full quality suite before pushing:
+3. Add the upstream remote:
    ```bash
-   # Backend
-   cd backend
-   pytest --cov=app --cov-fail-under=80
-   ruff check .
-   mypy app/
-
-   # Flutter
-   flutter analyze
-   flutter test
+   git remote add upstream https://gitlab.com/arunn009/help.git
    ```
-4. Open a Merge Request (MR) against `main`.
 
 ---
 
-## Branch Naming
+## Development Setup
 
-| Type | Pattern | Example |
-|------|---------|---------|
-| Feature | `feature/<short-desc>` | `feature/provider-ratings` |
-| Bug fix | `fix/<short-desc>` | `fix/otp-timeout` |
-| Docs | `docs/<short-desc>` | `docs/api-guide` |
-| Chore | `chore/<short-desc>` | `chore/update-deps` |
+### Prerequisites
 
----
+| Tool | Minimum Version |
+|------|----------------|
+| Python | 3.11+ |
+| Flutter SDK | 3.x (Dart 3.x) |
+| PostgreSQL | 14+ |
+| Node.js (optional) | 18+ (for tooling only) |
 
-## Commit Messages
+### Backend (FastAPI)
 
-Follow [Conventional Commits](https://www.conventionalcommits.org/):
+```powershell
+cd backend
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+pip install pre-commit
+pre-commit install
 
-```
-<type>(scope): short summary
+Copy-Item .env.example .env
+# Edit .env with your local DATABASE_URL and JWT_SECRET
 
-Optional body explaining WHY the change was needed.
+alembic upgrade head
+python -m app.seed.run
+
+uvicorn app.main:app --reload --port 8000
 ```
 
-**Types**: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`, `perf`, `ci`
+### Frontend (Flutter)
+
+```powershell
+cd frontend
+flutter pub get
+flutter run -d chrome --dart-define=API_BASE_URL=http://localhost:8000
+```
+
+---
+
+## Branch & Commit Conventions
+
+### Branch Names
+
+Use the following prefixes:
+
+| Prefix | Purpose |
+|--------|---------|
+| `feat/` | New features |
+| `fix/` | Bug fixes |
+| `chore/` | Maintenance, refactoring, tooling |
+| `docs/` | Documentation only |
+| `test/` | Tests only |
+
+Example: `feat/provider-push-notifications`
+
+### Commit Messages (Conventional Commits)
+
+We use [Conventional Commits](https://www.conventionalcommits.org/) — these power the automated `CHANGELOG.md` via `git-cliff`.
+
+```
+<type>(<optional scope>): <short description>
+
+[optional body]
+
+[optional footer: BREAKING CHANGE or issue refs]
+```
+
+**Types**: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`, `ci`, `perf`
 
 Examples:
 ```
-feat(auth): add phone OTP verification
-fix(tracking): correct helper location drift on low GPS accuracy
-docs(api): document request lifecycle endpoints
+feat(auth): add Google OAuth sign-in support
+fix(requests): prevent double-accept race condition
+docs(readme): add Haversine query explanation
+chore(ci): cache .venv by requirements.txt hash
 ```
 
 ---
 
-## Pull / Merge Request Process
+## Submitting a Merge Request
 
-1. Ensure CI passes (linting, type checks, tests, coverage ≥ 80 %).
-2. Update `CHANGELOG.md` under `[Unreleased]` if your change is user-visible.
-3. Link the MR to the relevant issue (`Closes #42`).
-4. Request review from at least one maintainer.
-5. Squash commits on merge to keep history clean.
+1. **Sync** with upstream before branching:
+   ```bash
+   git fetch upstream
+   git checkout main
+   git merge upstream/main
+   ```
+2. Create a feature branch from `main`.
+3. Make your changes and commit using Conventional Commits.
+4. **Run the full quality suite** (see below) — the CI pipeline will reject failures.
+5. Push your branch and open a **Merge Request** against `main`.
+6. Fill in the MR template: summary, related issue, testing steps, and screenshots for UI changes.
+7. Request a review from at least one maintainer.
 
----
-
-## Testing Requirements
-
-| Layer | Tool | Minimum coverage |
-|-------|------|-----------------|
-| Backend unit | pytest | 80 % |
-| Backend integration | pytest + real PostgreSQL | all critical paths |
-| Flutter widgets | flutter_test | smoke tests for all screens |
-
-Do **not** mock the database in integration tests — use a real PostgreSQL instance. See [AGENTS.md](AGENTS.md) for CI database setup.
+> **Do not** merge your own MR. Wait for approval and a green pipeline.
 
 ---
 
-## Code Style
+## Quality Checklist
 
-### Python (backend)
-- **Formatter / linter**: Ruff (`ruff format .` + `ruff check .`)
-- **Type checker**: Mypy (`mypy app/`)
-- **Security scanner**: Bandit (`bandit -r app/`)
-- Line length: 100 characters.
-- All public functions must have type annotations.
+Run these locally **before** pushing. The CI pipeline enforces the same checks.
 
-### Dart / Flutter (frontend)
-- Follow the [Effective Dart](https://dart.dev/effective-dart) guide.
-- Run `flutter analyze` before committing; zero warnings allowed.
+### Backend
 
-### General
-- Delete dead code instead of commenting it out.
-- Keep functions small and single-purpose.
-- Write comments only when the *why* is non-obvious.
+```powershell
+cd backend
+.\.venv\Scripts\Activate.ps1
+
+ruff check .                          # lint
+ruff format --check .                 # format
+mypy app/                             # type checking
+bandit -r app/ -ll                    # security scan
+pytest --cov=app --cov-fail-under=80  # tests + 80% coverage
+```
+
+### Frontend
+
+```powershell
+cd frontend
+flutter analyze   # static analysis
+flutter test      # widget + unit tests
+```
+
+### Pre-commit (runs automatically on `git commit`)
+
+```bash
+pre-commit run --all-files
+```
+
+---
+
+## Project Structure
+
+| Path | Contents |
+|------|----------|
+| `backend/app/` | FastAPI application (routers, services, models, schemas) |
+| `backend/alembic/` | Database migration scripts |
+| `frontend/lib/` | Flutter source code |
+| `specs/` | Spec-Kit design artifacts |
+| `docs/` | Additional documentation |
+| `scripts/` | Utility and automation scripts |
+
+---
+
+## Spec-Kit Workflow
+
+Before implementing a new feature, consult the design artifacts in `specs/002-roadside-marketplace/`:
+
+| File | Purpose |
+|------|---------|
+| `spec.md` | Feature specification |
+| `plan.md` | Implementation plan |
+| `tasks.md` | Task breakdown |
+| `data-model.md` | Database schema |
+| `api-contract.md` | OpenAPI endpoint contracts |
+
+Update these documents if your change alters the design.
+
+---
+
+## Reporting Issues
+
+- Use the GitLab issue tracker.
+- For **security vulnerabilities**, please follow the [Security Policy](SECURITY.md) — do **not** open a public issue.
+- Label bugs with `type::bug` and enhancements with `type::feature`.
+
+---
+
+Thank you for helping make Roadside SOS better! 🚗🔧

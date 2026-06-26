@@ -1,207 +1,236 @@
-# Roadside Help — User Manual
+# Roadside SOS — User Manual
 
-**Version**: 0.1.0 | **Platform**: Android · iOS · Web
+Welcome to **Roadside SOS**, a two-sided marketplace for roadside emergencies. This manual covers everything a seeker (stranded user) and a helper (service provider) need to get up and running.
+
+**Live App**: <https://help-ashy.vercel.app>
 
 ---
 
 ## Table of Contents
-1. [Introduction](#introduction)
+
+1. [Overview](#overview)
 2. [Getting Started](#getting-started)
-3. [Signing In](#signing-in)
-4. [Finding a Helper (Seeker Mode)](#finding-a-helper-seeker-mode)
-5. [Tracking Your Request](#tracking-your-request)
-6. [Rating a Helper](#rating-a-helper)
-7. [Becoming a Helper (Provider Mode)](#becoming-a-helper-provider-mode)
-8. [Managing Requests as a Provider](#managing-requests-as-a-provider)
-9. [Profile & Settings](#profile--settings)
-10. [Language Settings](#language-settings)
-11. [Request History](#request-history)
-12. [Troubleshooting](#troubleshooting)
-13. [Privacy & Data](#privacy--data)
+   - [Creating an Account](#creating-an-account)
+   - [Signing In](#signing-in)
+   - [Guest Access](#guest-access)
+3. [For Seekers — Requesting Help](#for-seekers--requesting-help)
+   - [Finding Nearby Helpers](#finding-nearby-helpers)
+   - [Submitting an SOS Request](#submitting-an-sos-request)
+   - [Tracking Your Request](#tracking-your-request)
+   - [Completing a Request & Leaving a Review](#completing-a-request--leaving-a-review)
+   - [My SOS Requests History](#my-sos-requests-history)
+4. [For Helpers — Provider Mode](#for-helpers--provider-mode)
+   - [Registering as a Provider](#registering-as-a-provider)
+   - [Accepting Requests](#accepting-requests)
+   - [Updating Request Status](#updating-request-status)
+5. [App Features](#app-features)
+   - [Language Selection](#language-selection)
+   - [Profile & Settings](#profile--settings)
+   - [Emergency Contacts](#emergency-contacts)
+   - [Offline Mode](#offline-mode)
+6. [Troubleshooting](#troubleshooting)
+7. [Support](#support)
 
 ---
 
-## Introduction
+## Overview
 
-**Roadside Help** connects stranded drivers with nearby mechanics, tow-truck operators, petrol pumps, puncture shops, and battery-boost services in real time — similar to Uber/Rapido, but for roadside emergencies.
+Roadside SOS connects **stranded users** with nearby **mechanics, puncture shops, petrol pumps, towing services, and battery jump-start providers** in real time.
 
-The app works in two modes:
-- **Seeker** — you need help.
-- **Provider** — you offer help.
-
-Any registered user can switch between modes at any time from their profile.
+| Role | What They Do |
+|------|-------------|
+| **Seeker** | Submits an emergency request and tracks help arriving on a live map |
+| **Helper / Provider** | Receives nearby requests, accepts jobs, and updates status to completion |
 
 ---
 
 ## Getting Started
 
-### System Requirements
+### Creating an Account
 
-| Platform | Minimum version |
-|----------|----------------|
-| Android | 8.0 (API 26) |
-| iOS | 13.0 |
-| Web browser | Chrome 90+ / Edge 90+ / Firefox 88+ |
+The app supports four sign-in methods:
 
-### Permissions Required
+| Method | Description |
+|--------|-------------|
+| **Email + Password** | Standard sign-up with email verification |
+| **Phone OTP** | Enter your mobile number and verify with a one-time code sent via SMS |
+| **Google Sign-In** | One-tap sign-in with your Google account |
+| **Guest Access** | Browse and submit requests without creating an account |
 
-| Permission | Why |
-|-----------|-----|
-| Location (precise) | Finding nearby helpers / sharing your location as a provider |
-| Phone | One-tap call to helper |
-| Internet | Real-time tracking and chat |
+To create an account:
+1. Open the app at <https://help-ashy.vercel.app>.
+2. Tap **Sign Up** on the welcome screen.
+3. Choose your preferred sign-in method.
+4. Follow the on-screen prompts to complete registration.
 
----
+### Signing In
 
-## Signing In
+1. Open the app and tap **Sign In**.
+2. Choose your sign-in method (Email, Phone, or Google).
+3. Enter your credentials and tap **Continue**.
 
-Roadside Help supports four sign-in methods:
+> **Note**: If third-party OAuth (Google) or SMS keys are not configured in the backend environment, the app automatically falls back to sandboxed development mocks — sign-in will still work.
 
-### 1. Phone OTP
-1. Enter your 10-digit mobile number.
-2. Tap **Send OTP**.
-3. Enter the 6-digit code received via SMS.
-4. Tap **Verify**.
+### Guest Access
 
-> In the development / demo build, any phone number is accepted and the OTP is always `000000`.
-
-### 2. Email & Password
-1. Tap **Email / Password**.
-2. Enter your email address and password.
-3. Tap **Sign In**. First-time users tap **Create Account** instead.
-
-### 3. Google Sign-In
-1. Tap **Continue with Google**.
-2. Select your Google account.
-3. Grant location permission when prompted.
-
-> In the development build, Google sign-in uses a demo identity.
-
-### 4. Guest Mode
-Tap **Continue as Guest** to browse helpers and categories without creating an account. Guest users cannot submit requests or switch to Provider mode.
+Tap **Continue as Guest** on the welcome screen to use the app without creating an account. Guest sessions have full access to the map and request flow but cannot view request history across sessions.
 
 ---
 
-## Finding a Helper (Seeker Mode)
+## For Seekers — Requesting Help
 
-1. After signing in, the **Home** screen shows a map centered on your current location.
-2. Scroll the category grid or use the **Search** bar to find the service type you need:
-   - Puncture / Tyre
-   - Fuel / Petrol
-   - Mechanic
-   - Towing
-   - Battery
-3. Tap a category to see a list of nearby helpers sorted by distance.
-4. Tap a helper card to view their details: name, rating, distance, and contact options.
-5. From the detail screen you can:
-   - **Call** — opens your phone dialer.
-   - **SMS** — opens your messaging app.
-   - **Directions** — opens Google Maps / Apple Maps.
-   - **Request** — sends a formal service request (requires sign-in).
-6. Tap **Request Help** and confirm your pickup location on the map.
+### Finding Nearby Helpers
 
-> **Offline mode**: if internet is unavailable, the app shows the last-cached list of nearby helpers. The "Offline — cached results" banner will appear at the top of the screen.
+1. After signing in, the app opens to the **Home / Map screen**.
+2. Allow the app to access your device location when prompted.
+3. The map (powered by OpenStreetMap) displays **available helpers** as markers near your current GPS position.
+4. Tap any helper marker to view their:
+   - Service type (e.g., Puncture Repair, Towing)
+   - Distance from you
+   - Star rating
 
----
+> **Offline**: If you have no internet connection, the app falls back to a locally cached list of helpers near your last known GPS coordinates.
 
-## Tracking Your Request
+### Submitting an SOS Request
 
-Once a helper accepts your request:
+1. Tap the **SOS button** (centre of the bottom navigation bar) to open the emergency request flow.
+2. Select your **emergency category**:
+   - 🔧 Puncture Repair
+   - ⛽ Petrol / Fuel Delivery
+   - 🔋 Battery Jump-Start
+   - 🚗 Towing Service
+   - 🛠️ General Mechanic
+3. Add an optional **note** (e.g., "Flat rear tyre, near highway marker 42").
+4. Confirm your location shown on the map. Drag the pin if needed.
+5. Tap **Request Help Now** to submit.
 
-1. A **Tracking** screen appears showing the helper's live location on the map.
-2. The **Status Timeline** at the bottom shows the current step:
-   - Pending → Accepted → En Route → On Site → Completed
-3. You can **Cancel** the request (before the helper is On Site) by tapping the red **Cancel** button.
-4. Once the helper marks the job **Completed**, you are prompted to rate them.
+The request is sent to all nearby active helpers for that category — **first to accept wins** the job.
 
----
+### Tracking Your Request
 
-## Rating a Helper
+After submitting, the app transitions to the **Tracking Screen** automatically:
 
-1. After completion, a 1–5 star rating dialog appears.
-2. Optionally add a short comment.
-3. Tap **Submit Rating**.
+- A **status timeline** shows the current step: `Requested → Accepted → En Route → Arrived → Completed`.
+- The helper's **live position marker** moves on the map as they travel toward you.
+- The screen shows estimated distance and helper details (name, rating, contact).
 
-Your rating contributes to the helper's public average, which other seekers can see.
+The tracking screen polls the backend every few seconds to refresh the helper's location.
 
----
+### Completing a Request & Leaving a Review
 
-## Becoming a Helper (Provider Mode)
+When the helper taps **Complete Service**:
+1. The tracking screen shows a **Completed** status with the final `fare amount`.
+2. A **Review Dialog** appears automatically — rate the helper from **1–5 stars** and leave an optional comment.
+3. Tap **Submit Review** to save.
 
-1. Go to **Profile** (bottom-right tab).
-2. Tap **Switch to Provider Mode**.
-3. Fill in your provider profile:
-   - Service type (e.g., Mechanic, Towing)
-   - Vehicle / equipment description
-   - Service radius (km)
-4. Tap **Save & Go Live**.
+Your review updates the helper's rolling average rating visible to future seekers.
 
-You are now visible to seekers within your service radius. Your real-time GPS location is shared with seekers who have an active request for you.
+### My SOS Requests History
+
+Access your past requests from the **Profile → My SOS Requests** screen:
+- Switch between the **Seeker** tab (requests you submitted) and the **Helper** tab (requests you fulfilled as a provider).
+- Each entry shows the service category, status chip, fare amount, and date.
 
 ---
 
-## Managing Requests as a Provider
+## For Helpers — Provider Mode
 
-1. When a new request is nearby, a notification and an **Incoming Request** card appear.
-2. Tap **Accept** to take the job (first provider to accept wins).
-3. Advance the status as you work:
-   - **En Route** → tap when you start travelling.
-   - **On Site** → tap when you arrive.
-   - **Completed** → tap when the job is done.
-4. If you cannot take a job, tap **Ignore** to dismiss the card.
+### Registering as a Provider
+
+Any user can become a helper by completing the Provider onboarding flow:
+
+1. Go to **Profile → Become a Provider**.
+2. Fill in:
+   - **Service type** (e.g., Mechanic, Puncture Shop)
+   - **Contact number**
+   - **Current location** (auto-stamped from GPS, or adjust manually on the map)
+3. Tap **Register as Provider**.
+
+Your helper profile is now active and visible to seekers nearby.
+
+### Accepting Requests
+
+When in **Provider Mode**:
+1. The app shows a **live inbox** of open requests near your location.
+2. Each request card shows the emergency category, distance, and the seeker's note.
+3. Tap **Accept Request** on a card to claim the job.
+   - This is **first-accept-wins**: if another helper accepts first, the request will be removed from your inbox.
+4. Once accepted, the seeker is notified and you are shown directions to their location.
+
+### Updating Request Status
+
+After accepting, use the status buttons on the active request card:
+
+| Button | Sets Status To |
+|--------|---------------|
+| **Start Journey** | `EN_ROUTE` |
+| **Mark Arrived** | `ARRIVED` |
+| **Complete Service** | `COMPLETED` |
+
+The seeker's tracking screen updates in real time with each status change. When you tap **Complete Service**, the request is finalized and the fare is stamped automatically from the service category's base fare.
 
 ---
 
-## Profile & Settings
+## App Features
 
-Access your profile via the **Profile** tab (bottom navigation).
+### Language Selection
 
-| Section | What you can change |
-|---------|-------------------|
-| Personal info | Display name, phone number |
-| Vehicle info | Make, model, registration |
-| Provider profile | Service type, radius, availability |
-| Account | Change password, sign out, delete account |
+The app supports four languages:
 
----
+| Language | Script |
+|----------|--------|
+| English | Latin |
+| हिन्दी (Hindi) | Devanagari |
+| తెలుగు (Telugu) | Telugu |
+| தமிழ் (Tamil) | Tamil |
 
-## Language Settings
+To change language: **Profile → Settings → Language**. The full app updates within 2 seconds and the preference is saved across sessions.
 
-1. Go to **Profile → Settings → Language**.
-2. Select from:
-   - English
-   - हिन्दी (Hindi)
-   - తెలుగు (Telugu)
-   - தமிழ் (Tamil)
-3. The app language changes immediately and is remembered across app restarts.
+### Profile & Settings
 
----
+Access from the **Profile tab** (bottom navigation):
+- Edit your name and contact details
+- View your request history (Seeker & Helper tabs)
+- Manage payment methods
+- Read Safety Guidelines
+- Access Help & Support
+- Refer & Earn (share the app with friends)
 
-## Request History
+### Emergency Contacts
 
-- **Seeker history**: Profile → My Requests — shows all past service requests with status and helper details.
-- **Provider history**: Profile → Completed Jobs — shows all jobs you have fulfilled with ratings received.
+Store emergency contacts for quick access during a roadside situation:
+1. Go to **Profile → Emergency Contacts**.
+2. Tap **Add Contact** and enter name and phone number.
+3. During a crisis, tap any contact to call them directly from the app.
+
+### Offline Mode
+
+When internet connectivity is lost:
+- The app automatically switches to an **offline cache** of the nearest helpers based on your last known GPS location.
+- You can still initiate a **direct call or SMS** to a cached helper from the map.
+- Requests submitted offline are queued and synced when connectivity is restored.
 
 ---
 
 ## Troubleshooting
 
-| Problem | Solution |
-|---------|---------|
-| "No helpers found nearby" | Ensure location permission is granted. Try zooming out on the map. |
-| OTP not received | Wait 60 seconds and tap **Resend OTP**. Check spam/junk folder for email OTPs. |
-| App shows "Offline — cached results" | Check your internet connection. Cached helpers are shown from your last online session. |
-| Helper location not updating | Pull down to refresh on the Tracking screen. |
-| Can't switch to Provider mode | You must be signed in with a full account (not Guest). |
-| Google sign-in fails | Ensure Google Play Services are up to date (Android). |
+| Issue | Solution |
+|-------|---------|
+| Map shows no helpers nearby | Ensure location permissions are granted; try refreshing or zooming out |
+| SOS button is unresponsive | Check your internet connection; the app needs to reach the backend to submit a request |
+| Backend slow on first load | The Render free-tier backend sleeps after inactivity — the first request may take 30–50 s to cold-start |
+| Google Sign-In not working | Ensure your browser allows pop-ups for the app domain |
+| Request stuck in "Requested" | No helpers may be available in your area; try again or use the direct call fallback |
+| Location pin is wrong | Drag the map pin to your exact location before tapping "Request Help Now" |
 
 ---
 
-## Privacy & Data
+## Support
 
-- **Location data**: your precise location is only shared with a helper during an active request. It is not stored permanently.
-- **Contact details**: phone numbers are visible to matched helpers to enable direct communication.
-- **Ratings**: all ratings are public and attributed to your display name.
-- **Data deletion**: to delete your account and all associated data, go to Profile → Account → Delete Account.
+- **In-app**: Profile → Help & Support → one-tap helpline call
+- **GitHub / GitLab Issues**: Open a bug report at the project repository
+- **Security issues**: Follow the [Security Policy](SECURITY.md) — do not open a public issue
 
-For security concerns or to report a vulnerability, see [SECURITY.md](SECURITY.md).
+---
+
+*Roadside SOS — built with FastAPI, Flutter, and PostgreSQL.*
