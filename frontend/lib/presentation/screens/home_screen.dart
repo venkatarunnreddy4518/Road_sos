@@ -1341,30 +1341,19 @@ class _DiscoverTabState extends State<_DiscoverTab> {
                           width: 1.5,
                         ),
                       );
-                      return Column(
-                        children: [
-                          GestureDetector(
-                            onTap: _useMyLocation,
-                            child: Container(
-                              width: 38,
-                              height: 38,
-                              decoration: boxDecoration,
-                              alignment: Alignment.center,
-                              child: const Text('🎯', style: TextStyle(fontSize: 16)),
-                            ),
+                      return GestureDetector(
+                        onTap: _useMyLocation,
+                        child: Container(
+                          width: 38,
+                          height: 38,
+                          decoration: boxDecoration,
+                          alignment: Alignment.center,
+                          child: Icon(
+                            Icons.my_location,
+                            size: 18,
+                            color: Theme.of(context).colorScheme.primary,
                           ),
-                          const SizedBox(height: 8),
-                          GestureDetector(
-                            onTap: _load,
-                            child: Container(
-                              width: 38,
-                              height: 38,
-                              decoration: boxDecoration,
-                              alignment: Alignment.center,
-                              child: const Text('📡', style: TextStyle(fontSize: 16)),
-                            ),
-                          ),
-                        ],
+                        ),
                       );
                     }
                   ),
@@ -1433,30 +1422,19 @@ class _DiscoverTabState extends State<_DiscoverTab> {
                     width: 1.5,
                   ),
                 );
-                return Column(
-                  children: [
-                    GestureDetector(
-                      onTap: _useMyLocation,
-                      child: Container(
-                        width: 38,
-                        height: 38,
-                        decoration: boxDecoration,
-                        alignment: Alignment.center,
-                        child: const Text('🎯', style: TextStyle(fontSize: 16)),
-                      ),
+                return GestureDetector(
+                  onTap: _useMyLocation,
+                  child: Container(
+                    width: 38,
+                    height: 38,
+                    decoration: boxDecoration,
+                    alignment: Alignment.center,
+                    child: Icon(
+                      Icons.my_location,
+                      size: 18,
+                      color: Theme.of(context).colorScheme.primary,
                     ),
-                    const SizedBox(height: 8),
-                    GestureDetector(
-                      onTap: _load,
-                      child: Container(
-                        width: 38,
-                        height: 38,
-                        decoration: boxDecoration,
-                        alignment: Alignment.center,
-                        child: const Text('📡', style: TextStyle(fontSize: 16)),
-                      ),
-                    ),
-                  ],
+                  ),
                 );
               }
             ),
