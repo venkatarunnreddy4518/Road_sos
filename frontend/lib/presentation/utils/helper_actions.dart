@@ -23,4 +23,9 @@ class HelperActions {
       mode: LaunchMode.externalApplication,
     );
   }
+
+  /// Open an arbitrary URL (e.g. the GitLab issue tracker) in the browser.
+  static Future<void> openUrl(String url) async {
+    await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+  }
 }

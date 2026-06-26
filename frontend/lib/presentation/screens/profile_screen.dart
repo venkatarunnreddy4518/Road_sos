@@ -1282,6 +1282,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                         content: Text('Support email copied'), behavior: SnackBarBehavior.floating));
                   }),
+                  const SizedBox(height: 8),
+                  _helpContact(
+                      Icons.bug_report_outlined,
+                      const Color(0xFFFDEDED),
+                      const Color(0xFFE5484D),
+                      'Report an Issue',
+                      'Found a bug or have feedback? Open a ticket',
+                      () => HelperActions.openUrl(
+                          'https://code.swecha.org/arunn009/help/-/issues/new')),
                   const SizedBox(height: 18),
                   const Row(
                     children: [
