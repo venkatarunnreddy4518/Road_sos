@@ -254,8 +254,11 @@ class _RequestTrackingScreenState extends State<RequestTrackingScreen> {
         foregroundColor: _ink,
         title: Text(context.tr('request_help')),
       ),
-      body: r == null
-          ? const CarOnRoute(message: 'Loading your request', sub: 'Fetching live status…')
+      body: r == null || _loadingHelper
+          ? (r == null
+              ? const CarOnRoute(message: 'Loading your request', sub: 'Fetching live status…')
+              : const WrenchGear(
+                  message: 'Connecting your mechanic', sub: 'Helper assigned — preparing route…'))
           : Column(
               children: [
                 SizedBox(
